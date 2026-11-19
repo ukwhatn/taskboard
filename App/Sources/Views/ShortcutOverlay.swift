@@ -104,6 +104,7 @@ enum ShortcutCatalog {
                 Item(keys: "⌘↩", label: String(localized: "応答が終わってから送信")),
                 Item(keys: "⌥⌘↩", label: String(localized: "フォークして送信")),
                 Item(keys: "⌥⌘O", label: String(localized: "末尾からフォーク")),
+                Item(keys: "⇧⌘W", label: String(localized: "会話を終了")),
                 Item(keys: "⌥⌘↑ / ⌥⌘↓", label: String(localized: "前・次のメッセージへ移動")),
                 Item(keys: "⇧⌘M", label: String(localized: "権限のモードを変更")),
                 Item(keys: "⇧⌘I", label: String(localized: "モデルを変更")),

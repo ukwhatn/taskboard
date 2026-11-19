@@ -199,6 +199,8 @@ struct SessionCommands: Commands {
         CommandMenu("会話") {
             Button("末尾からフォーク") { model.sessionActions?.conversation?.fork() }
                 .keyboardShortcut("o", modifiers: [.option, .command])
+            Button("会話を終了") { model.sessionActions?.conversation?.end() }
+                .keyboardShortcut("w", modifiers: [.shift, .command])
             Divider()
             Button("権限のモードを変更…") { model.sessionActions?.conversation?.openField(.permission) }
                 .keyboardShortcut("m", modifiers: [.shift, .command])

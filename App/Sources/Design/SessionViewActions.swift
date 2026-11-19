@@ -23,6 +23,8 @@ struct ConversationMenuActions {
     var openField: (ConversationField) -> Void
     /// ⌥⌘↑・⌥⌘↓。前・次の人の発言へ送る
     var jump: (_ forward: Bool) -> Void
+    /// ⇧⌘W。この会話を終了する（右クリックの［終了］と同じ。書き込めない接続先では何もしない）
+    var end: () -> Void
 }
 
 

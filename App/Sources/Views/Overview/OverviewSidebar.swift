@@ -344,11 +344,18 @@ private struct TaskGroupTreeRow: View {
 }
 
 /// タスクの行。番号と題、右に札（応答待ち・回答待ち・CI失敗・未読・実行中など。呼び手が `AppModel.rowStatus` で引いて渡す）と委譲先の進み。押すとタスク画面を開く
-private struct TaskTreeRow: View {
+struct TaskTreeRow: View {
     @Environment(AppModel.self) private var model
     let task: BoardTask
     let status: TaskRowStatus?
-    @State private var hovering = false
+    @State private var hovering: Bool
+
+    /// `hovering` はマウスを載せた形を snapshot test で描くときだけ渡す
+    init(task: BoardTask, status: TaskRowStatus?, hovering: Bool = false) {
+        self.task = task
+        self.status = status
+        _hovering = State(initialValue: hovering)
+    }
 
     var body: some View {
         let progress = model.delegateProgress(of: task)
@@ -368,12 +375,25 @@ private struct TaskTreeRow: View {
                             .fontWeight(selected ? .semibold : nil)
                         BackgroundTasksGlyph(count: background)
                     }
+                    #if os(macOS)
+                    // マウスを載せたときの操作の置き場を札の位置に取っておく（題の幅と行の高さを、載せても動かさない）
+                    ZStack(alignment: .trailing) {
+                        if !badge.isEmpty {
+                            Text(verbatim: badge)
+                                .lineLimit(1)
+                                .foregroundStyle(.secondary)
+                                .opacity(hovering ? 0 : 1)
+                        }
+                        TaskRowHoverActions.placeholder
+                            .anchorPreference(key: TaskRowActionSlot.self, value: .bounds) { $0 }
+                    }
+                    #else
                     if !badge.isEmpty {
                         Text(verbatim: badge)
                             .lineLimit(1)
                             .foregroundStyle(.secondary)
-                            .opacity(hovering ? 0 : 1)
                     }
+                    #endif
                 }
             } icon: {
                 TaskRowGlyph(status: status)
@@ -383,8 +403,16 @@ private struct TaskTreeRow: View {
         .buttonStyle(.plain)
         #if os(macOS)
         // ほかの操作はホバーで出す（右クリックと同じ中身。会話が 1 つなら［終了］も）
-        .overlay(alignment: .trailing) {
-            if hovering { TaskRowHoverActions(task: task, status: status) }
+        .overlayPreferenceValue(TaskRowActionSlot.self) { slot in
+            if hovering, let slot {
+                GeometryReader { proxy in
+                    // 縦は札の行に合わせ、横は行の右端に置く（札が 2 行目に回ると、札は左に寄る）
+                    let rect = proxy[slot]
+                    TaskRowHoverActions(task: task, status: status)
+                        .frame(width: proxy.size.width, height: rect.height, alignment: .trailing)
+                        .offset(y: rect.minY)
+                }
+            }
         }
         .onHover { hovering = $0 }
         #endif
@@ -397,7 +425,7 @@ private struct TaskTreeRow: View {
 
 #if os(macOS)
 /// タスクの行にマウスを載せたときの操作。会話が 1 つなら［終了］、残りは［⋯］（右クリックと同じメニュー）
-private struct TaskRowHoverActions: View {
+struct TaskRowHoverActions: View {
     @Environment(AppModel.self) private var model
     let task: BoardTask
     let status: TaskRowStatus?
@@ -407,17 +435,17 @@ private struct TaskRowHoverActions: View {
         HStack(spacing: Space.inline) {
             if targets.count == 1, let conversation = targets.first, model.canWrite(task.machine) {
                 Button { model.close(conversation: conversation.key) } label: {
-                    Image(systemName: "xmark.circle")
+                    Self.icon("xmark.circle")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
                 .help("会話を終了")
                 .accessibilityLabel("会話を終了")
             }
             Menu { TaskRowMenuItems(task: task, status: status) } label: {
-                Image(systemName: "ellipsis")
+                Self.icon("ellipsis.circle")
             }
             .menuStyle(.button)
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
             .help("タスクの操作")
@@ -425,6 +453,25 @@ private struct TaskRowHoverActions: View {
         }
         .foregroundStyle(.secondary)
     }
+
+    private static func icon(_ name: String) -> some View {
+        Image(systemName: name).imageScale(.medium)
+    }
+
+    /// 操作と同じ大きさの見えない置き場（行の札の位置に取っておく）
+    static var placeholder: some View {
+        HStack(spacing: Space.inline) {
+            icon("xmark.circle")
+            icon("ellipsis.circle")
+        }
+        .hidden()
+    }
+}
+
+/// 行の中の、操作の置き場の位置
+private struct TaskRowActionSlot: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) { value = value ?? nextValue() }
 }
 #endif
 

@@ -466,6 +466,10 @@ struct ConversationView: View {
             jump: { forward in
                 jump.forward = forward
                 jump.token += 1
+            },
+            end: {
+                guard model.canWrite(key.machine) else { return }
+                model.close(conversation: key)
             })
     }
 
