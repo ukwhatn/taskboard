@@ -139,18 +139,22 @@ struct DocumentScreen: View {
     @State private var showsComments: Bool?
     @State private var confirmDelete = false
     @State private var exportedPDF: PDFFile?
+    /// 前の版との差分を描いている（版の選択は差分の新しい側を選ぶ）
+    @State private var showsDiff = false
+    /// 今描いている差分の新しい側の版。本文を描いていれば nil
+    @State private var shownDiff: Int?
     @State private var exportFailure: UserFacingError?
     @State private var width: CGFloat = 0
     /// 返信・質問の回答の書きかけがあるか（中の部品が `DocumentPendingInputKey` で知らせる）
     @State private var pendingInput = false
     /// 本文の欄で［承認］を押した送る文面（確認のダイアログを出す）
     @State var approving: Approving?
+    /// 今の本文のリモートコンテンツを許したか（許した値は `DocumentRemoteContent` が覚える。ここは描き直しのため）
+    @State private var remoteAllowed = false
 
     struct Approving: Identifiable {
         var draft: DocDraft
         var body: String
-    /// 今の本文のリモートコンテンツを許したか（許した値は `DocumentRemoteContent` が覚える。ここは描き直しのため）
-    @State private var remoteAllowed = false
         var id: String { draft.id }
     }
 
@@ -189,10 +193,6 @@ struct DocumentScreen: View {
             HStack(spacing: 0) {
                 if sideBySide || !commentsShown {
                     VStack(spacing: 0) {
-                        if !sideBySide || !commentsShown, let ask = openAsk {
-                            Banner(kind: .waiting, message: String(localized: "質問が\(ask.questions.count)件あります")) {
-                                Button("回答する") { focusForm(AppModel.formSlot(for: ask)) }.controlSize(.small)
-                            }
                         if let hosts = blockedRemoteHosts {
                             Banner(kind: .notice, message: String(localized: "リモートコンテンツを読み込んでいません"),
                                    detail: String(localized: "読み込み先：\(hosts.joined(separator: "・"))")) {
@@ -201,6 +201,10 @@ struct DocumentScreen: View {
                             .padding(.horizontal, inset)
                             .padding(.vertical, Space.row)
                         }
+                        if !sideBySide || !commentsShown, let ask = openAsk {
+                            Banner(kind: .waiting, message: String(localized: "質問が\(ask.questions.count)件あります")) {
+                                Button("回答する") { focusForm(AppModel.formSlot(for: ask)) }.controlSize(.small)
+                            }
                             .padding(.horizontal, inset)
                             .padding(.vertical, Space.row)
                         }
@@ -270,7 +274,8 @@ struct DocumentScreen: View {
             web = controller
         }
         .modifier(FormsHandling(screen: self, doc: doc))
-        .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)") { await loadContent() }
+        .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)/\(showsDiff)") { await loadContent() }
+        .onChange(of: key) { _, _ in showsDiff = false }
         .task(id: "\(key)/\(doc.openComments)/\(doc.draftComments)/\(askSignature)") { await loadSide(task: task) }
         .onChange(of: comments) { _, _ in pushHighlights() }
         .onChange(of: activeComment) { _, _ in pushHighlights() }
@@ -331,12 +336,19 @@ struct DocumentScreen: View {
                 .labelsHidden()
                 .controlSize(.small)
                 .fixedSize()
+                // 題と並ぶ帯の幅を取らないよう、アイコンだけにする（読み上げと help は名前）
+                Toggle(isOn: $showsDiff) { Label("前の版との差分", systemImage: "plus.forwardslash.minus") }
+                    .toggleStyle(.button)
+                    .labelStyle(.iconOnly)
+                    .controlSize(.small)
+                    .help("前の版との差分")
+                    .disabled((selectedRev ?? doc.latestRev) <= (revisions.first?.rev ?? 1))
             }
             if model.canWrite(key.machine) {
                 Button(web?.hasSelection == true ? "選択範囲にコメント" : "コメントを追加", systemImage: "plus.bubble") {
                     Task { await startComment() }
                 }
-                .disabled(content == nil)
+                .disabled(content == nil || showsDiff)
                 .controlSize(.small)
             }
             if sideBySide {
@@ -369,6 +381,20 @@ struct DocumentScreen: View {
         .fixedSize()
     }
 
+    /// 止めているリモートコンテンツのホスト。無いか許してあれば nil
+    private var blockedRemoteHosts: [String]? {
+        guard let content, !content.externalHosts.isEmpty, !remoteAllowed, !showsDiff else { return nil }
+        return content.externalHosts
+    }
+
+    /// 帯の［読み込む］。今の版のホストを許し、止める規則を外して載せ直す
+    private func allowRemoteContent() {
+        guard let content else { return }
+        DocumentRemoteContent.allow(content.externalHosts, for: key)
+        remoteAllowed = true
+        web?.load(content: content, highlights: highlightItems(), textSize: bodyTextSize, allowsRemote: true)
+    }
+
     private var openAsk: Ask? {
         asks.first { $0.status == .open } ?? model.fleet.machineState(for: key.machine)?.openAsk(forDoc: key.id)
     }
@@ -398,20 +424,6 @@ struct DocumentScreen: View {
     func takeFormFocus() {
         guard let focus = model.docFormFocus, focus.doc == key, web != nil else { return }
         focusForm(focus.slot)
-    /// 止めているリモートコンテンツのホスト。無いか許してあれば nil
-    private var blockedRemoteHosts: [String]? {
-        guard let content, !content.externalHosts.isEmpty, !remoteAllowed else { return nil }
-        return content.externalHosts
-    }
-
-    /// 帯の［読み込む］。今の版のホストを許し、止める規則を外して載せ直す
-    private func allowRemoteContent() {
-        guard let content else { return }
-        DocumentRemoteContent.allow(content.externalHosts, for: key)
-        remoteAllowed = true
-        web?.load(content: content, highlights: highlightItems(), textSize: bodyTextSize, allowsRemote: true)
-    }
-
         model.docFormFocus = nil
     }
 
@@ -518,7 +530,7 @@ struct DocumentScreen: View {
                 DocumentWebView(controller: web)
                     .overlay { if content == nil { ProgressView("読み込み中…") } }
                     .overlay {
-                        if model.canWrite(key.machine), content != nil, floating == nil {
+                        if model.canWrite(key.machine), content != nil, floating == nil, !showsDiff {
                             FloatingCommentButton(web: web) { rect in Task { await startFloatingComment(at: rect) } }
                         }
                     }
@@ -627,7 +639,17 @@ struct DocumentScreen: View {
             let fetched = try await model.documentContent(key, rev: selectedRev)
             self.revisions = (try? await revisions) ?? self.revisions
             contentFailure = nil
-            if content?.rev != fetched.rev || content?.content != fetched.content {
+            if showsDiff, fetched.rev > (self.revisions.first?.rev ?? 1) {
+                guard shownDiff != fetched.rev || content?.content != fetched.content else { return }
+                let previous = try await model.documentContent(key, rev: fetched.rev - 1)
+                content = fetched
+                shownDiff = fetched.rev
+                web.load(content: DocumentDiffPage.content(old: previous, new: fetched), highlights: [], textSize: bodyTextSize, forms: false)
+                return
+            }
+            if content?.rev != fetched.rev || content?.content != fetched.content || shownDiff != nil {
+                showsDiff = false
+                shownDiff = nil
                 content = fetched
                 remoteAllowed = DocumentRemoteContent.isAllowed(fetched.externalHosts, for: key)
                 web.load(content: fetched, highlights: highlightItems(), textSize: bodyTextSize, allowsRemote: remoteAllowed && !fetched.externalHosts.isEmpty)
@@ -655,7 +677,8 @@ struct DocumentScreen: View {
     }
 
     private func highlightItems() -> [DocumentWebController.HighlightItem] {
-        comments.compactMap { comment in
+        guard shownDiff == nil else { return [] }
+        return comments.compactMap { comment in
             guard let anchor = comment.anchor, comment.state != .resolved, comment.rev == (content?.rev ?? comment.rev) else { return nil }
             return DocumentWebController.HighlightItem(id: comment.id, anchor: anchor)
         }
