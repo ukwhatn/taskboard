@@ -3,7 +3,8 @@ import TaskboardKit
 
 /// タスクを開いたときのパネル（サイドビュー・全面・中央モーダル・別ウィンドウで共通）。
 /// 上の帯に番号と開き方、題と待ち理由の下に、中央に札（lead と委譲先の会話）と選んだ会話、右に欄（`TaskSideArea`）。
-/// 会話のシェルは会話と右の欄の下に全幅で開く（`TaskTerminalArea`）。並べて入らない幅では右の欄を下に重ねる（`TaskPanelMetrics`）。文書を開くと、帯の下を文書の画面にする。
+/// 会話のシェルは会話と右の欄の下に全幅で開く（`TaskTerminalArea`）。並べて入らない幅では右の欄を下に重ねる（`TaskPanelMetrics`）。
+/// 文書を開くと、2 つ目の会話の欄に文書を置き、会話と並べて入らない幅では帯の下を文書だけにする（`TaskPanelMetrics.docPlacement`）。
 /// 別のタスクを開いても作り直さず、中の部品を使い回す。そのタスクの間だけ持つ値は `TaskState` で持つ
 struct TaskPanel: View {
     let key: TaskKey
@@ -99,58 +100,61 @@ private struct TaskPanelBody: View {
         let shownDoc = model.openDoc(in: key).flatMap { model.fleet.document(for: $0) }
         let canEdit = model.canWrite(task.machine)
         let sessions = model.taskSessions(for: task)
+        let preferredSideWidth = sideWidth > 0 ? CGFloat(sideWidth) : nil
+        let docPlacement = shownDoc.map { _ in TaskPanelMetrics.docPlacement(width: size.width, sidePaneShown: !sidePaneHidden, preferredDetails: preferredSideWidth) }
+        let docAlone = docPlacement == .alone
         VStack(spacing: 0) {
             TaskPanelBar(task: task, inWindow: inWindow, sidePaneHidden: $sidePaneHidden, close: close)
-            if let shownDoc {
+            // 文書を開いても会話の欄は同じ子のまま残す（文書だけの幅では枠の外へ送る）。枝を替えると会話の購読と端末の接続が作り直される
+            let sideBySide = TaskPanelMetrics.sideBySide(width: size.width)
+            let swaps = !sideBySide && TaskPanelMetrics.swapsWhenStacked
+            if docAlone {
                 Divider()
-                DocumentScreen(key: shownDoc.id).id(shownDoc.id)
-            } else {
-                let sideBySide = TaskPanelMetrics.sideBySide(width: size.width)
-                let swaps = !sideBySide && TaskPanelMetrics.swapsWhenStacked
-                if !(swaps && keyboardShown) {
-                    TaskHeader(task: task, signals: model.cardSignals(for: task), showsNote: false, editable: canEdit) {
-                        sessionBar(task, sessions)
-                    }
-                    Divider()
+            } else if !(swaps && keyboardShown) {
+                TaskHeader(task: task, signals: model.cardSignals(for: task), showsNote: false, editable: canEdit) {
+                    sessionBar(task, sessions)
                 }
-                // 幅が分かる前（size が 0）は上下に重ね、分かってから左右に並べる。if で分けると配置が替わるたびに端末の view が作り直され、
-                // 接続と操作権の取得が 2 回走る（前の view の onDisappear より新しい view の onAppear が先に来る）ので、同じ子を `SessionSplit` の向きだけ替える
-                // ファイルの欄が右の欄と並べて入らず、右の欄を畳めば入る幅なら、ファイルを開いている間だけ畳む（2 つ並べているときはチャットが半分なので畳まない）
-                let fileRoom = TaskPanelMetrics.makesRoomForFile(width: size.width) && visibleSecond(sessions) == nil
-                let showsSidePane = !sidePaneHidden && !(fileRoom && chatFileOpen)
-                let detailsWidth = TaskPanelMetrics.detailsWidth(in: size.width, preferred: sideWidth > 0 ? CGFloat(sideWidth) : nil)
-                SessionSplit(
-                    sideBySide: sideBySide, sideWidth: detailsWidth,
-                    stackedMaxHeight: size.height > 0 ? size.height * TaskPanelMetrics.stackedDetailsShare : nil,
-                    swap: swaps && showsSidePane ? (swapShowsDetails ? .details : .conversation) : nil
-                ) {
-                    DeferredMount {
-                        sessionArea(task, sessions, sidePaneShown: showsSidePane)
-                            .environment(\.chatFileRoom, fileRoom)
-                    }
-                    .accessibilityHidden(swaps && showsSidePane && swapShowsDetails)
-                    if showsSidePane {
-                        SplitDivider(vertical: sideBySide)
-                            .overlay {
-                                if sideBySide { sideWidthHandle(detailsWidth) }
-                            }
-                        DeferredMount(lane: .later) {
-                            TaskSideArea(
-                                task: task, editable: canEdit, conversation: shownConversation(sessions)?.key,
-                                single: !sideBySide, swap: swaps ? $swapShowsDetails : nil,
-                                openConversation: {
-                                    currentConversation = $0
-                                    swapShowsDetails = false
-                                }
-                            )
+                Divider()
+            }
+            // 幅が分かる前（size が 0）は上下に重ね、分かってから左右に並べる。if で分けると配置が替わるたびに端末の view が作り直され、
+            // 接続と操作権の取得が 2 回走る（前の view の onDisappear より新しい view の onAppear が先に来る）ので、同じ子を `SessionSplit` の向きだけ替える
+            // ファイルの欄が右の欄と並べて入らず、右の欄を畳めば入る幅なら、ファイルを開いている間だけ畳む（2 つ並べているときはチャットが半分なので畳まない）
+            // 文書を開いている間は、文書と並べて右の欄が入らなければ畳む
+            let fileRoom = TaskPanelMetrics.makesRoomForFile(width: size.width) && visibleSecond(sessions) == nil && shownDoc == nil
+            let foldsForDoc = docPlacement.map { $0 != .beside(foldsSidePane: false) } ?? false
+            let showsSidePane = !sidePaneHidden && !(fileRoom && chatFileOpen) && !foldsForDoc
+            let detailsWidth = TaskPanelMetrics.detailsWidth(in: size.width, preferred: preferredSideWidth)
+            SessionSplit(
+                sideBySide: sideBySide, sideWidth: detailsWidth,
+                stackedMaxHeight: size.height > 0 ? size.height * TaskPanelMetrics.stackedDetailsShare : nil,
+                swap: swaps && showsSidePane ? (swapShowsDetails ? .details : .conversation) : nil
+            ) {
+                DeferredMount {
+                    sessionArea(task, sessions, sidePaneShown: showsSidePane, doc: shownDoc, docAlone: docAlone)
+                        .environment(\.chatFileRoom, fileRoom)
+                }
+                .accessibilityHidden(swaps && showsSidePane && swapShowsDetails)
+                if showsSidePane {
+                    SplitDivider(vertical: sideBySide)
+                        .overlay {
+                            if sideBySide { sideWidthHandle(detailsWidth) }
                         }
+                    DeferredMount(lane: .later) {
+                        TaskSideArea(
+                            task: task, editable: canEdit, conversation: shownConversation(sessions)?.key,
+                            single: !sideBySide, swap: swaps ? $swapShowsDetails : nil,
+                            openConversation: {
+                                currentConversation = $0
+                                swapShowsDetails = false
+                            }
+                        )
                     }
                 }
-                .onPreferenceChange(ChatFileOpenKey.self) { chatFileOpen = $0 }
-                // 出している会話のシェルは、会話と右の欄の下に全幅で出す（右に並べた 2 つ目の会話のシェルは、その欄の下）
-                if let owner = shownConversation(sessions)?.key, let dock = model.terminalDock(for: owner) {
-                    TaskTerminalArea(owner: owner, state: dock, panelHeight: size.height)
-                }
+            }
+            .onPreferenceChange(ChatFileOpenKey.self) { chatFileOpen = $0 }
+            // 出している会話のシェルは、会話と右の欄の下に全幅で出す（右に並べた 2 つ目の会話のシェルは、その欄の下）
+            if let owner = shownConversation(sessions)?.key, let dock = model.terminalDock(for: owner) {
+                TaskTerminalArea(owner: owner, state: dock, panelHeight: size.height)
             }
         }
         // 最小の高さを外へ伝えない。見出しの題とチップは折り返すので、幅 0 で測られると 1 字ずつ折り返して高くなり、
@@ -180,15 +184,16 @@ private struct TaskPanelBody: View {
 
     // MARK: 会話
 
-    /// 右に並べているもの（左と同じなら無し）
+    /// 右に並べているもの（左と同じなら無し）。文書を開いている間は、その欄を文書が使う（閉じると戻る）
     private func visibleSecond(_ sessions: TaskSessionSet) -> Conversation? {
-        guard !AppModel.isPhone else { return nil }
+        guard !AppModel.isPhone, model.openDoc(in: key) == nil else { return nil }
         return TaskSplit.visible(second, primary: shownConversation(sessions)?.key, rows: sessions.rows)
     }
 
     /// 右に並べて、入力をそちらへ移す。出たばかりの欄は出たときに自分でフォーカスを取る
     private func placeBeside(_ item: ConversationKey, _ sessions: TaskSessionSet) {
         guard !AppModel.isPhone, item != shownConversation(sessions)?.key else { return }
+        if model.openDoc(in: key) != nil { model.closeDoc() }
         second = item
         model.requestSessionFocus(on: item)
     }
@@ -215,6 +220,7 @@ private struct TaskPanelBody: View {
         if focus.beside {
             let rows = model.fleet.task(for: key).map { model.taskSessions(for: $0).rows } ?? []
             guard rows.contains(where: { $0.conversation.key == focus.item }) else { return }
+            if model.openDoc(in: key) != nil { model.closeDoc() }
             second = focus.item
             model.sessionFocus = nil
             return
@@ -226,8 +232,32 @@ private struct TaskPanelBody: View {
     }
 
     @ViewBuilder
-    /// `sidePaneShown` は右の欄を今出しているか（隠したときと、ファイルの欄のために畳んでいる間は false。会話の［状態］［差分］の出し先が変わる）
-    private func sessionArea(_ task: BoardTask, _ sessions: TaskSessionSet, sidePaneShown: Bool) -> some View {
+    /// `sidePaneShown` は右の欄を今出しているか（隠したときと、ファイルの欄・文書のために畳んでいる間は false。会話の［状態］［差分］の出し先が変わる）。
+    /// `doc` は 2 つ目の欄に置く文書で、`docAlone` なら会話を枠の外へ送って文書だけを出す
+    private func sessionArea(_ task: BoardTask, _ sessions: TaskSessionSet, sidePaneShown: Bool, doc: Document?, docAlone: Bool) -> some View {
+        let beside = visibleSecond(sessions)
+        let parked = doc != nil && docAlone
+        let move = beside == nil ? nil : { (side: SplitSide) in moveFocus(side, sessions) }
+        // 左は並べても並べなくても、文書を開いても同じ所に置く（置き場が替わると会話の購読と端末の接続が作り直される。`ConversationView` の onAppear が古い方の onDisappear より先に来る）
+        EvenSplit(parksLeading: parked) {
+            primaryArea(task, sessions, showsHeader: beside != nil, sidePaneShown: sidePaneShown)
+                .environment(\.splitFocus, move)
+                .accessibilityHidden(parked)
+                .allowsHitTesting(!parked)
+            if let doc {
+                SplitDivider(vertical: true)
+                DocumentScreen(key: doc.id, inPane: !docAlone).id(doc.id)
+            } else if let beside {
+                SplitDivider(vertical: true)
+                SessionColumn(conversation: beside, showsHeader: true, docksBelow: true, detailsBeside: false) { second = nil }
+                    .environment(\.splitFocus, move)
+            }
+        }
+    }
+
+    /// 左の欄。札で選んだ会話か、会話が無いときの起動と再開の画面
+    @ViewBuilder
+    private func primaryArea(_ task: BoardTask, _ sessions: TaskSessionSet, showsHeader: Bool, sidePaneShown: Bool) -> some View {
         let canLaunch = model.canWrite(key.machine)
         let stopped = sessions.stopped
         let shownConversation = shownConversation(sessions)
@@ -255,22 +285,8 @@ private struct TaskPanelBody: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                let shown = shownConversation
-                let beside = visibleSecond(sessions)
-                // 左は並べても並べなくても同じ所に置く（置き場が替わると会話の購読と端末の接続が作り直される。`ConversationView` の onAppear が古い方の onDisappear より先に来る）
-                if let shown {
-                    let move = beside == nil ? nil : { (side: SplitSide) in moveFocus(side, sessions) }
-                    EvenSplit {
-                        SessionColumn(conversation: shown, showsHeader: beside != nil, docksBelow: false, detailsBeside: sidePaneShown, partsTask: task.id, close: nil)
-                            .environment(\.splitFocus, move)
-                        if let beside {
-                            SplitDivider(vertical: true)
-                            SessionColumn(conversation: beside, showsHeader: true, docksBelow: true, detailsBeside: false) { second = nil }
-                                .environment(\.splitFocus, move)
-                        }
-                    }
-                }
+            } else if let shownConversation {
+                SessionColumn(conversation: shownConversation, showsHeader: showsHeader, docksBelow: false, detailsBeside: sidePaneShown, partsTask: task.id, close: nil)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

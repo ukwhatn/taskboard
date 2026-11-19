@@ -114,6 +114,23 @@ enum TaskPanelMetrics {
     static func makesRoomForFile(width: CGFloat) -> Bool {
         sideBySide(width: width) && !ChatFileMetrics.sideBySide(width: width - detailsWidth(in: width)) && ChatFileMetrics.sideBySide(width: width)
     }
+
+    /// 文書を開いたときの置き方。会話と文書にそれぞれ `sessionMinWidth` を取れれば並べる（右の欄を出したままで入らず、畳めば入るなら畳む）。
+    /// `preferredDetails` は境目を動かして残した右の欄の幅
+    static func docPlacement(width: CGFloat, sidePaneShown: Bool, preferredDetails: CGFloat? = nil) -> DocPlacement {
+        let pair = sessionMinWidth * 2
+        guard width >= pair else { return .alone }
+        let fitsWithSidePane = sideBySide(width: width) && width - detailsWidth(in: width, preferred: preferredDetails) >= pair
+        return .beside(foldsSidePane: sidePaneShown && !fitsWithSidePane)
+    }
+}
+
+/// タスクのパネルで文書を開いたときの置き方（`TaskPanelMetrics.docPlacement`）
+enum DocPlacement: Equatable {
+    /// 会話の右に並べる。`foldsSidePane` なら、並べている間だけ右の欄を畳む
+    case beside(foldsSidePane: Bool)
+    /// 会話を隠して文書だけを出す
+    case alone
 }
 
 /// 会話が登録した部品（`OverviewPanelParts`）の寸法
@@ -339,8 +356,11 @@ enum SessionSwap: Equatable {
 }
 
 /// 同じ幅の 2 つの欄を境目を挟んで並べる（タスク画面で 2 つ並べたとき）。子は左の欄・境目・右の欄の順で、左の欄だけなら全体に置く。
-/// HStack で並べると、揃えを聞くたびに両方の会話の欄の中身を奥まで辿り、並べたままスクロールする間に主スレッドが 100 ms を超えて止まっていた
+/// HStack で並べると、揃えを聞くたびに両方の会話の欄の中身を奥まで辿り、並べたままスクロールする間に主スレッドが 100 ms を超えて止まっていた。
+/// `parksLeading` なら右の欄を全体に広げ、左の欄は枠の下の外へ送る（作り直さずに隠す。並べられない幅で文書だけを出すとき）
 struct EvenSplit: Layout {
+    var parksLeading = false
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         CGSize(width: proposal.width ?? 0, height: proposal.height ?? 0)
     }
@@ -349,6 +369,12 @@ struct EvenSplit: Layout {
         guard let leading = subviews.first else { return }
         guard subviews.count == 3 else {
             leading.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+            return
+        }
+        if parksLeading {
+            leading.place(at: CGPoint(x: bounds.minX, y: bounds.maxY), proposal: ProposedViewSize(bounds.size))
+            subviews[1].place(at: CGPoint(x: bounds.minX, y: bounds.maxY), proposal: ProposedViewSize(width: 0, height: bounds.height))
+            subviews[2].place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
             return
         }
         let line = subviews[1].sizeThatFits(ProposedViewSize(width: nil, height: bounds.height)).width

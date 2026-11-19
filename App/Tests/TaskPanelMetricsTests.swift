@@ -16,6 +16,23 @@ import Testing
         #expect(!TaskPanelMetrics.makesRoomForFile(width: 1_300))
     }
 
+    @Test("文書の置き方: 会話と文書が 480 ずつ入れば並べ、右の欄を出したままで入らなければ畳み、全幅でも入らなければ文書だけ")
+    func docPlacement() {
+        // 全幅 900 は会話と文書の 960 に満たない
+        #expect(TaskPanelMetrics.docPlacement(width: 900, sidePaneShown: true) == .alone)
+        #expect(TaskPanelMetrics.docPlacement(width: 959, sidePaneShown: false) == .alone)
+        // 右の欄を隠していれば、全幅 960 で並ぶ
+        #expect(TaskPanelMetrics.docPlacement(width: 960, sidePaneShown: false) == .beside(foldsSidePane: false))
+        // 1,180: 右の欄 424.8 を除くと 755 で入らず、畳めば入る
+        #expect(TaskPanelMetrics.docPlacement(width: 1_180, sidePaneShown: true) == .beside(foldsSidePane: true))
+        // 1,399: 右の欄 440（上限）を除くと 959
+        #expect(TaskPanelMetrics.docPlacement(width: 1_399, sidePaneShown: true) == .beside(foldsSidePane: true))
+        // 1,400: 右の欄 440 を除いて 960 が残る
+        #expect(TaskPanelMetrics.docPlacement(width: 1_400, sidePaneShown: true) == .beside(foldsSidePane: false))
+        // 境目を動かして右の欄を 320 にしていれば、1,300 でも右の欄と並ぶ
+        #expect(TaskPanelMetrics.docPlacement(width: 1_300, sidePaneShown: true, preferredDetails: 320) == .beside(foldsSidePane: false))
+    }
+
     @Test("右の欄のタブ: このタスクで選んだもの、前に選んだもの、文書 → 作業項目 → 状態の順")
     func sidePaneTab() {
         let all: (SidePanel) -> Bool = { _ in true }

@@ -96,7 +96,7 @@ struct DocumentRow: View {
 
 /// 文書の画面。本文は読める幅（`ReadableWidth.text`）で中央に置き、右にコメントの欄（質問・コメント・レビューの送信）。
 /// 本文とコメントの欄が並んで入らない幅では、コメントの欄を本文と切り替えて出す。
-/// パネル（帯の下の全体）・別ウィンドウ・iPhone のシートで使う
+/// パネル（会話の右の欄か、帯の下の全体）・別ウィンドウ・iPhone のシートで使う
 struct DocumentScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(\.window) private var window
@@ -113,6 +113,8 @@ struct DocumentScreen: View {
     var inSheet = false
     /// 別ウィンドウで開いているとき。「戻る」を出さず、Esc で閉じない（閉じるのは ⌘W）
     var inWindow = false
+    /// タスクのパネルで会話の右の欄に置いているとき。［戻る］の代わりに右端に閉じるボタンを出す
+    var inPane = false
     /// 同じタスクの別の文書へ切り替える。nil はパネルとシートの既定（開いている文書を差し替える）。別ウィンドウはウィンドウの値を差し替える
     var switchTo: ((DocKey) -> Void)?
 
@@ -156,7 +158,7 @@ struct DocumentScreen: View {
                 if inSheet || inWindow {
                     Button("閉じる") { close() }
                 } else {
-                    Button("戻る") { model.closeDoc() }
+                    Button(inPane ? "閉じる" : "戻る") { model.closeDoc() }
                 }
             }
         }
@@ -281,7 +283,7 @@ struct DocumentScreen: View {
     /// 上の帯。戻る・前と次の文書・題（押すと同じタスクの文書を選べる）・版・コメントの追加・コメントの欄の開閉（狭い幅では本文とコメントの切り替え）・その他
     private func bar(_ doc: Document, commentsShown: Bool, sideBySide: Bool) -> some View {
         HStack(spacing: Space.row) {
-            if !inWindow {
+            if !inWindow, !inPane {
                 Button("戻る", systemImage: "chevron.left") { model.closeDoc() }
                     .buttonStyle(.borderless)
                     .hitTarget()
@@ -321,6 +323,13 @@ struct DocumentScreen: View {
                 readerSwitch(commentsShown: commentsShown, doc: doc)
             }
             moreMenu(doc)
+            if inPane {
+                Button("閉じる", systemImage: "xmark") { model.closeDoc() }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .hitTarget()
+                    .help("閉じる（Esc）")
+            }
         }
         .padding(.horizontal, inset)
         .padding(.vertical, Space.inline)
