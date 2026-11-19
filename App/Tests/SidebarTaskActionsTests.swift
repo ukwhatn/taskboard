@@ -36,7 +36,7 @@ import Testing
         #expect(prefs.pinnedTasks == [TaskKey(machine: MachineID(rawValue: "studio"), number: 12)])
     }
 
-    @Test("ピン留めしたタスクは、動いていなくてもマシンの段の頭の組に出し、ほかの組からは外す。外すと元に戻る")
+    @Test("ピン留めしたタスクは、全部のマシンのものをサイドバーの先頭の組にまとめて動いていなくても出し、元の組にも残す。外すと先頭の組から消える")
     func pinnedGroup() async throws {
         let model = try await loaded("test-sidebar-pin")
         let machine = try #require(model.orderedMachines.first)
@@ -47,17 +47,17 @@ import Testing
         let busy = try #require(model.sidebarTasks(on: machine.state, fleetID: machine.id, waiting: waiting, active: active).first)
         model.setPinned(quiet, true)
         model.setPinned(busy, true)
-        #expect(model.pinnedSidebarTasks(on: machine.state).map(\.number) == [quiet.number, busy.number].sorted())
+        #expect(model.pinnedSidebarTasks().map(\.number) == [quiet.number, busy.number].sorted())
         let rest = model.sidebarTasks(on: machine.state, fleetID: machine.id, waiting: waiting, active: active).map(\.number)
-        #expect(!rest.contains(busy.number) && !rest.contains(quiet.number))
+        #expect(rest.contains(busy.number), "動いているタスクは元の組にも出す")
+        #expect(!rest.contains(quiet.number), "元の組に出す条件は変えない")
         let columns = model.orderedBoards(machine.state, fleetID: machine.id).flatMap { board in
             board.orderedColumns.flatMap { model.sidebarTasks(in: board, column: $0, state: machine.state, waiting: waiting, active: active) }
         }
-        #expect(!columns.map(\.number).contains(busy.number))
+        #expect(columns.map(\.number).contains(busy.number))
         model.setPinned(busy, false)
         model.setPinned(quiet, false)
-        #expect(model.pinnedSidebarTasks(on: machine.state).isEmpty)
-        #expect(model.sidebarTasks(on: machine.state, fleetID: machine.id, waiting: waiting, active: active).map(\.number).contains(busy.number))
+        #expect(model.pinnedSidebarTasks().isEmpty)
     }
 
     @Test("すべて終了の対象は札に並ぶ会話（オーケストレーターを除く）。作業の途中のものがあれば名前を出して確かめ、無ければ確かめない")

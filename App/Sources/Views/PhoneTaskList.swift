@@ -2,7 +2,7 @@
 import SwiftUI
 import TaskboardKit
 
-/// iPhone の「タスク」タブの一覧。先頭に対応待ち、続けてマシンごとにオーケストレーターとタスクなし、列（並べ方で分けた組）の節を並べる。
+/// iPhone の「タスク」タブの一覧。先頭に対応待ち、次にピン留め、続けてマシンごとにオーケストレーターとタスクなし、列（並べ方で分けた組）の節を並べる。
 /// 字下げの木にせず、列は節の見出しにする（Mac・iPad のサイドバーの `SidebarTree` と出すタスクは同じ）。
 /// タブを押し直すとシステムが先頭へ戻すので、対応待ちの節は先頭に置く
 struct PhoneTaskList: View {
@@ -24,6 +24,10 @@ struct PhoneTaskList: View {
                         PhoneProblemRow(tile: tile, machine: showsMachine ? model.machineName(tile.id.machine) : nil)
                     }
                 }
+            }
+            let pinned = model.pinnedSidebarTasks()
+            if !pinned.isEmpty {
+                PhoneTaskSection(label: String(localized: "ピン留め"), rows: pinned.map { ($0, model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) })
             }
             ForEach(model.orderedMachines, id: \.id) { machine in
                 PhoneMachineSections(fleetID: machine.id, state: machine.state, waiting: waiting)
@@ -124,10 +128,6 @@ private struct PhoneMachineSections: View {
                 MachineUsageBars(state: state, name: name)
             }
             .contextMenu { MachineMenuItems(fleetID: fleetID, state: state) }
-        }
-        let pinned = model.pinnedSidebarTasks(on: state)
-        if !pinned.isEmpty {
-            PhoneTaskSection(label: String(localized: "ピン留め"), rows: pinned.map { ($0, model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) })
         }
         switch model.sidebarArrangement.grouping {
         case .boards:

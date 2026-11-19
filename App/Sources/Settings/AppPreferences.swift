@@ -32,7 +32,7 @@ enum AppPreferences {
     /// サイドバーの並べ方（`SidebarArrangement`）
     static let sidebarGroupingKey = "sidebar.grouping"
     static let sidebarTaskOrderKey = "sidebar.taskOrder"
-    /// サイドバーのマシンの段の頭に出すタスク（［ピン留め］）
+    /// サイドバーの先頭に出すタスク（［ピン留め］）
     static let pinnedTasksKey = "sidebar.pinnedTasks"
     static let onlyMachineEnabledKey = "onlyMachine.enabled"
     static let onlyMachineIDKey = "onlyMachine.id"

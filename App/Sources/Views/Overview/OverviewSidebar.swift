@@ -67,13 +67,19 @@ struct SidebarArrangementMenu: View {
     }
 }
 
-/// マシンごとの木（Mac・iPad のサイドバー）。iPhone の「タスク」タブは `PhoneTaskList` で、同じタスクを節に分けて出す
+/// 先頭にピン留めの組、続けてマシンごとの木（Mac・iPad のサイドバー）。iPhone の「タスク」タブは `PhoneTaskList` で、同じタスクを節に分けて出す
 struct SidebarTree: View {
     @Environment(AppModel.self) private var model
     let selectable: Bool
 
     var body: some View {
         let waiting = model.waitingItemsByTask
+        let pinned = model.pinnedSidebarTasks()
+        if !pinned.isEmpty {
+            TaskGroupTreeRow(
+                id: "pinned", label: String(localized: "ピン留め"),
+                rows: pinned.map { (task: $0, status: model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) })
+        }
         ForEach(model.orderedMachines, id: \.id) { machine in
             MachineTreeRow(fleetID: machine.id, state: machine.state, selectable: selectable, waiting: waiting)
         }
@@ -141,12 +147,6 @@ private struct MachineTreeRow: View {
             set: { if $0 == model.collapsedMachines.contains(fleetID) { model.toggleCollapsed(fleetID) } })
         DisclosureGroup(isExpanded: expanded) {
             let boards = model.orderedBoards(state, fleetID: fleetID)
-            let pinned = model.pinnedSidebarTasks(on: state)
-            if !pinned.isEmpty {
-                TaskGroupTreeRow(
-                    id: "pinned/\(fleetID)", label: String(localized: "ピン留め"),
-                    rows: pinned.map { (task: $0, status: model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) })
-            }
             switch model.sidebarArrangement.grouping {
             case .boards:
                 ForEach(boards) { board in

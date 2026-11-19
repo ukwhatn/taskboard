@@ -126,7 +126,7 @@ extension AppModel {
     func sidebarTasks(in board: Board, column: BoardColumn, state: MachineState, waiting: [TaskKey: [InboxItem]], active: Set<Int>) -> [BoardTask] {
         sidebarArrangement.sorted(
             state.tasks.values.filter {
-                $0.boardID == board.id && $0.columnID == column.id && !pinnedTasks.contains($0.id) && (active.contains($0.number) || waiting[$0.id] != nil)
+                $0.boardID == board.id && $0.columnID == column.id && (active.contains($0.number) || waiting[$0.id] != nil)
             },
             lastActivity: { self.lastActivity(of: $0, in: state) })
     }
@@ -135,13 +135,14 @@ extension AppModel {
     func sidebarTasks(on state: MachineState, fleetID: String, waiting: [TaskKey: [InboxItem]], active: Set<Int>) -> [BoardTask] {
         let boards = Set(orderedBoards(state, fleetID: fleetID).map(\.id))
         return sidebarArrangement.sorted(
-            state.tasks.values.filter { boards.contains($0.boardID) && !pinnedTasks.contains($0.id) && (active.contains($0.number) || waiting[$0.id] != nil) },
+            state.tasks.values.filter { boards.contains($0.boardID) && (active.contains($0.number) || waiting[$0.id] != nil) },
             lastActivity: { self.lastActivity(of: $0, in: state) })
     }
 
-    /// マシンの段の頭の「ピン留め」の組（並べ方の並び順）。動いていなくても、どの案件のものでも出す。ほかの組には出さない
-    func pinnedSidebarTasks(on state: MachineState) -> [BoardTask] {
-        sidebarArrangement.sorted(state.tasks.values.filter { pinnedTasks.contains($0.id) }, lastActivity: { self.lastActivity(of: $0, in: state) })
+    /// サイドバーの先頭の「ピン留め」の組（並べ方の並び順）。全部のマシンのものを 1 つにまとめ、動いていなくても、どの案件のものでも出す。元の組にも出す
+    func pinnedSidebarTasks() -> [BoardTask] {
+        let tasks = orderedMachines.flatMap { $0.state.tasks.values.filter { pinnedTasks.contains($0.id) } }
+        return sidebarArrangement.sorted(tasks, lastActivity: { task in fleet.machineState(for: task.machine).map { self.lastActivity(of: task, in: $0) } ?? task.updatedAt })
     }
 
     func setPinned(_ task: BoardTask, _ pinned: Bool) {

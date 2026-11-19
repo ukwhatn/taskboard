@@ -35,7 +35,7 @@ extension AppModel {
                     .map { row($0, rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) }
             }
             return [
-                "machine": machine.id, "boards": boards, "arranged": arranged, "pinned": pinnedSidebarTasks(on: state).map(\.number),
+                "machine": machine.id, "boards": boards, "arranged": arranged, "pinned": pinnedSidebarTasks().filter { $0.machine == state.machine?.id }.map(\.number),
                 "unassigned": unassigned.map { ["sessions": $0.sessions.rows.map(\.conversation.id), "schedules": $0.schedules.map(\.scheduleID)] } as Any,
             ]
         }
