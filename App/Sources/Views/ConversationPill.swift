@@ -7,6 +7,8 @@ struct ConversationPill: View {
     @Environment(\.today) private var today
     let conversation: Conversation
     let selected: Bool
+    /// 状態の印の位置に［×］を重ねる間は印を隠す（幅を変えない）
+    var hidesStatusGlyph = false
     let action: () -> Void
 
     var body: some View {
@@ -15,7 +17,7 @@ struct ConversationPill: View {
         let status = [model.statusText(of: conversation, now: today)] + (running > 0 ? [StatusAppearance.backgroundTasks(running).label] : [])
         Button(action: action) {
             HStack(spacing: Space.inline) {
-                StatusGlyph(conversation: conversation)
+                StatusGlyph(conversation: conversation).opacity(hidesStatusGlyph ? 0 : 1)
                 Text(conversation.displayTitle)
                 BackgroundTasksGlyph(count: running)
             }

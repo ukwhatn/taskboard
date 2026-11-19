@@ -34,7 +34,7 @@ struct LinkedSessionPills: View {
     }
 
     private func pill(_ conversation: Conversation) -> some View {
-        ConversationPill(conversation: conversation, selected: current == conversation.key || second == conversation.key) {
+        EndablePill(conversation: conversation, selected: current == conversation.key || second == conversation.key) {
             select(conversation.key)
         }
         .contextMenu {
@@ -43,5 +43,36 @@ struct LinkedSessionPills: View {
             }
             ConversationMenuItems(conversation: conversation)
         }
+    }
+}
+
+/// 会話の札。Mac ではマウスを載せている間、状態の印の位置に［×］を出し、タブを閉じるのと同じく 1 回で終了する
+/// （確かめない。記録は残り、送るか再開すると戻る）
+private struct EndablePill: View {
+    @Environment(AppModel.self) private var model
+    let conversation: Conversation
+    let selected: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        #if os(macOS)
+        let showsEnd = hovering && model.canWrite(conversation.machine)
+        ConversationPill(conversation: conversation, selected: selected, hidesStatusGlyph: showsEnd, action: action)
+            .overlay(alignment: .leading) {
+                if showsEnd {
+                    Button { model.close(conversation: conversation.key) } label: {
+                        Image(systemName: "xmark.circle.fill").symbolRenderingMode(.hierarchical).font(.callout)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, Space.block)
+                    .help("会話を終了")
+                    .accessibilityLabel("会話を終了")
+                }
+            }
+            .onHover { hovering = $0 }
+        #else
+        ConversationPill(conversation: conversation, selected: selected, action: action)
+        #endif
     }
 }

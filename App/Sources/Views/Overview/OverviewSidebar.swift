@@ -348,6 +348,7 @@ private struct TaskTreeRow: View {
     @Environment(AppModel.self) private var model
     let task: BoardTask
     let status: TaskRowStatus?
+    @State private var hovering = false
 
     var body: some View {
         let progress = model.delegateProgress(of: task)
@@ -371,6 +372,7 @@ private struct TaskTreeRow: View {
                         Text(verbatim: badge)
                             .lineLimit(1)
                             .foregroundStyle(.secondary)
+                            .opacity(hovering ? 0 : 1)
                     }
                 }
             } icon: {
@@ -379,12 +381,52 @@ private struct TaskTreeRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        #if os(macOS)
+        // ほかの操作はホバーで出す（右クリックと同じ中身。会話が 1 つなら［終了］も）
+        .overlay(alignment: .trailing) {
+            if hovering { TaskRowHoverActions(task: task, status: status) }
+        }
+        .onHover { hovering = $0 }
+        #endif
         .contextMenu { TaskRowMenuItems(task: task, status: status) }
         .help((["#\(task.number) \(task.title)", status?.label, progressText, backgroundText]).compactMap { $0 }.joined(separator: "\n"))
         .accessibilityLabel((["#\(task.number) \(task.title)", status?.label, progressText, backgroundText]).compactMap { $0 }.joined(separator: "、"))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
+
+#if os(macOS)
+/// タスクの行にマウスを載せたときの操作。会話が 1 つなら［終了］、残りは［⋯］（右クリックと同じメニュー）
+private struct TaskRowHoverActions: View {
+    @Environment(AppModel.self) private var model
+    let task: BoardTask
+    let status: TaskRowStatus?
+
+    var body: some View {
+        let targets = model.endTargets(of: task).conversations
+        HStack(spacing: Space.inline) {
+            if targets.count == 1, let conversation = targets.first, model.canWrite(task.machine) {
+                Button { model.close(conversation: conversation.key) } label: {
+                    Image(systemName: "xmark.circle")
+                }
+                .buttonStyle(.borderless)
+                .help("会話を終了")
+                .accessibilityLabel("会話を終了")
+            }
+            Menu { TaskRowMenuItems(task: task, status: status) } label: {
+                Image(systemName: "ellipsis")
+            }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("タスクの操作")
+            .accessibilityLabel("タスクの操作")
+        }
+        .foregroundStyle(.secondary)
+    }
+}
+#endif
 
 /// タスクの行の右クリック（長押し）のメニュー。開く・既読にする・対応待ちを非表示・ピン留めと、動いている会話ごとの停止（タスク画面の札と同じ項目）と［すべて終了］。
 /// 会話が 2 つ以上あれば、名前ごとのサブメニューにする
