@@ -60,6 +60,14 @@ public struct DictationEndpoint: Sendable {
         self.margin = margin
     }
 
+    /// 区切りを終えて次の区切りを聞く。雑音の大きさの並びは残す（聞き続けている間は、区切りごとに測り直さない）
+    public mutating func nextSegment() {
+        heardSpeech = false
+        ended = false
+        run = 0
+        quietFrames = 0
+    }
+
     /// 届いた音を足し、話し終えた後の無音が `silence` 秒に達したら true
     @discardableResult
     public mutating func feed(_ samples: [Float]) -> Bool {

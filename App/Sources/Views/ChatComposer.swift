@@ -4,7 +4,8 @@ import TaskboardKit
 /// 会話の入力欄。左端の操作（`leading`。会話の［ファイルを添付］、iPhone は＋のメニュー）、文の欄、送信。
 /// 生成中の［生成を停止］のように画面ごとに足すボタンは `accessory` に渡す（送信の左に並ぶ）。
 /// `stop` があれば、送れる文が無い間は送信の場所に［生成を停止］を出す（iPhone。送信と停止を 1 つの場所にして文の幅を取る）。
-/// iPhone・iPad の画像は、文の欄の長押しの［ペースト］で受ける（`canAttach` の間）
+/// iPhone・iPad の画像は、文の欄の長押しの［ペースト］で受ける（`canAttach` の間）。
+/// `tentative` は音声入力の確定前の文で、文の欄の下に薄い色で出す（入力欄の文には入れないので、送信や打鍵で混ざらない）
 struct ChatComposer<Leading: View, Accessory: View>: View {
     @Binding var draft: String
     @Binding var selection: TextSelection?
@@ -18,6 +19,7 @@ struct ChatComposer<Leading: View, Accessory: View>: View {
     /// 長い貼り付けの受け口（会話だけ。nil なら入力欄に入れる）
     var pasteLong: ((String) -> Void)?
     var stop: ChatComposerStop?
+    var tentative: String?
     @ViewBuilder var leading: Leading
     @ViewBuilder var accessory: Accessory
 
@@ -28,10 +30,19 @@ struct ChatComposer<Leading: View, Accessory: View>: View {
         let shape = RoundedRectangle(cornerRadius: Radius.composer, style: .continuous)
         HStack(alignment: .bottom, spacing: Space.inline) {
             leading
-            field
-                .padding(.horizontal, Space.inline / 2)
-                .frame(minHeight: HitTarget.size)
-                .focused(focused)
+            VStack(alignment: .leading, spacing: 0) {
+                field
+                    .frame(minHeight: HitTarget.size)
+                    .focused(focused)
+                if let tentative, !tentative.isEmpty {
+                    Text(tentative)
+                        .foregroundStyle(ChatPalette.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, Space.inline / 2)
+                        .accessibilityLabel(Text("聞き取り中：\(tentative)"))
+                }
+            }
+            .padding(.horizontal, Space.inline / 2)
             accessory
             if let stop, !canSend {
                 Button(action: stop.action) {

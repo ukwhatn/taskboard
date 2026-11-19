@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// 入力欄の［音声入力］。押したときと離したときを `VoiceDictation` に渡す（1 回押すとハンズフリーで聞き、押し続けると離すまで聞く）。
-/// 聞いている間は塗りのマイクにして、不透明度だけをゆっくり動かす（視差効果を減らす設定では動かさない）。
+/// 入力欄の［音声入力］。押したときと離したときを `VoiceDictation` に渡す（1 回押すともう一度押すまで聞き、押し続けると離すまで聞く）。
+/// 聞いている間は、どの会話の入力欄でも塗りのマイクにして、不透明度だけをゆっくり動かす（視差効果を減らす設定では動かさない）。
 /// VoiceOver は押すたびに聞き始めと終わりを切り替える
 struct ComposerVoiceButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,12 +40,12 @@ struct ComposerVoiceButton: View {
             .accessibilityValue(listening ? Text("聞き取り中") : polishing ? Text("校正中") : Text(verbatim: ""))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction {
-                // 押してすぐ離したのと同じ（止まっていればハンズフリーで聞き始め、聞いていれば終える）
+                // 押してすぐ離したのと同じ（止まっていれば聞き始め、聞いていれば終える）
                 press()
                 release()
             }
             #if os(macOS)
-            .help("話した内容を入力します。もう一度押すか話し終えると止まり、押し続けると離したときに止まります（⌥Space）")
+            .help("話した内容を入力します。もう一度押すと止まり、押し続けると離したときに止まります。最後に「送信」と言うと送信します（⌥Space）")
             #endif
     }
 
@@ -62,12 +62,11 @@ struct ComposerVoiceButton: View {
 #if os(macOS)
 import AppKit
 
-/// 入力欄にいる間の ⌥Space の押し下げと離し（短く押すとハンズフリーの開始と終了、押し続けると離すまで聞く）。押し続けている間の繰り返しは捨てる（入力欄に空白を入れない）
+/// アプリのどの画面でも、⌥Space の押し下げと離しを音声入力に渡す（短く押すと聞き始めと終わり、押し続けると離すまで聞く）。
+/// `isEnabled` が false の間は渡さない。押し続けている間の繰り返しは捨てる（入力欄に空白を入れない）
 @MainActor
 final class VoiceKeyMonitor {
-    var isActive = false {
-        didSet { if !isActive, holding { end() } }
-    }
+    var isEnabled: () -> Bool = { true }
     var onPress: () -> Void = {}
     var onRelease: () -> Void = {}
     private var token: Any?
@@ -81,7 +80,7 @@ final class VoiceKeyMonitor {
             guard let self, event.keyCode == Self.space else { return event }
             switch event.type {
             case .keyDown:
-                guard self.isActive, event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .option else { return event }
+                guard self.isEnabled(), event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .option else { return event }
                 if !event.isARepeat, !self.holding {
                     self.holding = true
                     self.onPress()

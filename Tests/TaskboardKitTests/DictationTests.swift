@@ -191,6 +191,23 @@ struct DictationEndpointTests {
         #expect(ended3)
     }
 
+    @Test("次の区切りに移ると、話す前の無音を数えず、また話して 2 秒黙ったら終わる")
+    func nextSegment() {
+        var endpoint = DictationEndpoint(silence: 2)
+        endpoint.feed(noise(0.5))
+        endpoint.feed(speech(1))
+        endpoint.feed(noise(2.1))
+        #expect(endpoint.ended)
+        endpoint.nextSegment()
+        #expect(!endpoint.ended && !endpoint.heardSpeech)
+        let waited = endpoint.feed(noise(5))
+        #expect(!waited)
+        endpoint.feed(speech(1))
+        #expect(endpoint.heardSpeech)
+        let ended = endpoint.feed(noise(2.1))
+        #expect(ended)
+    }
+
     @Test("話している途中の短い間では終わらない")
     func pausesDoNotEnd() {
         var endpoint = DictationEndpoint(silence: 2)

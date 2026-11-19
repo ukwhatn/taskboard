@@ -32,12 +32,9 @@ struct ConversationComposerArea: View {
     @State private var history = ComposerHistory()
     /// 候補を入力欄に入れた依頼と入れた文。送った文に文が残っていれば、送った後にその依頼を閉じる
 
-    /// 音声入力（1 回押すとハンズフリー、押し続けると離すまで聞く）
-    @State private var dictation = VoiceDictation()
+    /// 音声入力（アプリに 1 つ。この入力欄が出ている間は入れる先に登録する）
     @AppStorage(AppPreferences.voiceInputKey) private var voiceInput = true
-    #if os(macOS)
-    @State private var voiceKeys = VoiceKeyMonitor()
-    #endif
+    @State private var voiceID = UUID()
 
     /// `initialDraft` が空でなければそれを（snapshot 用）、空なら `drafts` の書きかけを出す
     init(
@@ -67,6 +64,8 @@ struct ConversationComposerArea: View {
     private var images: [ChatDraftImage] { model.chatImages(for: key) }
     private var files: [ChatDraftFile] { model.chatFiles(for: key) }
 
+    private var dictation: VoiceDictation { model.dictation }
+
     var body: some View {
         let suggestions = commandSuggestions
         let files = mentionSuggestions
@@ -91,28 +90,21 @@ struct ConversationComposerArea: View {
             .composerDraftSync($input, to: key, in: drafts) { history.edited(to: $0) }
             #if DEBUG
             .modifier(DebugComposerFeed(draft: $input.draft, selection: $input.selection))
-            .modifier(
-                DebugDictationFeed(
-                    dictation: dictation, press: { startDictation() }, release: { dictation.release() },
-                    file: { url in dictation.transcribeFile(url, vocabulary: dictationVocabulary, handlers: dictationHandlers()) }))
             #endif
-            #if os(macOS)
             .onAppear {
-                voiceKeys.onPress = { startDictation() }
-                voiceKeys.onRelease = { dictation.release() }
-                voiceKeys.isActive = voiceInput && focused.wrappedValue
-                voiceKeys.start()
+                registerVoiceTarget()
+                if voiceInput { dictation.prewarm() }
             }
-            .onChange(of: focused.wrappedValue) { _, now in voiceKeys.isActive = voiceInput && now }
-            .onChange(of: voiceInput) { _, now in voiceKeys.isActive = now && focused.wrappedValue }
-            #endif
-            .onAppear { if voiceInput { dictation.prewarm() } }
-            .onDisappear {
-                #if os(macOS)
-                voiceKeys.stop()
-                #endif
-                dictation.cancel()
+            .onChange(of: conversation) { _, _ in registerVoiceTarget() }
+            .onChange(of: writable) { _, _ in registerVoiceTarget() }
+            .onChange(of: focused.wrappedValue) { _, now in if now { dictation.focus(voiceID) } }
+            .onChange(of: voiceInput) { _, now in if !now { dictation.disable() } }
+            .onChange(of: dictation.failure) { _, failure in
+                guard let failure, dictation.isTarget(voiceID) else { return }
+                dictation.failure = nil
+                failed(failure)
             }
+            .onDisappear { dictation.unregister(voiceID) }
     }
 
     private var generating: Bool { conversation.phase == .running || feed.isGenerating }
@@ -127,7 +119,8 @@ struct ConversationComposerArea: View {
             draft: $input.draft, selection: $input.selection, focused: focused, canAttach: canAttach,
             canSend: canSend, addImages: addImages, send: { send() }, commandKey: { handleCommandKey($0, $1) },
             pasteLong: writable ? { takePastedText($0) } : nil,
-            stop: phone && generating ? ChatComposerStop(enabled: writable && !interrupting, action: interrupt) : nil
+            stop: phone && generating ? ChatComposerStop(enabled: writable && !interrupting, action: interrupt) : nil,
+            tentative: dictation.tentative.flatMap { $0.key == key ? $0.text : nil }
         ) {
             #if os(iOS)
             if phone {
@@ -140,7 +133,7 @@ struct ConversationComposerArea: View {
             #endif
         } accessory: {
             if voiceInput {
-                ComposerVoiceButton(phase: dictation.phase, polishing: dictation.polishing, press: { startDictation() }, release: { dictation.release() })
+                ComposerVoiceButton(phase: dictation.phase, polishing: dictation.polishing > 0, press: { dictation.press() }, release: { dictation.release() })
             }
             if generating, !phone {
                 Button {
@@ -160,7 +153,7 @@ struct ConversationComposerArea: View {
 
     // MARK: 音声入力
 
-    /// マイクを断られたときの理由と設定を開く操作、日本語のモデルの取得中。どちらも入力欄のすぐ上に、解決するまで出す
+    /// マイクを断られたときの理由と設定を開く操作、日本語のモデルの取得中、音声入力で答えた・溜めていた文を入れた知らせ。入力欄のすぐ上に出す
     @ViewBuilder
     private var dictationNotices: some View {
         if dictation.microphoneDenied {
@@ -179,37 +172,84 @@ struct ConversationComposerArea: View {
         if dictation.phase == .loading {
             Banner(kind: .pending, message: String(localized: "音声認識のモデルを準備しています…"))
         }
+        if let notice = dictation.notices[key] {
+            Banner(kind: .success, message: Self.text(notice), onClose: { dictation.notices[key] = nil })
+        }
     }
 
-    /// 押した。止まっていれば、今のカーソル（選んでいればその範囲）に聞き取った文を入れる準備をして聞き始める（ハンズフリーで聞いていれば終える）
-    private func startDictation() {
-        dictation.press(vocabulary: dictationVocabulary, handlers: dictationHandlers())
+    private static func text(_ notice: VoiceDictation.Notice) -> String {
+        switch notice {
+        case .answered(let option?): String(localized: "質問に「\(option)」で回答しました")
+        case .answered(nil): String(localized: "質問に回答しました")
+        case .delivered: String(localized: "会話を開いていない間に話した文を入力しました")
+        }
     }
 
-    /// 聞き取った文を、聞き始めたときのカーソルに入れる。校正した文は、入力欄が校正の前の文を入れたときのままなら置き換える（打ち直していれば捨てる）
-    private func dictationHandlers() -> VoiceDictation.Handlers {
-        let insertion = DictationDraft(draft: input.draft, selection: selectedRange)
+    /// この入力欄を音声入力の入れる先にする。文は今のカーソル（選んでいればその範囲）に入れ、校正した文は入れた区切りのまま残っていれば置き換える
+    private func registerVoiceTarget() {
         var task: BoardTask?
         if case .task(let taskKey) = model.conversationScope(for: key) { task = model.fleet.task(for: taskKey) }
         let title = task?.title
         let number = task?.number
-        let messages = Array(feed.messages.suffix(80))
         var polish: (@Sendable (String) async throws -> String)?
         if let source = feed.source as? any DictationSource {
+            let feed = feed
             polish = { text in
-                try await source.polishDictation(DictationPolishRequest(text: text, taskTitle: title, taskNumber: number, messages: messages)).text
+                let messages = await MainActor.run { Array(feed.messages.suffix(80)) }
+                return try await source.polishDictation(DictationPolishRequest(text: text, taskTitle: title, taskNumber: number, messages: messages)).text
             }
         }
-        return VoiceDictation.Handlers(
-            transcribed: { spoken in
-                input.replace(insertion.inserting(spoken))
-                focused.wrappedValue = true
-            },
-            polished: { original, polished in
-                guard input.draft == insertion.inserting(original).text else { return }
-                input.replace(insertion.inserting(polished))
-            },
-            failed: { failed($0) }, polish: polish)
+        dictation.register(
+            voiceID,
+            VoiceDictation.Target(
+                key: key,
+                vocabulary: { DictationVocabulary.phrases(taskTitle: title, taskNumber: number, messages: Array(feed.messages.suffix(80))) },
+                polish: polish,
+                insert: { spoken in
+                    let insertion = DictationDraft(draft: input.draft, selection: selectedRange)
+                    let result = insertion.inserting(spoken)
+                    input.replace(result)
+                    return DictationSpan(start: insertion.before.count, text: spoken)
+                },
+                replace: { span, text in
+                    guard let result = span.replacing(with: text, in: input.draft) else { return nil }
+                    let cursor = result.text.index(result.text.startIndex, offsetBy: result.span.start + result.span.text.count)
+                    input.replace((result.text, cursor))
+                    return result.span
+                },
+                submit: { await submitDictation() }))
+    }
+
+    /// 合図の言葉で送る。会話が問い（AskUserQuestion・request_user_input。動いている間の問いと defer で終えた問い）の回答を待っていれば、入力欄の文を回答にする。
+    /// どの問いへの回答か決められなければ、入力欄の送信と同じ経路に渡す（回答を待っている間は送らずに帯で知らせる）
+    private func submitDictation() async {
+        let text = input.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let request = conversation.requests.first(where: { $0.kind == .question }), let questions = request.waiting.questions, !text.isEmpty,
+            images.isEmpty, files.isEmpty, writable, model.canWrite(key.machine)
+        else {
+            send()
+            return
+        }
+        let answer: AskAnswer
+        let option: String?
+        switch DictationAnswer.match(text, questions: questions) {
+        case .selected(let picked):
+            answer = picked
+            option = picked.selected.first.flatMap { label in questions.lazy.flatMap(\.options).first { $0.label == label }?.displayLabel }
+        case .freeText(let written):
+            answer = written
+            option = nil
+        case .undetermined:
+            send()
+            return
+        }
+        do {
+            try await feed.answer(ConversationAnswerRequest(requestID: request.id, answers: [answer]))
+            clear()
+            dictation.notices[key] = .answered(option: option)
+        } catch {
+            failed(UserFacingError("回答を送信できませんでした", error: error))
+        }
     }
 
     /// 欄で選んでいる範囲（カーソルだけなら空の範囲）。分からなければ nil（末尾に足す）
@@ -218,13 +258,6 @@ struct ConversationComposerArea: View {
             let lower = SlashTyping.cursor(range.lowerBound, in: input.draft), let upper = SlashTyping.cursor(range.upperBound, in: input.draft)
         else { return nil }
         return lower..<upper
-    }
-
-    /// 会話のタスクの題と番号、最近の発言に出た番号のような語
-    private var dictationVocabulary: [String] {
-        var task: BoardTask?
-        if case .task(let taskKey) = model.conversationScope(for: key) { task = model.fleet.task(for: taskKey) }
-        return DictationVocabulary.phrases(taskTitle: task?.title, taskNumber: task?.number, messages: Array(feed.messages.suffix(80)))
     }
 
     /// 取り消された待機中の発言と巻き戻した指示を、今の下書きの前に戻す。画像とファイルも前に戻し、上限を超えた分は外す

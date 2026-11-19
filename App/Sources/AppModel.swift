@@ -55,11 +55,6 @@ final class AppModel {
     var debugBoardScrollSizes: (container: CGSize, content: CGSize, offset: CGPoint)?
     /// 計測用: 会話の入力欄の文とカーソル（DebugServer の /conversation/type が 1 字ずつ変える）
     var debugComposerInput: DebugComposerInput?
-    /// 確認用: 会話の入力欄の［音声入力］の押し下げと離し（DebugServer の /conversation/dictation）と、入力欄が書き戻す今の段階
-    var debugDictationPress: DebugDictationPress?
-    var debugDictationPhase = "idle"
-    var debugDictationPolishing = false
-    var debugDictationTiming: VoiceDictation.Timing?
     #endif
     private let prefs = DevicePrefs()
     /// タスクの開き方。開いた後に切り替えると、次からもその開き方になる
@@ -664,6 +659,8 @@ final class AppModel {
     var chatFileDrafts: [ConversationKey: [ChatDraftFile]] = [:]
     /// 入力欄の書きかけの文とカーソル（観測しない）
     @ObservationIgnored let chatDrafts = ChatDraftTexts(store: AppDefaults.store)
+    /// 会話の入力欄の音声入力。アプリに 1 つで、会話を切り替えても聞き続ける（入れる先は開いている会話の入力欄）
+    @ObservationIgnored lazy var dictation = VoiceDictation(drafts: chatDrafts)
     /// 巻き戻した会話の［元に戻す］のバーを消した・送った印。画面が作り直されても、アプリを開き直しても残る
     var rewindNoticeDismissals = RewindNoticeDismissals(store: AppDefaults.store)
     /// サイドバーのタスクの行の「未読」の印。この端末で見たかで決め、アプリを開き直しても残る。見張り盤の札の未読にも渡す

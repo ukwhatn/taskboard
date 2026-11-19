@@ -102,19 +102,29 @@ extension DebugServer {
                 "draftChars": model.chatDrafts.text(for: feed.key).count,
             ])
         case ("POST", "/conversation/dictation"):
-            // {"down": true} で開いている会話の入力欄の［音声入力］を押し、{"down": false} で離す（ボタンと ⌥Space と同じ経路）。
-            // {"file": "/path/to.wav"} は、その音声ファイルをマイクの代わりに同じ手順（文字にして校正）に通す。返りは今の段階
-            guard model.activeConversation != nil else { return .json(404, ["error": "会話を開いていない"]) }
-            let down = request.jsonBody?["down"] as? Bool ?? true
-            let file = (request.jsonBody?["file"] as? String).map { URL(filePath: $0) }
-            model.debugDictationPress = DebugDictationPress(seq: (model.debugDictationPress?.seq ?? 0) + 1, down: down, file: file)
+            // {"down": true} で［音声入力］を押し、{"down": false} で離す（ボタンと ⌥Space と同じ経路。音声入力はアプリに 1 つで、入れる先は開いている会話の入力欄）。
+            // {"file": "/path/to.wav"} は、その音声ファイルをマイクの代わりに同じ手順（区切り・確定前の文・合図・校正）へ実時間で流す
+            // （聞いていなければ聞き始め、ファイルで聞いていれば続けて流す。止めるのは down の true と false）。返りは今の段階
+            let dictation = model.dictation
+            if let path = request.jsonBody?["file"] as? String {
+                dictation.feedFile(URL(filePath: path))
+            } else if request.jsonBody?["down"] as? Bool ?? true {
+                dictation.press()
+            } else {
+                dictation.release()
+            }
             try? await Task.sleep(for: .milliseconds(100))
-            return .json(200, ["ok": true, "phase": model.debugDictationPhase])
+            return .json(200, ["ok": true, "phase": "\(dictation.phase)"])
         case ("GET", "/conversation/dictation"):
-            guard let feed = model.activeConversation else { return .json(404, ["error": "会話を開いていない"]) }
+            // 音声入力の今。draft は開いている会話の書きかけ（会話を開いていなければ null）、held は入れる先が無い間に確定した文、時間は最後の区切りの秒数
+            let dictation = model.dictation
+            let timing = dictation.lastTiming
             return .json(200, [
-                "phase": model.debugDictationPhase, "polishing": model.debugDictationPolishing, "draft": model.chatDrafts.text(for: feed.key),
-                "transcribedSeconds": model.debugDictationTiming?.transcribed as Any, "polishedSeconds": model.debugDictationTiming?.polished as Any,
+                "phase": "\(dictation.phase)", "polishing": dictation.polishing > 0,
+                "draft": model.activeConversation.map { model.chatDrafts.text(for: $0.key) } as Any,
+                "tentative": dictation.tentative?.text as Any, "held": dictation.held,
+                "firstTextSeconds": timing?.firstText as Any, "committedSeconds": timing?.committed as Any,
+                "polishedSeconds": timing?.polished as Any, "sentSeconds": timing?.sent as Any,
             ])
         case ("GET", "/conversation/draft"):
             // 開いている会話の書きかけ（ChatDraftTexts。入力欄が作り直されたらここから読む）
@@ -391,39 +401,6 @@ struct DebugComposerInput: Equatable {
     var text: String
     /// カーソルの位置（文字の数）
     var cursor: Int
-}
-
-/// 確認用: 会話の入力欄の［音声入力］の押し下げ（true）と離し（false）。`file` があれば、その音声ファイルを文字にする
-struct DebugDictationPress: Equatable {
-    var seq: Int
-    var down: Bool
-    var file: URL?
-}
-
-/// 会話の入力欄に付け、/conversation/dictation の押し下げと離しと音声ファイルを渡し、音声入力の段階と時間を書き戻す
-struct DebugDictationFeed: ViewModifier {
-    @Environment(AppModel.self) private var model: AppModel?
-    let dictation: VoiceDictation
-    let press: () -> Void
-    let release: () -> Void
-    let file: (URL) -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: model?.debugDictationPress) { _, value in
-                guard let value else { return }
-                if let url = value.file {
-                    file(url)
-                } else if value.down {
-                    press()
-                } else {
-                    release()
-                }
-            }
-            .onChange(of: dictation.phase, initial: true) { _, phase in model?.debugDictationPhase = "\(phase)" }
-            .onChange(of: dictation.polishing, initial: true) { _, polishing in model?.debugDictationPolishing = polishing }
-            .onChange(of: dictation.lastTiming, initial: true) { _, timing in model?.debugDictationTiming = timing }
-    }
 }
 
 /// 入力欄の文とカーソルの持ち主に付け、/conversation/type の文を打鍵と同じに入れる。値を読むのはこの modifier だけにする（持ち主の body を計測で走らせない）
