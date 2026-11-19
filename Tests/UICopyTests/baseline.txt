@@ -1,0 +1,2 @@
+# UICopyTests の基準（path\trule\t文字列）。F7 で空にした。違反を残すときだけ載せる。
+

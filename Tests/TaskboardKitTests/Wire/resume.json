@@ -1,0 +1,29 @@
+[
+  {
+    "conversation" : {
+      "agentSessionID" : "agent-c-gen",
+      "backgroundTasks" : 0,
+      "backgroundTasksKnown" : true,
+      "canRedoRewind" : false,
+      "canUndoRewind" : false,
+      "createdAt" : "2026-10-07T08:00:00Z",
+      "cwd" : "/Users/ukwhatn/dev/8_tools/taskboard",
+      "engine" : "claude",
+      "forkPending" : false,
+      "id" : "c-gen",
+      "limitPaused" : false,
+      "machine" : "fixture-studio",
+      "model" : "opus",
+      "parentNoticePending" : false,
+      "pending" : [
+
+      ],
+      "phase" : "running",
+      "rewindIncomplete" : false,
+      "runner" : "host",
+      "taskNumber" : 137,
+      "title" : "会話の画面を作る",
+      "updatedAt" : "2026-10-07T08:05:00Z"
+    }
+  }
+]

@@ -1,0 +1,106 @@
+import SwiftUI
+
+/// 入力欄の［音声入力］。押している間だけ聞く。聞いている間は塗りのマイクにして、不透明度だけをゆっくり動かす（視差効果を減らす設定では動かさない）。
+/// VoiceOver は押すたびに聞き始めと終わりを切り替える
+struct ComposerVoiceButton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let phase: VoiceDictation.Phase
+    let press: () -> Void
+    let release: () -> Void
+    @State private var pressing = false
+    @State private var dim = false
+
+    var body: some View {
+        let listening = phase == .listening
+        Image(systemName: listening ? "mic.fill" : "mic")
+            .font(.title3)
+            .foregroundStyle(listening ? Color.accentColor : ChatPalette.secondaryText)
+            .opacity(listening && dim ? 0.45 : busy ? 0.5 : 1)
+            .animation(listening && !reduceMotion ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true) : nil, value: dim)
+            .hitTarget()
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !pressing else { return }
+                        pressing = true
+                        press()
+                    }
+                    .onEnded { _ in
+                        pressing = false
+                        release()
+                    }
+            )
+            .onChange(of: listening, initial: true) { _, now in dim = now }
+            .accessibilityElement()
+            .accessibilityLabel("音声入力")
+            .accessibilityValue(listening ? Text("聞き取り中") : Text(verbatim: ""))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                if phase == .idle { press() } else { release() }
+            }
+            #if os(macOS)
+            .help("押している間、話した内容を入力します（⌥Space）")
+            #endif
+    }
+
+    /// 準備・取得・確定の間は押しても始まらないので薄くする
+    private var busy: Bool {
+        switch phase {
+        case .idle, .listening: false
+        case .preparing, .downloading, .finishing: true
+        }
+    }
+}
+
+#if os(macOS)
+import AppKit
+
+/// 入力欄にいる間の ⌥Space の押し下げと離し。押し続けている間の繰り返しは捨てる（入力欄に空白を入れない）
+@MainActor
+final class VoiceKeyMonitor {
+    var isActive = false {
+        didSet { if !isActive, holding { end() } }
+    }
+    var onPress: () -> Void = {}
+    var onRelease: () -> Void = {}
+    private var token: Any?
+    private var holding = false
+
+    private static let space: UInt16 = 49
+
+    func start() {
+        guard token == nil else { return }
+        token = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            guard let self, event.keyCode == Self.space else { return event }
+            switch event.type {
+            case .keyDown:
+                guard self.isActive, event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .option else { return event }
+                if !event.isARepeat, !self.holding {
+                    self.holding = true
+                    self.onPress()
+                }
+                return nil
+            case .keyUp:
+                // ⌥ を先に離しても、Space を離したときに終える
+                guard self.holding else { return event }
+                self.end()
+                return nil
+            default:
+                return event
+            }
+        }
+    }
+
+    func stop() {
+        if let token { NSEvent.removeMonitor(token) }
+        token = nil
+        if holding { end() }
+    }
+
+    private func end() {
+        holding = false
+        onRelease()
+    }
+}
+#endif

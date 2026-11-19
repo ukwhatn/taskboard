@@ -1,0 +1,418 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [],
+  "machine": {
+    "id": "fixture-second",
+    "name": "Mac mini",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [
+    {
+      "id": "second-board",
+      "machine": "fixture-second",
+      "name": "Mac mini の案件",
+      "position": 0,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 0,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 1
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 2
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 3
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 4
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 5
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 6
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 7
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    }
+  ],
+  "tasks": [
+    {
+      "machine": "fixture-second",
+      "number": 19,
+      "boardID": "second-board",
+      "columnID": "working",
+      "title": "決済の API の移行",
+      "note": "",
+      "due": null,
+      "links": [],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "second-s1",
+          "cwd": "/Users/me/dev/shop/api",
+          "label": "",
+          "linkedAt": "2026-10-02T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "number": 20,
+      "boardID": "second-board",
+      "columnID": "working",
+      "title": "会員の画面の権限をまとめて見直し、管理画面とアプリの両方で同じ判定にする",
+      "note": "",
+      "due": null,
+      "links": [],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "second-s2",
+          "cwd": "/Users/me/dev/shop/api",
+          "label": "",
+          "linkedAt": "2026-10-02T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "number": 21,
+      "boardID": "second-board",
+      "columnID": "planning",
+      "title": "ログの保存先の変更",
+      "note": "",
+      "due": null,
+      "links": [],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "second-s3",
+          "cwd": "/Users/me/dev/shop/api",
+          "label": "",
+          "linkedAt": "2026-10-02T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "number": 22,
+      "boardID": "second-board",
+      "columnID": "todo",
+      "title": "週次の棚卸し",
+      "note": "",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T10:00:00+09:00"
+    }
+  ],
+  "workItems": [
+    {
+      "machine": "fixture-second",
+      "itemID": 1,
+      "taskNumber": 19,
+      "title": "手順書を書く",
+      "state": "wait",
+      "blockerKind": "approval",
+      "blockerText": "本番に流す前に、移行の手順書の承認をもらう",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T09:30:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "itemID": 2,
+      "taskNumber": 20,
+      "title": "権限の表の確認",
+      "state": "wait",
+      "blockerKind": "approval",
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-03T07:00:00+09:00"
+    }
+  ],
+  "documents": [
+    {
+      "machine": "fixture-second",
+      "docID": 1,
+      "taskNumber": 19,
+      "name": "plan.md",
+      "format": "markdown",
+      "title": "移行の計画",
+      "latestRev": 3,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T08:00:00+09:00",
+      "updatedAt": "2026-10-03T11:45:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "docID": 2,
+      "taskNumber": 20,
+      "name": "perm.md",
+      "format": "markdown",
+      "title": "権限の判定の表（管理画面とアプリの両方で同じ判定にするための一覧と、移行の順番）",
+      "latestRev": 1,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T08:00:00+09:00",
+      "updatedAt": "2026-10-03T10:10:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "docID": 3,
+      "taskNumber": 21,
+      "name": "q.md",
+      "format": "markdown",
+      "title": "ログの保存先",
+      "latestRev": 1,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T08:00:00+09:00",
+      "updatedAt": "2026-10-03T09:00:00+09:00"
+    }
+  ],
+  "asks": [
+    {
+      "machine": "fixture-second",
+      "askID": 1,
+      "taskNumber": 21,
+      "docID": 3,
+      "status": "open",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "保存先のバケットは既存のものを使いますか、新しく作りますか",
+          "options": [
+            {
+              "label": "既存"
+            },
+            {
+              "label": "新規"
+            }
+          ]
+        },
+        {
+          "id": "q2",
+          "question": "保存期間は",
+          "options": [
+            {
+              "label": "30日"
+            },
+            {
+              "label": "90日"
+            }
+          ]
+        },
+        {
+          "id": "q3",
+          "question": "暗号化の鍵",
+          "options": [
+            {
+              "label": "既定"
+            }
+          ]
+        }
+      ],
+      "createdAt": "2026-10-03T10:30:00+09:00"
+    }
+  ],
+  "reviewRequests": [
+    {
+      "machine": "fixture-second",
+      "taskNumber": 20,
+      "note": "",
+      "requestedAt": "2026-10-03T09:45:00+09:00"
+    }
+  ],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "demo-work",
+        "fetchedAt": "2026-10-03T11:50:00+09:00",
+        "error": null,
+        "rateLimited": false
+      },
+      {
+        "host": "github.com",
+        "account": "review-bot",
+        "fetchedAt": "2026-10-03T11:00:00+09:00",
+        "error": "API rate limit exceeded for user",
+        "rateLimited": true
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-second",
+        "host": "github.com",
+        "account": "demo-work",
+        "category": "reviewRequested",
+        "url": "https://github.com/example-org/api/pull/310",
+        "repository": "example-org/api",
+        "number": 310,
+        "title": "会員の画面の権限の判定を 1 か所にまとめ、管理画面とアプリで同じ関数を通す（長い題の確認）",
+        "author": "tanaka",
+        "isDraft": false,
+        "headRef": "feature/310",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:10:00+09:00",
+        "reviewDecision": null,
+        "checks": "FAILURE",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-second",
+        "host": "github.com",
+        "account": "demo-work",
+        "category": "myReady",
+        "url": "https://github.com/example-org/api/pull/305",
+        "repository": "example-org/api",
+        "number": 305,
+        "title": "決済の API の移行",
+        "author": "demo-work",
+        "isDraft": false,
+        "headRef": "feature/305",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T10:00:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "SUCCESS",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-second",
+        "host": "github.com",
+        "account": "demo-work",
+        "category": "myDraft",
+        "url": "https://github.com/example-org/api/pull/301",
+        "repository": "example-org/api",
+        "number": 301,
+        "title": "ログの保存先",
+        "author": "demo-work",
+        "isDraft": true,
+        "headRef": "feature/301",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T09:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": [
+      {
+        "id": "https://github.com/example-org/api/pull/305#approved#1791000100",
+        "machine": "fixture-second",
+        "url": "https://github.com/example-org/api/pull/305",
+        "label": "example-org/api#305",
+        "title": "決済の API の移行",
+        "kind": "approved",
+        "detail": "suzuki",
+        "at": "2026-10-03T10:00:00+09:00"
+      }
+    ]
+  },
+  "usage": null,
+  "schedules": [
+    {
+      "scheduleID": 1,
+      "machine": "fixture-second",
+      "name": "週次の棚卸し",
+      "enabled": false,
+      "rule": {
+        "intervalMinutes": 360
+      },
+      "cwd": "/Users/ukwhatn/dev/wiki",
+      "kind": "codex",
+      "agentArgs": [],
+      "prompt": "検索 index を作り直して、失敗したページを一覧にして",
+      "overlap": "parallel",
+      "lastRun": {
+        "id": 5,
+        "scheduleID": 1,
+        "scheduledAt": "2026-10-02T18:00:00+09:00",
+        "trigger": "manual",
+        "requestID": "sched-2-5",
+        "stage": "failed",
+        "error": "作業ディレクトリが見つかりません",
+        "createdAt": "2026-10-03T09:00:01+09:00"
+      },
+      "createdAt": "2026-09-30T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:10:00+09:00",
+      "taskNumber": 22
+    }
+  ]
+}

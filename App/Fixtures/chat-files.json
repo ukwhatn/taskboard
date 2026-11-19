@@ -1,0 +1,1240 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [
+    {
+      "url": "https://ghe.example.com/console/console/pull/552",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "OPEN",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "REVIEW_REQUIRED"
+      }
+    },
+    {
+      "url": "https://example.atlassian.net/browse/PROJ-807",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "jira": {
+        "key": "PROJ-807",
+        "statusName": "進行中",
+        "category": "indeterminate",
+        "summary": "権限設計"
+      }
+    },
+    {
+      "url": "https://github.com/scpwiki/search/pull/9",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "MERGED",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "APPROVED"
+      }
+    }
+  ],
+  "machine": {
+    "id": "fixture-studio",
+    "name": "Mac Studio",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [
+    {
+      "id": "fixture-board",
+      "machine": "fixture-studio",
+      "name": "default",
+      "position": 0,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 0,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 1
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 2
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 3
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 4
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 5
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 6
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 7
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    }
+  ],
+  "tasks": [
+    {
+      "machine": "fixture-studio",
+      "number": 137,
+      "boardID": "fixture-board",
+      "columnID": "working",
+      "title": "taskboard フェーズ 3: ボードとカード",
+      "note": "daemon の SQLite に持ち、taskherd から取り込む",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/3",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-lead-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 131,
+      "boardID": "fixture-board",
+      "columnID": "review",
+      "title": "doorman PR #41 のレビュー対応",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/doorman/pull/41",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-doorman-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 128,
+      "boardID": "fixture-board",
+      "columnID": "review_req",
+      "title": "console の権限設計をレビューしてもらう",
+      "note": "",
+      "due": "2026-10-03",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://ghe.example.com/console/console/pull/552",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        },
+        {
+          "id": 2,
+          "url": "https://example.atlassian.net/browse/PROJ-807",
+          "kind": "jira",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-reviewer-0003",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 125,
+      "boardID": "fixture-board",
+      "columnID": "todo",
+      "title": "iPad の殻を切る",
+      "note": "",
+      "due": "2026-10-10",
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 120,
+      "boardID": "fixture-board",
+      "columnID": "planning",
+      "title": "kairan の置き換え方針",
+      "note": "受信箱と文書の統合",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-09-25T12:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 118,
+      "boardID": "fixture-board",
+      "columnID": "deploying",
+      "title": "wiki の検索 index を再構築",
+      "note": "",
+      "due": "2026-10-04",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/search/pull/9",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 110,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 1: daemon と一覧",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/1",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 109,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 2: 端末中継",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/2",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 90,
+      "boardID": "fixture-board",
+      "columnID": "wontfix",
+      "title": "taskherd を Web 化する",
+      "note": "ネイティブに寄せたので見送り",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "workItems": [
+    {
+      "machine": "fixture-studio",
+      "itemID": 1,
+      "taskNumber": 137,
+      "title": "Store の v2 migration と作業項目の CRUD",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "a1b2c3d4e5f6",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 2,
+      "taskNumber": 137,
+      "title": "API と DaemonEvent（work.updated / work.removed）",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "0f9e8d7c6b5a",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 3,
+      "taskNumber": 137,
+      "title": "MCP server（taskboard mcp）",
+      "state": "doing",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 2,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 4,
+      "taskNumber": 137,
+      "title": "CI の通過（macOS / iOS）",
+      "state": "wait",
+      "blockerKind": "ci",
+      "blockerText": "CI 待ち（約 6 分）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 3,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 5,
+      "taskNumber": 137,
+      "title": "ボードのカード 2 行目と進捗",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        3
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 4,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 6,
+      "taskNumber": 137,
+      "title": "README と CLAUDE.md の追記",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "doorman",
+      "position": 5,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 7,
+      "taskNumber": 137,
+      "title": "PostToolUse hook での鏡写し",
+      "state": "drop",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 6,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 8,
+      "taskNumber": 131,
+      "title": "実装と単体テスト",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "pr",
+      "deliverableRef": "https://github.com/ukwhatn/taskboard/pull/2",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 9,
+      "taskNumber": 131,
+      "title": "レビューの指摘対応",
+      "state": "wait",
+      "blockerKind": "review",
+      "blockerText": "レビューを待っている（PR #2）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 10,
+      "taskNumber": 128,
+      "title": "計画の承認",
+      "state": "wait",
+      "blockerKind": "approval",
+      "blockerText": "計画 30_plan の承認を待っている",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 11,
+      "taskNumber": 128,
+      "title": "実装",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        10
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    }
+  ],
+  "documents": [
+    {
+      "machine": "fixture-studio",
+      "docID": 1,
+      "taskNumber": 120,
+      "name": "kairan-replacement.md",
+      "format": "markdown",
+      "title": "kairan の置き換え方針",
+      "latestRev": 2,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T10:00:00+09:00",
+      "updatedAt": "2026-10-03T11:30:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 2,
+      "taskNumber": 120,
+      "name": "inbox-mock.html",
+      "format": "html",
+      "title": null,
+      "latestRev": 1,
+      "hasSourceFile": false,
+      "openComments": 1,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T09:00:00+09:00",
+      "updatedAt": "2026-10-03T09:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 3,
+      "taskNumber": 137,
+      "name": "phase3-plan.md",
+      "format": "markdown",
+      "title": "フェーズ 3 計画",
+      "latestRev": 3,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 1,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "asks": [
+    {
+      "machine": "fixture-studio",
+      "askID": 1,
+      "taskNumber": 120,
+      "docID": 1,
+      "status": "open",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "文書をタスクに属させる案でよいか",
+          "header": "所属",
+          "options": [
+            {
+              "label": "タスクに属させる",
+              "description": "受信箱・カードから辿れる"
+            },
+            {
+              "label": "セッションに属させる",
+              "description": "kairan と同じ"
+            }
+          ],
+          "multiSelect": false
+        },
+        {
+          "id": "q2",
+          "question": "HTML 文書で許す機能",
+          "header": "HTML",
+          "options": [
+            {
+              "label": "script"
+            },
+            {
+              "label": "外部画像"
+            },
+            {
+              "label": "外部 CSS"
+            }
+          ],
+          "multiSelect": true
+        }
+      ],
+      "answers": null,
+      "createdAt": "2026-10-03T11:30:00+09:00",
+      "answeredAt": null,
+      "deliveredAt": null
+    }
+  ],
+  "reviewRequests": [
+    {
+      "machine": "fixture-studio",
+      "taskNumber": 128,
+      "note": "移行スクリプトの 2 章を見てほしい",
+      "requestedAt": "2026-10-03T11:00:00+09:00"
+    }
+  ],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "ukwhatn",
+        "fetchedAt": "2026-10-03T11:58:00+09:00",
+        "error": null,
+        "rateLimited": false,
+        "nextFetchAt": "2026-10-03T12:03:00+09:00"
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/console/pull/41",
+        "repository": "scpwiki/console",
+        "number": 41,
+        "title": "console の権限設計",
+        "author": "alice",
+        "isDraft": false,
+        "headRef": "feature/41",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:40:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/search/pull/9",
+        "repository": "scpwiki/search",
+        "number": 9,
+        "title": "検索 index の再構築",
+        "author": "bob",
+        "isDraft": false,
+        "headRef": "feature/9",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T09:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "FAILURE",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewed",
+        "url": "https://github.com/scpwiki/wiki/pull/12",
+        "repository": "scpwiki/wiki",
+        "number": 12,
+        "title": "wiki の差分表示",
+        "author": "carol",
+        "isDraft": false,
+        "headRef": "feature/12",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-02T18:00:00+09:00",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "checks": "SUCCESS",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [
+          {
+            "login": "ukwhatn",
+            "state": "COMMENTED"
+          }
+        ],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myDraft",
+        "url": "https://github.com/ukwhatn/taskboard/pull/57",
+        "repository": "ukwhatn/taskboard",
+        "number": 57,
+        "title": "フェーズ 7: PR 一覧",
+        "author": "ukwhatn",
+        "isDraft": true,
+        "headRef": "feature/57",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:50:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myReady",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "repository": "ukwhatn/taskboard",
+        "number": 55,
+        "title": "フェーズ 6: 受信箱と文書",
+        "author": "ukwhatn",
+        "isDraft": false,
+        "headRef": "feature/55",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T08:00:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "SUCCESS",
+        "additions": 2400,
+        "deletions": 120,
+        "changedFiles": 31,
+        "latestReviews": [
+          {
+            "login": "dave",
+            "state": "APPROVED"
+          }
+        ],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": [
+      {
+        "id": "https://github.com/ukwhatn/taskboard/pull/55#approved#1791000000",
+        "machine": "fixture-studio",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "label": "ukwhatn/taskboard#55",
+        "title": "フェーズ 6: 受信箱と文書",
+        "kind": "approved",
+        "detail": "dave",
+        "at": "2026-10-03T11:00:00+09:00"
+      }
+    ]
+  },
+  "usage": {
+    "claude": {
+      "fiveHour": {
+        "usedPercent": 42,
+        "resetsAt": "2026-10-03T05:13:00Z",
+        "windowSeconds": 18000
+      },
+      "sevenDay": {
+        "usedPercent": 57,
+        "resetsAt": "2026-10-06T00:00:00Z",
+        "windowSeconds": 604800
+      },
+      "at": "2026-10-03T02:59:00Z"
+    },
+    "codex": {
+      "primary": {
+        "usedPercent": 13,
+        "resetsAt": "2026-10-03T07:12:00Z",
+        "windowSeconds": 18000
+      },
+      "secondary": {
+        "usedPercent": 31,
+        "resetsAt": "2026-10-05T09:00:00Z",
+        "windowSeconds": 604800
+      },
+      "fetchedAt": "2026-10-03T02:55:00Z"
+    },
+    "contexts": [
+      {
+        "agentSessionID": "sess-lead-0001",
+        "model": "Fable 5.1",
+        "effort": "high",
+        "usedPercent": 31,
+        "inputTokens": 155000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-doorman-0001",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 22,
+        "inputTokens": 110000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-t131-0002",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 64,
+        "inputTokens": 640000,
+        "windowSize": 1000000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-ask-1",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 18,
+        "inputTokens": 36000,
+        "windowSize": 200000,
+        "at": "2026-10-03T02:59:00Z"
+      }
+    ]
+  },
+  "schedules": [
+    {
+      "scheduleID": 1,
+      "machine": "fixture-studio",
+      "name": "朝の PR 棚卸し",
+      "enabled": true,
+      "rule": {
+        "cron": "0 9 * * 1-5"
+      },
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "kind": "claude",
+      "agentArgs": [
+        "--model",
+        "sonnet"
+      ],
+      "prompt": "自分宛てのレビュー依頼と、自分の PR の CI を見て、今日やることを 3 行で残して",
+      "taskNumber": 118,
+      "overlap": "skip",
+      "nextAt": "2026-10-04T09:00:00+09:00",
+      "lastRun": {
+        "id": 12,
+        "scheduleID": 1,
+        "scheduledAt": "2026-10-03T09:00:00+09:00",
+        "trigger": "schedule",
+        "requestID": "sched-1-12",
+        "stage": "done",
+        "pane": "w1:p9",
+        "createdAt": "2026-10-03T09:00:02+09:00"
+      },
+      "createdAt": "2026-09-28T10:00:00+09:00",
+      "updatedAt": "2026-09-28T10:00:00+09:00"
+    },
+    {
+      "scheduleID": 2,
+      "machine": "fixture-studio",
+      "name": "wiki の index を作り直す",
+      "enabled": false,
+      "rule": {
+        "intervalMinutes": 360
+      },
+      "cwd": "/Users/ukwhatn/dev/wiki",
+      "kind": "codex",
+      "agentArgs": [],
+      "prompt": "検索 index を作り直して、失敗したページを一覧にして",
+      "overlap": "parallel",
+      "lastRun": {
+        "id": 5,
+        "scheduleID": 2,
+        "scheduledAt": "2026-10-02T18:00:00+09:00",
+        "trigger": "manual",
+        "requestID": "sched-2-5",
+        "stage": "failed",
+        "error": "cwd が無い",
+        "createdAt": "2026-10-02T18:00:01+09:00"
+      },
+      "createdAt": "2026-09-30T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:10:00+09:00"
+    }
+  ],
+  "chatFiles": {
+    "fr1": {
+      "text": "import SwiftUI\nimport TaskboardKit\n\n/// 設定の窓\nstruct SettingsView: View {\n    @Environment(AppModel.self) private var model\n    @State private var draft = SettingsDraft()\n\n    var body: some View {\n        Form {\n            Section(\"端末\") {\n                Toggle(\"通知\", isOn: $draft.notify)\n"
+    },
+    "fr2": {
+      "image": "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"
+    },
+    "fe1#original": {
+      "text": "import SwiftUI\nimport TaskboardKit\n\n/// 設定の窓\nstruct SettingsView: View {\n    @Environment(AppModel.self) private var model\n    @State private var draft = SettingsDraft()\n\n    var body: some View {\n        Form {\n            Section(\"端末\") {\n                Toggle(\"通知\", isOn: $draft.notify)\n            }\n        }\n        .onDisappear { model.save(draft) }\n    }\n\n    private func save() {\n        model.save(draft)\n    }\n}\n"
+    },
+    "fw1": {
+      "text": "# 設定の保存\n\n設定の窓を閉じたときに保存する。\n\n- 端末の設定はすぐ反映する\n- 案件の設定は［保存］で送る\n"
+    },
+    "fw2": {
+      "diff": "@@ -0,0 +1,60 @@\n+0001 移行した行の文（長い文の折り返しを見る）\n+0002 移行した行の文（長い文の折り返しを見る）\n+0003 移行した行の文（長い文の折り返しを見る）\n+0004 移行した行の文（長い文の折り返しを見る）\n+0005 移行した行の文（長い文の折り返しを見る）\n+0006 移行した行の文（長い文の折り返しを見る）\n+0007 移行した行の文（長い文の折り返しを見る）\n+0008 移行した行の文（長い文の折り返しを見る）\n+0009 移行した行の文（長い文の折り返しを見る）\n+0010 移行した行の文（長い文の折り返しを見る）\n+0011 移行した行の文（長い文の折り返しを見る）\n+0012 移行した行の文（長い文の折り返しを見る）\n+0013 移行した行の文（長い文の折り返しを見る）\n+0014 移行した行の文（長い文の折り返しを見る）\n+0015 移行した行の文（長い文の折り返しを見る）\n+0016 移行した行の文（長い文の折り返しを見る）\n+0017 移行した行の文（長い文の折り返しを見る）\n+0018 移行した行の文（長い文の折り返しを見る）\n+0019 移行した行の文（長い文の折り返しを見る）\n+0020 移行した行の文（長い文の折り返しを見る）\n+0021 移行した行の文（長い文の折り返しを見る）\n+0022 移行した行の文（長い文の折り返しを見る）\n+0023 移行した行の文（長い文の折り返しを見る）\n+0024 移行した行の文（長い文の折り返しを見る）\n+0025 移行した行の文（長い文の折り返しを見る）\n+0026 移行した行の文（長い文の折り返しを見る）\n+0027 移行した行の文（長い文の折り返しを見る）\n+0028 移行した行の文（長い文の折り返しを見る）\n+0029 移行した行の文（長い文の折り返しを見る）\n+0030 移行した行の文（長い文の折り返しを見る）\n+0031 移行した行の文（長い文の折り返しを見る）\n+0032 移行した行の文（長い文の折り返しを見る）\n+0033 移行した行の文（長い文の折り返しを見る）\n+0034 移行した行の文（長い文の折り返しを見る）\n+0035 移行した行の文（長い文の折り返しを見る）\n+0036 移行した行の文（長い文の折り返しを見る）\n+0037 移行した行の文（長い文の折り返しを見る）\n+0038 移行した行の文（長い文の折り返しを見る）\n+0039 移行した行の文（長い文の折り返しを見る）\n+0040 移行した行の文（長い文の折り返しを見る）\n+0041 移行した行の文（長い文の折り返しを見る）\n+0042 移行した行の文（長い文の折り返しを見る）\n+0043 移行した行の文（長い文の折り返しを見る）\n+0044 移行した行の文（長い文の折り返しを見る）\n+0045 移行した行の文（長い文の折り返しを見る）\n+0046 移行した行の文（長い文の折り返しを見る）\n+0047 移行した行の文（長い文の折り返しを見る）\n+0048 移行した行の文（長い文の折り返しを見る）\n+0049 移行した行の文（長い文の折り返しを見る）\n+0050 移行した行の文（長い文の折り返しを見る）\n+0051 移行した行の文（長い文の折り返しを見る）\n+0052 移行した行の文（長い文の折り返しを見る）\n+0053 移行した行の文（長い文の折り返しを見る）\n+0054 移行した行の文（長い文の折り返しを見る）\n+0055 移行した行の文（長い文の折り返しを見る）\n+0056 移行した行の文（長い文の折り返しを見る）\n+0057 移行した行の文（長い文の折り返しを見る）\n+0058 移行した行の文（長い文の折り返しを見る）\n+0059 移行した行の文（長い文の折り返しを見る）\n+0060 移行した行の文（長い文の折り返しを見る）"
+    }
+  },
+  "conversations": [
+    {
+      "id": "c-chat-files",
+      "machine": "fixture-studio",
+      "taskNumber": null,
+      "engine": "claude",
+      "agentSessionID": "sess-lead-0001",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "フェーズ 1 の実装",
+      "runner": "host",
+      "phase": "idle",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-03T05:00:00Z",
+      "updatedAt": "2026-10-03T05:00:00Z"
+    }
+  ],
+  "conversationChats": {
+    "c-chat-files": {
+      "messages": [
+        {
+          "id": "cf1",
+          "role": "user",
+          "kind": "text",
+          "text": "設定の窓を閉じたときに保存されないのを直して。スクリーンショットも見て",
+          "isError": false,
+          "at": "2026-10-03T09:01:00Z"
+        },
+        {
+          "id": "cf2",
+          "role": "assistant",
+          "kind": "text",
+          "text": "設定の画面とスクリーンショットを読みます。",
+          "isError": false,
+          "at": "2026-10-03T09:02:00Z"
+        },
+        {
+          "id": "cf3",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+          "isError": false,
+          "at": "2026-10-03T09:03:00Z",
+          "toolName": "Read",
+          "toolID": "fr1"
+        },
+        {
+          "id": "cf4",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "import SwiftUI\nimport TaskboardKit\n\n/// 設定の窓\nstruct SettingsView: View {\n    @Environment(AppModel.self) private var model\n    @State private var draft = SettingsDraft()\n\n    var body: some View {\n        Form {\n            Section(\"端末\") {\n                Toggle(\"通知\", isOn: $draft.notify)\n",
+          "isError": false,
+          "at": "2026-10-03T09:04:00Z",
+          "toolID": "fr1",
+          "files": [
+            {
+              "action": "read",
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 0,
+              "removed": 0,
+              "offset": 1000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+              "firstLine": 1,
+              "lineCount": 12,
+              "totalLines": 21
+            }
+          ]
+        },
+        {
+          "id": "cf5",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/Desktop/設定の画面 2026-10-03.png",
+          "isError": false,
+          "at": "2026-10-03T09:05:00Z",
+          "toolName": "Read",
+          "toolID": "fr2"
+        },
+        {
+          "id": "cf6",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "[画像]",
+          "isError": false,
+          "at": "2026-10-03T09:06:00Z",
+          "toolID": "fr2",
+          "files": [
+            {
+              "action": "image",
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 0,
+              "removed": 0,
+              "offset": 2000,
+              "mediaType": "image/png",
+              "bytes": 1027536,
+              "width": 3600,
+              "height": 2300
+            }
+          ]
+        },
+        {
+          "id": "cf7",
+          "role": "assistant",
+          "kind": "text",
+          "text": "窓を閉じたときの保存が `onDisappear` の中で直に呼ばれています。保存の関数を通すように直します。",
+          "isError": false,
+          "at": "2026-10-03T09:07:00Z"
+        },
+        {
+          "id": "cf8",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+          "isError": false,
+          "at": "2026-10-03T09:08:00Z",
+          "toolName": "Edit",
+          "toolID": "fe1"
+        },
+        {
+          "id": "cf9",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "The file /Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift has been updated successfully.",
+          "isError": false,
+          "at": "2026-10-03T09:09:00Z",
+          "toolID": "fe1",
+          "files": [
+            {
+              "action": "edited",
+              "hunks": [
+                {
+                  "oldStart": 7,
+                  "oldLines": 3,
+                  "newStart": 7,
+                  "newLines": 4,
+                  "lines": [
+                    "     @State private var draft = SettingsDraft()",
+                    "+    @State private var saving = false",
+                    " ",
+                    "     var body: some View {"
+                  ]
+                },
+                {
+                  "oldStart": 15,
+                  "oldLines": 3,
+                  "newStart": 16,
+                  "newLines": 3,
+                  "lines": [
+                    "-        .onDisappear { model.save(draft) }",
+                    "+        .onDisappear { save() }",
+                    "     }",
+                    " "
+                  ]
+                }
+              ],
+              "hunksOmitted": false,
+              "added": 2,
+              "removed": 1,
+              "offset": 3000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift"
+            }
+          ]
+        },
+        {
+          "id": "cf10",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/docs/settings.md",
+          "isError": false,
+          "at": "2026-10-03T09:10:00Z",
+          "toolName": "Write",
+          "toolID": "fw1"
+        },
+        {
+          "id": "cf11",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "File created successfully at: /Users/ukwhatn/dev/8_tools/taskboard/docs/settings.md",
+          "isError": false,
+          "at": "2026-10-03T09:11:00Z",
+          "toolID": "fw1",
+          "files": [
+            {
+              "action": "created",
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 6,
+              "removed": 0,
+              "offset": 4000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/docs/settings.md"
+            }
+          ]
+        },
+        {
+          "id": "cf12",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "sed -i '' 's/保存する/保存/' README.md docs/ui-copy.md",
+          "isError": false,
+          "at": "2026-10-03T09:12:00Z",
+          "toolName": "Bash",
+          "toolID": "fb1"
+        },
+        {
+          "id": "cf13",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "",
+          "isError": false,
+          "at": "2026-10-03T09:13:00Z",
+          "toolID": "fb1",
+          "files": [
+            {
+              "action": "edited",
+              "hunks": [
+                {
+                  "oldStart": 40,
+                  "oldLines": 1,
+                  "newStart": 40,
+                  "newLines": 1,
+                  "lines": [
+                    "-設定を保存する",
+                    "+設定を保存"
+                  ]
+                }
+              ],
+              "hunksOmitted": false,
+              "added": 1,
+              "removed": 1,
+              "offset": 5000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/README.md"
+            },
+            {
+              "action": "edited",
+              "hunks": [
+                {
+                  "oldStart": 12,
+                  "oldLines": 2,
+                  "newStart": 12,
+                  "newLines": 1,
+                  "lines": [
+                    "-［保存する］",
+                    "-［保存］",
+                    "+［保存］"
+                  ]
+                }
+              ],
+              "hunksOmitted": false,
+              "added": 1,
+              "removed": 2,
+              "offset": 5000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/docs/ui-copy.md"
+            }
+          ]
+        },
+        {
+          "id": "cf14",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/Migration.swift",
+          "isError": false,
+          "at": "2026-10-03T09:14:00Z",
+          "toolName": "Write",
+          "toolID": "fw2"
+        },
+        {
+          "id": "cf15",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "The file has been updated.",
+          "isError": false,
+          "at": "2026-10-03T09:15:00Z",
+          "toolID": "fw2",
+          "files": [
+            {
+              "action": "edited",
+              "hunks": [],
+              "hunksOmitted": true,
+              "added": 60,
+              "removed": 0,
+              "offset": 6000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/Migration.swift"
+            }
+          ]
+        },
+        {
+          "id": "cf16",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsDraft.swift",
+          "isError": false,
+          "at": "2026-10-03T09:16:00Z",
+          "toolName": "Read",
+          "toolID": "fr3"
+        },
+        {
+          "id": "cf17",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "1\timport Foundation",
+          "isError": false,
+          "at": "2026-10-03T09:17:00Z",
+          "toolID": "fr3",
+          "files": [
+            {
+              "action": "read",
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 0,
+              "removed": 0,
+              "offset": 7000,
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsDraft.swift",
+              "firstLine": 1,
+              "lineCount": 80,
+              "totalLines": 80
+            }
+          ]
+        },
+        {
+          "id": "cf18",
+          "role": "assistant",
+          "kind": "text",
+          "text": "直しました。閉じたときも［保存］と同じ経路を通ります。",
+          "isError": false,
+          "at": "2026-10-03T09:18:00Z"
+        }
+      ]
+    }
+  }
+}

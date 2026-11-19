@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [],
+  "machine": {
+    "id": "fixture-long",
+    "name": "とても長い名前を付けた検証用の接続先（会社の開発機）",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [],
+  "tasks": [],
+  "workItems": [],
+  "documents": [],
+  "asks": [],
+  "reviewRequests": [],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "long",
+        "fetchedAt": "2026-10-03T11:55:00+09:00",
+        "error": null,
+        "rateLimited": false
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-long",
+        "host": "github.com",
+        "account": "long",
+        "category": "myReady",
+        "url": "https://github.com/long/repo/pull/7",
+        "repository": "long/repo",
+        "number": 7,
+        "title": "長い名前のマシンの PR",
+        "author": "long",
+        "isDraft": false,
+        "headRef": "feature/7",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T08:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "SUCCESS",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": []
+  },
+  "usage": null,
+  "schedules": []
+}

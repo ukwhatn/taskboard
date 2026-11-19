@@ -1,0 +1,16 @@
+.build/
+.swiftpm/
+DerivedData/
+# App/Taskboard.xcodeproj の中の Xcode の Package.resolved だけは git add -f で追跡している（docs/development.md「依存の版」）
+*.xcodeproj
+*.xcworkspace
+!project.yml
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.local/
+/Taskboard/Taskboard.xcodeproj
+# 本番の state から作る fixtures（scripts/fixtures/make-production.py）。作った Mac だけに置く
+App/Fixtures/prod-*.json
+# 署名の値（App/Signing.xcconfig から読む）
+App/Signing.local.xcconfig

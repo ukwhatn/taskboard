@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [],
+  "machine": {
+    "id": "fixture-air",
+    "name": "MacBook Air",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [],
+  "tasks": [],
+  "workItems": [],
+  "documents": [],
+  "asks": [],
+  "reviewRequests": [],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "demo-work",
+        "fetchedAt": "2026-10-03T11:56:00+09:00",
+        "error": null,
+        "rateLimited": false
+      },
+      {
+        "host": "github.com",
+        "account": "review-bot",
+        "fetchedAt": "2026-10-03T11:57:00+09:00",
+        "error": null,
+        "rateLimited": false
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-air",
+        "host": "github.com",
+        "account": "demo-work",
+        "category": "reviewRequested",
+        "url": "https://github.com/example-org/api/pull/310",
+        "repository": "example-org/api",
+        "number": 310,
+        "title": "会員の画面の権限の判定を 1 か所にまとめ、管理画面とアプリで同じ関数を通す（長い題の確認）",
+        "author": "tanaka",
+        "isDraft": false,
+        "headRef": "feature/310",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-air",
+        "host": "github.com",
+        "account": "demo-work",
+        "category": "myReady",
+        "url": "https://github.com/example-org/api/pull/305",
+        "repository": "example-org/api",
+        "number": 305,
+        "title": "決済の API の移行",
+        "author": "demo-work",
+        "isDraft": false,
+        "headRef": "feature/305",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T10:30:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "FAILURE",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-air",
+        "host": "github.com",
+        "account": "review-bot",
+        "category": "reviewRequested",
+        "url": "https://github.com/example-org/api/pull/305",
+        "repository": "example-org/api",
+        "number": 305,
+        "title": "決済の API の移行",
+        "author": "demo-work",
+        "isDraft": false,
+        "headRef": "feature/305",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T10:30:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "FAILURE",
+        "additions": 120,
+        "deletions": 30,
+        "changedFiles": 5,
+        "latestReviews": [],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": []
+  },
+  "usage": null,
+  "schedules": []
+}

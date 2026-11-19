@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <mask id="check">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <path d="M268 314 L296 344 L344 284" fill="none" stroke="#000" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <circle cx="304" cy="312" r="72" fill="#fff" mask="url(#check)"/>
+  <circle cx="304" cy="512" r="66" fill="none" stroke="#fff" stroke-width="22"/>
+  <path d="M304 446 A66 66 0 0 0 304 578 Z" fill="#fff"/>
+  <circle cx="304" cy="712" r="66" fill="none" stroke="#fff" stroke-width="18" stroke-dasharray="26 22"/>
+</svg>

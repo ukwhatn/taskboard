@@ -1,0 +1,168 @@
+name: Taskboard
+options:
+  bundleIdPrefix: uk.whatn
+  # 画面の文は日本語で書いている。en のままだと、日本語の Mac でもメニューとダイアログが英語になる
+  developmentLanguage: ja
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "26.0"
+    iOS: "26.0"
+  generateEmptyDirectories: true
+packages:
+  taskboard:
+    path: ..
+  libghostty-spm:
+    url: https://github.com/Lakr233/libghostty-spm.git
+    exactVersion: 1.6.20261003
+  swift-snapshot-testing:
+    url: https://github.com/pointfreeco/swift-snapshot-testing.git
+    exactVersion: 1.19.6
+  swift-markdown:
+    url: https://github.com/swiftlang/swift-markdown.git
+    exactVersion: 0.9.0
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 1
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    # 画面の文を String Catalog（Sources/Localizable.xcstrings）に集める。コマンドラインのビルドは catalog を書き換えないので、
+    # 抽出した .stringsdata を scripts/sync-strings.sh で catalog に入れる
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+targets:
+  Taskboard:
+    type: application
+    supportedDestinations: [macOS, iOS]
+    sources:
+      - path: Sources
+      - path: Fixtures
+        type: folder
+        buildPhase: resources
+      - path: Resources/AppIcon.icon
+        type: file
+        buildPhase: resources
+    dependencies:
+      - package: taskboard
+        product: TaskboardKit
+      - package: libghostty-spm
+        product: GhosttyTerminal
+      - package: libghostty-spm
+        product: GhosttyTheme
+      - package: swift-markdown
+        product: Markdown
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: Taskboard
+        CFBundleURLTypes:
+          - CFBundleURLName: uk.whatn.taskboard
+            CFBundleURLSchemes: [taskboard]
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSCameraUsageDescription: 接続先のQRコードを読み取るために使います。
+        NSMicrophoneUsageDescription: 会話の入力欄の音声入力で、話した内容を文字にするために使います。
+        NSSpeechRecognitionUsageDescription: 会話の入力欄の音声入力で、話した内容をこのデバイスの中で文字にするために使います。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+    entitlements:
+      path: Generated/Taskboard.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.network.client: true
+    configFiles:
+      Debug: Signing.xcconfig
+      Release: Signing.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.whatn.taskboard
+        PRODUCT_NAME: Taskboard
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        SUPPORTS_MACCATALYST: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # 署名の値（証明書・Team ID・iOS 実機の bundle ID）は Signing.xcconfig の TASKBOARD_* から読む。既定は ad hoc で、
+        # 上書きは gitignore した Signing.local.xcconfig に書く（ターゲットに直接書いた値は xcconfig より優先されるので、値だけを変数にする）
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        "CODE_SIGN_IDENTITY[sdk=macosx*]": "$(TASKBOARD_MAC_SIGN_IDENTITY)"
+        "DEVELOPMENT_TEAM[sdk=macosx*]": "$(TASKBOARD_TEAM_ID)"
+        "CODE_SIGN_STYLE[sdk=iphoneos*]": Automatic
+        "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Development"
+        "DEVELOPMENT_TEAM[sdk=iphoneos*]": "$(TASKBOARD_TEAM_ID)"
+        "PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]": "$(TASKBOARD_IOS_BUNDLE_ID)"
+        # シミュレータは iOS 実機の既定と同じ bundle ID にする（APNs の鍵の App ID に合わせる。scripts/ui のスクリプトもこの ID で起こす）
+        "PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]": uk.whatn.taskboard.ios
+        # iOS だけ APNs の entitlement を付ける（上の entitlements は macOS の分。XcodeGen はターゲットに 1 つしか持てない）
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Entitlements/Taskboard-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Entitlements/Taskboard-iOS.entitlements
+      configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+  TaskboardTests:
+    # 画面の snapshot test。macOS だけ（アプリの View を NSHostingView で描いて PNG と比べる）
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+        excludes:
+          - "__Snapshots__/**"
+          - "iOS/**"
+    dependencies:
+      - target: Taskboard
+      - package: swift-snapshot-testing
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.whatn.taskboard.tests
+        # アプリが multiplatform なので xcodegen は iOS 形のパスを出す。macOS のバンドル構造に合わせる
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Taskboard.app/Contents/MacOS/Taskboard
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
+  TaskboardiOSTests:
+    # iPhone の幅の snapshot test（Tests/iOS）と、iOS でも動かす単体テスト。iPhone のシミュレータで回す（scripts/snapshot-test.sh --ios）
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/iOS
+        excludes:
+          - "__Snapshots__/**"
+      - path: Tests/MainThreadWatchdogTests.swift
+      - path: Tests/DiagnosticsOutboxTests.swift
+      - path: Tests/HangDiagnosticsTests.swift
+    dependencies:
+      - target: Taskboard
+      - package: swift-snapshot-testing
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.whatn.taskboard.ios.tests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  TaskboardiOS:
+    build:
+      targets:
+        Taskboard: all
+        TaskboardiOSTests: [test]
+    test:
+      config: Debug
+      targets:
+        - TaskboardiOSTests
+  Taskboard:
+    build:
+      targets:
+        Taskboard: all
+        TaskboardTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - TaskboardTests

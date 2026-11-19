@@ -1,0 +1,182 @@
+{
+ "generatedAt": "2026-10-30T03:00:00Z",
+ "machine": {
+  "id": "demo-laptop",
+  "name": "MacBook Pro",
+  "daemonVersion": "0.1.0"
+ },
+ "boards": [
+  {
+   "id": "demo-personal",
+   "machine": "demo-laptop",
+   "name": "個人開発",
+   "position": 0,
+   "createdAt": "2026-09-01T09:00:00+09:00",
+   "columns": [
+    {
+     "id": "review_req",
+     "label": "レビュー依頼",
+     "kind": "open",
+     "position": 0,
+     "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+    },
+    {
+     "id": "todo",
+     "label": "未着手",
+     "kind": "open",
+     "position": 1
+    },
+    {
+     "id": "planning",
+     "label": "計画",
+     "kind": "open",
+     "position": 2
+    },
+    {
+     "id": "working",
+     "label": "作業中",
+     "kind": "open",
+     "position": 3
+    },
+    {
+     "id": "review",
+     "label": "レビュー中",
+     "kind": "open",
+     "position": 4
+    },
+    {
+     "id": "deploying",
+     "label": "デプロイ中",
+     "kind": "open",
+     "position": 5
+    },
+    {
+     "id": "done",
+     "label": "完了",
+     "kind": "terminal",
+     "position": 6
+    },
+    {
+     "id": "wontfix",
+     "label": "見送り",
+     "kind": "terminal",
+     "position": 7
+    }
+   ],
+   "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}"
+  }
+ ],
+ "tasks": [
+  {
+   "machine": "demo-laptop",
+   "number": 41,
+   "boardID": "demo-personal",
+   "columnID": "working",
+   "title": "ブログの記事の OGP 画像を自動で作る",
+   "note": "",
+   "due": null,
+   "links": [
+    {
+     "id": 1,
+     "url": "https://github.com/demo-user/blog/pull/23",
+     "kind": "github_pr",
+     "note": "",
+     "addedAt": "2026-10-20T10:00:00+09:00"
+    }
+   ],
+   "sessions": [],
+   "importedID": null,
+   "createdAt": "2026-10-20T10:00:00+09:00",
+   "updatedAt": "2026-10-30T11:30:00+09:00"
+  },
+  {
+   "machine": "demo-laptop",
+   "number": 42,
+   "boardID": "demo-personal",
+   "columnID": "todo",
+   "title": "家計簿アプリの CSV 取り込み",
+   "note": "",
+   "due": null,
+   "links": [],
+   "sessions": [],
+   "importedID": null,
+   "createdAt": "2026-10-20T10:00:00+09:00",
+   "updatedAt": "2026-10-30T08:00:00+09:00"
+  },
+  {
+   "machine": "demo-laptop",
+   "number": 40,
+   "boardID": "demo-personal",
+   "columnID": "done",
+   "title": "dotfiles を整理する",
+   "note": "",
+   "due": null,
+   "links": [],
+   "sessions": [],
+   "importedID": null,
+   "createdAt": "2026-10-20T10:00:00+09:00",
+   "updatedAt": "2026-10-28T21:00:00+09:00"
+  }
+ ],
+ "workItems": [
+  {
+   "machine": "demo-laptop",
+   "itemID": 1,
+   "taskNumber": 41,
+   "title": "画像のテンプレート",
+   "state": "done",
+   "blockerKind": null,
+   "blockerText": "",
+   "blockerTone": null,
+   "dependsOn": [],
+   "deliverableKind": "commit",
+   "deliverableRef": "51c2d8e0f3a4",
+   "owner": "",
+   "position": 0,
+   "source": "session",
+   "createdAt": "2026-10-28T10:00:00+09:00",
+   "updatedAt": "2026-10-30T11:00:00+09:00"
+  },
+  {
+   "machine": "demo-laptop",
+   "itemID": 2,
+   "taskNumber": 41,
+   "title": "ビルドで画像を書き出す",
+   "state": "doing",
+   "blockerKind": null,
+   "blockerText": "",
+   "blockerTone": null,
+   "dependsOn": [],
+   "deliverableKind": null,
+   "deliverableRef": "",
+   "owner": "",
+   "position": 1,
+   "source": "session",
+   "createdAt": "2026-10-28T10:00:00+09:00",
+   "updatedAt": "2026-10-30T11:00:00+09:00"
+  }
+ ],
+ "documents": [],
+ "asks": [],
+ "reviewRequests": [],
+ "schedules": [],
+ "links": [
+  {
+   "url": "https://github.com/demo-user/blog/pull/23",
+   "fetchedAt": "2026-10-30T02:58:00Z",
+   "pullRequest": {
+    "state": "OPEN",
+    "isDraft": true,
+    "checks": "SUCCESS",
+    "reviewDecision": null
+   }
+  }
+ ],
+ "settings": {
+  "orchestrator": {
+   "enabled": false,
+   "agentArgs": []
+  },
+  "idleStopMinutes": 120
+ }
+}

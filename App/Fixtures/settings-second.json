@@ -1,0 +1,359 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [
+    {
+      "url": "https://ghe.example.com/console/console/pull/552",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "OPEN",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "REVIEW_REQUIRED"
+      }
+    },
+    {
+      "url": "https://example.atlassian.net/browse/PROJ-807",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "jira": {
+        "key": "PROJ-807",
+        "statusName": "進行中",
+        "category": "indeterminate",
+        "summary": "権限設計"
+      }
+    },
+    {
+      "url": "https://github.com/scpwiki/search/pull/9",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "MERGED",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "APPROVED"
+      }
+    }
+  ],
+  "machine": {
+    "id": "fixture-second",
+    "name": "Mac mini",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [
+    {
+      "id": "fixture-second-board",
+      "machine": "fixture-second",
+      "name": "acme-console",
+      "position": 0,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 0,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 1
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 2
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 3
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 4
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 5
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 6
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 7
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    }
+  ],
+  "tasks": [
+    {
+      "machine": "fixture-second",
+      "number": 131,
+      "boardID": "fixture-second-board",
+      "columnID": "review",
+      "title": "doorman PR #41 のレビュー対応",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/doorman/pull/41",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-second",
+      "number": 118,
+      "boardID": "fixture-second-board",
+      "columnID": "deploying",
+      "title": "wiki の検索 index を再構築",
+      "note": "",
+      "due": "2026-10-04",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/search/pull/9",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "workItems": [],
+  "documents": [],
+  "asks": [],
+  "reviewRequests": [],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "ukwhatn",
+        "fetchedAt": "2026-10-03T11:58:00+09:00",
+        "error": null,
+        "rateLimited": false,
+        "nextFetchAt": "2026-10-03T12:03:00+09:00"
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/console/pull/41",
+        "repository": "scpwiki/console",
+        "number": 41,
+        "title": "console の権限設計",
+        "author": "alice",
+        "isDraft": false,
+        "headRef": "feature/41",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:40:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/search/pull/9",
+        "repository": "scpwiki/search",
+        "number": 9,
+        "title": "検索 index の再構築",
+        "author": "bob",
+        "isDraft": false,
+        "headRef": "feature/9",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T09:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "FAILURE",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewed",
+        "url": "https://github.com/scpwiki/wiki/pull/12",
+        "repository": "scpwiki/wiki",
+        "number": 12,
+        "title": "wiki の差分表示",
+        "author": "carol",
+        "isDraft": false,
+        "headRef": "feature/12",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-02T18:00:00+09:00",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "checks": "SUCCESS",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [
+          {
+            "login": "ukwhatn",
+            "state": "COMMENTED"
+          }
+        ],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myDraft",
+        "url": "https://github.com/ukwhatn/taskboard/pull/57",
+        "repository": "ukwhatn/taskboard",
+        "number": 57,
+        "title": "フェーズ 7: PR 一覧",
+        "author": "ukwhatn",
+        "isDraft": true,
+        "headRef": "feature/57",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:50:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myReady",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "repository": "ukwhatn/taskboard",
+        "number": 55,
+        "title": "フェーズ 6: 受信箱と文書",
+        "author": "ukwhatn",
+        "isDraft": false,
+        "headRef": "feature/55",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T08:00:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "SUCCESS",
+        "additions": 2400,
+        "deletions": 120,
+        "changedFiles": 31,
+        "latestReviews": [
+          {
+            "login": "dave",
+            "state": "APPROVED"
+          }
+        ],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": [
+      {
+        "id": "https://github.com/ukwhatn/taskboard/pull/55#approved#1791000000",
+        "machine": "fixture-studio",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "label": "ukwhatn/taskboard#55",
+        "title": "フェーズ 6: 受信箱と文書",
+        "kind": "approved",
+        "detail": "dave",
+        "at": "2026-10-03T11:00:00+09:00"
+      }
+    ]
+  },
+  "usage": {
+    "claude": {
+      "fiveHour": {
+        "usedPercent": 42,
+        "resetsAt": "2026-10-03T05:13:00Z",
+        "windowSeconds": 18000
+      },
+      "sevenDay": {
+        "usedPercent": 57,
+        "resetsAt": "2026-10-06T00:00:00Z",
+        "windowSeconds": 604800
+      },
+      "at": "2026-10-03T02:59:00Z"
+    },
+    "codex": {
+      "primary": {
+        "usedPercent": 13,
+        "resetsAt": "2026-10-03T07:12:00Z",
+        "windowSeconds": 18000
+      },
+      "secondary": {
+        "usedPercent": 31,
+        "resetsAt": "2026-10-05T09:00:00Z",
+        "windowSeconds": 604800
+      },
+      "fetchedAt": "2026-10-03T02:55:00Z"
+    },
+    "contexts": [
+      {
+        "agentSessionID": "sess-lead-0001",
+        "model": "Fable 5.1",
+        "effort": "high",
+        "usedPercent": 31,
+        "inputTokens": 155000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-doorman-0001",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 22,
+        "inputTokens": 110000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-t131-0002",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 64,
+        "inputTokens": 640000,
+        "windowSize": 1000000,
+        "at": "2026-10-03T02:59:00Z"
+      }
+    ]
+  },
+  "schedules": []
+}

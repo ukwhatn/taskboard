@@ -1,0 +1,7 @@
+// Signing.local.xcconfig にコピーして値を書き換える。
+// macOS を Team の証明書で署名すると、再ビルドのたびに Keychain の確認が出なくなる（ad hoc は署名の条件が実行ファイルのハッシュになる）
+TASKBOARD_MAC_SIGN_IDENTITY = Apple Development: Your Name (XXXXXXXXXX)
+TASKBOARD_TEAM_ID = XXXXXXXXXX
+
+// iOS の実機に入れるときは、自分の Team で登録できる bundle ID にする
+TASKBOARD_IOS_BUNDLE_ID = com.example.taskboard

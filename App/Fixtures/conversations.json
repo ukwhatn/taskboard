@@ -1,0 +1,2983 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [
+    {
+      "url": "https://ghe.example.com/console/console/pull/552",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "OPEN",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "REVIEW_REQUIRED"
+      }
+    },
+    {
+      "url": "https://example.atlassian.net/browse/PROJ-807",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "jira": {
+        "key": "PROJ-807",
+        "statusName": "進行中",
+        "category": "indeterminate",
+        "summary": "権限設計"
+      }
+    },
+    {
+      "url": "https://github.com/scpwiki/search/pull/9",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "MERGED",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "APPROVED"
+      }
+    }
+  ],
+  "machine": {
+    "codexCLI": {
+      "using": "0.130.0",
+      "newest": "0.130.0"
+    },
+    "id": "fixture-studio",
+    "name": "Mac Studio",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [
+    {
+      "id": "fixture-board",
+      "machine": "fixture-studio",
+      "name": "default",
+      "position": 0,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 0,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 1
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 2
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 3
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 4
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 5
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 6
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 7
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    }
+  ],
+  "tasks": [
+    {
+      "machine": "fixture-studio",
+      "number": 137,
+      "boardID": "fixture-board",
+      "columnID": "working",
+      "title": "taskboard フェーズ 3: ボードとカード",
+      "note": "daemon の SQLite に持ち、taskherd から取り込む",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/3",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-lead-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 131,
+      "boardID": "fixture-board",
+      "columnID": "review",
+      "title": "doorman PR #41 のレビュー対応",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/doorman/pull/41",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-doorman-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 128,
+      "boardID": "fixture-board",
+      "columnID": "review_req",
+      "title": "console の権限設計をレビューしてもらう",
+      "note": "",
+      "due": "2026-10-03",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://ghe.example.com/console/console/pull/552",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        },
+        {
+          "id": 2,
+          "url": "https://example.atlassian.net/browse/PROJ-807",
+          "kind": "jira",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-reviewer-0003",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 125,
+      "boardID": "fixture-board",
+      "columnID": "todo",
+      "title": "iPad の殻を切る",
+      "note": "",
+      "due": "2026-10-10",
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 120,
+      "boardID": "fixture-board",
+      "columnID": "planning",
+      "title": "kairan の置き換え方針",
+      "note": "受信箱と文書の統合",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-09-25T12:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 118,
+      "boardID": "fixture-board",
+      "columnID": "deploying",
+      "title": "wiki の検索 index を再構築",
+      "note": "",
+      "due": "2026-10-04",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/search/pull/9",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 110,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 1: daemon と一覧",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/1",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 109,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 2: 端末中継",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/2",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 90,
+      "boardID": "fixture-board",
+      "columnID": "wontfix",
+      "title": "taskherd を Web 化する",
+      "note": "ネイティブに寄せたので見送り",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "workItems": [
+    {
+      "machine": "fixture-studio",
+      "itemID": 1,
+      "taskNumber": 137,
+      "title": "Store の v2 migration と作業項目の CRUD",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "a1b2c3d4e5f6",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 2,
+      "taskNumber": 137,
+      "title": "API と DaemonEvent（work.updated / work.removed）",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "0f9e8d7c6b5a",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 3,
+      "taskNumber": 137,
+      "title": "MCP server（taskboard mcp）",
+      "state": "doing",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 2,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 4,
+      "taskNumber": 137,
+      "title": "CI の通過（macOS / iOS）",
+      "state": "wait",
+      "blockerKind": "ci",
+      "blockerText": "CI 待ち（約 6 分）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 3,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 5,
+      "taskNumber": 137,
+      "title": "ボードのカード 2 行目と進捗",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        3
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 4,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 6,
+      "taskNumber": 137,
+      "title": "README と CLAUDE.md の追記",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "doorman",
+      "position": 5,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 7,
+      "taskNumber": 137,
+      "title": "PostToolUse hook での鏡写し",
+      "state": "drop",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 6,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 8,
+      "taskNumber": 131,
+      "title": "実装と単体テスト",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "pr",
+      "deliverableRef": "https://github.com/ukwhatn/taskboard/pull/2",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 9,
+      "taskNumber": 131,
+      "title": "レビューの指摘対応",
+      "state": "wait",
+      "blockerKind": "review",
+      "blockerText": "レビューを待っている（PR #2）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 10,
+      "taskNumber": 128,
+      "title": "計画の承認",
+      "state": "wait",
+      "blockerKind": "approval",
+      "blockerText": "計画 30_plan の承認を待っている",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 11,
+      "taskNumber": 128,
+      "title": "実装",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        10
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 12,
+      "taskNumber": 128,
+      "title": "実機での確認",
+      "state": "wait",
+      "blockerKind": "manual",
+      "blockerText": "iPhone をケーブルでつないで、通知が届くか確認してください",
+      "blockerTone": "attention",
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 2,
+      "source": "session",
+      "createdAt": "2026-10-03T09:00:00+09:00",
+      "updatedAt": "2026-10-03T09:00:00+09:00"
+    }
+  ],
+  "documents": [
+    {
+      "machine": "fixture-studio",
+      "docID": 1,
+      "taskNumber": 120,
+      "name": "kairan-replacement.md",
+      "format": "markdown",
+      "title": "kairan の置き換え方針",
+      "latestRev": 2,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T10:00:00+09:00",
+      "updatedAt": "2026-10-03T11:30:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 2,
+      "taskNumber": 120,
+      "name": "inbox-mock.html",
+      "format": "html",
+      "title": null,
+      "latestRev": 1,
+      "hasSourceFile": false,
+      "openComments": 1,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T09:00:00+09:00",
+      "updatedAt": "2026-10-03T09:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 3,
+      "taskNumber": 137,
+      "name": "phase3-plan.md",
+      "format": "markdown",
+      "title": "フェーズ 3 計画",
+      "latestRev": 3,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 1,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "asks": [
+    {
+      "machine": "fixture-studio",
+      "askID": 1,
+      "taskNumber": 120,
+      "docID": 1,
+      "status": "open",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "文書をタスクに属させる案でよいか",
+          "header": "所属",
+          "options": [
+            {
+              "label": "タスクに属させる",
+              "description": "受信箱・カードから辿れる"
+            },
+            {
+              "label": "セッションに属させる",
+              "description": "kairan と同じ"
+            }
+          ],
+          "multiSelect": false
+        },
+        {
+          "id": "q2",
+          "question": "HTML 文書で許す機能",
+          "header": "HTML",
+          "options": [
+            {
+              "label": "script"
+            },
+            {
+              "label": "外部画像"
+            },
+            {
+              "label": "外部 CSS"
+            }
+          ],
+          "multiSelect": true
+        }
+      ],
+      "answers": null,
+      "createdAt": "2026-10-03T11:30:00+09:00",
+      "answeredAt": null,
+      "deliveredAt": null
+    }
+  ],
+  "reviewRequests": [
+    {
+      "machine": "fixture-studio",
+      "taskNumber": 128,
+      "note": "移行スクリプトの 2 章を見てほしい",
+      "requestedAt": "2026-10-03T11:00:00+09:00"
+    }
+  ],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "ukwhatn",
+        "fetchedAt": "2026-10-03T11:58:00+09:00",
+        "error": null,
+        "rateLimited": false,
+        "nextFetchAt": "2026-10-03T12:03:00+09:00"
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/console/pull/41",
+        "repository": "scpwiki/console",
+        "number": 41,
+        "title": "console の権限設計",
+        "author": "alice",
+        "isDraft": false,
+        "headRef": "feature/41",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:40:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/search/pull/9",
+        "repository": "scpwiki/search",
+        "number": 9,
+        "title": "検索 index の再構築",
+        "author": "bob",
+        "isDraft": false,
+        "headRef": "feature/9",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T09:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "FAILURE",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewed",
+        "url": "https://github.com/scpwiki/wiki/pull/12",
+        "repository": "scpwiki/wiki",
+        "number": 12,
+        "title": "wiki の差分表示",
+        "author": "carol",
+        "isDraft": false,
+        "headRef": "feature/12",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-02T18:00:00+09:00",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "checks": "SUCCESS",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [
+          {
+            "login": "ukwhatn",
+            "state": "COMMENTED"
+          }
+        ],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myDraft",
+        "url": "https://github.com/ukwhatn/taskboard/pull/57",
+        "repository": "ukwhatn/taskboard",
+        "number": 57,
+        "title": "フェーズ 7: PR 一覧",
+        "author": "ukwhatn",
+        "isDraft": true,
+        "headRef": "feature/57",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:50:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myReady",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "repository": "ukwhatn/taskboard",
+        "number": 55,
+        "title": "フェーズ 6: 受信箱と文書",
+        "author": "ukwhatn",
+        "isDraft": false,
+        "headRef": "feature/55",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T08:00:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "SUCCESS",
+        "additions": 2400,
+        "deletions": 120,
+        "changedFiles": 31,
+        "latestReviews": [
+          {
+            "login": "dave",
+            "state": "APPROVED"
+          }
+        ],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": [
+      {
+        "id": "https://github.com/ukwhatn/taskboard/pull/55#approved#1791000000",
+        "machine": "fixture-studio",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "label": "ukwhatn/taskboard#55",
+        "title": "フェーズ 6: 受信箱と文書",
+        "kind": "approved",
+        "detail": "dave",
+        "at": "2026-10-03T11:00:00+09:00"
+      }
+    ]
+  },
+  "usage": {
+    "claude": {
+      "fiveHour": {
+        "usedPercent": 42,
+        "resetsAt": "2026-10-03T05:13:00Z",
+        "windowSeconds": 18000
+      },
+      "sevenDay": {
+        "usedPercent": 57,
+        "resetsAt": "2026-10-06T00:00:00Z",
+        "windowSeconds": 604800
+      },
+      "at": "2026-10-03T02:59:00Z"
+    },
+    "codex": {
+      "primary": {
+        "usedPercent": 13,
+        "resetsAt": "2026-10-03T07:12:00Z",
+        "windowSeconds": 18000
+      },
+      "secondary": {
+        "usedPercent": 31,
+        "resetsAt": "2026-10-05T09:00:00Z",
+        "windowSeconds": 604800
+      },
+      "fetchedAt": "2026-10-03T02:55:00Z"
+    },
+    "contexts": [
+      {
+        "agentSessionID": "sess-lead-0001",
+        "model": "Fable 5.1",
+        "effort": "high",
+        "usedPercent": 31,
+        "inputTokens": 155000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-doorman-0001",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 22,
+        "inputTokens": 110000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-t131-0002",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 64,
+        "inputTokens": 640000,
+        "windowSize": 1000000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-ask-1",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 18,
+        "inputTokens": 36000,
+        "windowSize": 200000,
+        "at": "2026-10-03T02:59:00Z"
+      }
+    ]
+  },
+  "schedules": [
+    {
+      "scheduleID": 1,
+      "machine": "fixture-studio",
+      "name": "朝の PR 棚卸し",
+      "enabled": true,
+      "rule": {
+        "cron": "0 9 * * 1-5"
+      },
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "kind": "claude",
+      "agentArgs": [
+        "--model",
+        "sonnet"
+      ],
+      "prompt": "自分宛てのレビュー依頼と、自分の PR の CI を見て、今日やることを 3 行で残して",
+      "taskNumber": 118,
+      "overlap": "skip",
+      "nextAt": "2026-10-04T09:00:00+09:00",
+      "lastRun": {
+        "id": 12,
+        "scheduleID": 1,
+        "scheduledAt": "2026-10-03T09:00:00+09:00",
+        "trigger": "schedule",
+        "requestID": "sched-1-12",
+        "stage": "done",
+        "pane": "w1:p9",
+        "createdAt": "2026-10-03T09:00:02+09:00"
+      },
+      "createdAt": "2026-09-28T10:00:00+09:00",
+      "updatedAt": "2026-09-28T10:00:00+09:00"
+    },
+    {
+      "scheduleID": 2,
+      "machine": "fixture-studio",
+      "name": "wiki の index を作り直す",
+      "enabled": false,
+      "rule": {
+        "intervalMinutes": 360
+      },
+      "cwd": "/Users/ukwhatn/dev/wiki",
+      "kind": "codex",
+      "agentArgs": [],
+      "prompt": "検索 index を作り直して、失敗したページを一覧にして",
+      "overlap": "parallel",
+      "lastRun": {
+        "id": 5,
+        "scheduleID": 2,
+        "scheduledAt": "2026-10-02T18:00:00+09:00",
+        "trigger": "manual",
+        "requestID": "sched-2-5",
+        "stage": "failed",
+        "error": "cwd が無い",
+        "createdAt": "2026-10-02T18:00:01+09:00"
+      },
+      "createdAt": "2026-09-30T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:10:00+09:00"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "c-gen",
+      "machine": "fixture-studio",
+      "taskNumber": 137,
+      "engine": "claude",
+      "agentSessionID": "agent-c-gen",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "会話の画面を作る",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:00:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z"
+    },
+    {
+      "id": "c-ask",
+      "machine": "fixture-studio",
+      "taskNumber": 137,
+      "engine": "claude",
+      "agentSessionID": "agent-c-ask",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "計画書の形式を決める",
+      "runner": "host",
+      "phase": "waiting",
+      "pending": [
+        {
+          "id": "req-q",
+          "kind": "question",
+          "toolName": "AskUserQuestion",
+          "toolUseID": "toolu_q1",
+          "waiting": {
+            "id": "toolu_q1",
+            "since": "2026-10-07T08:00:00Z",
+            "questions": [
+              {
+                "id": "q0",
+                "question": "計画書はどの形式で出しますか？",
+                "header": "形式",
+                "multiSelect": false,
+                "options": [
+                  {
+                    "label": "HTML (Recommended)",
+                    "description": "段の順序と比較の表があるとき",
+                    "preview": "| 段 | 内容 | 確認 |\n|---|---|---|\n| 1 | 依頼の候補 | snapshot |\n| 2 | 見本と推奨 | debug のアプリ |"
+                  },
+                  {
+                    "label": "Markdown",
+                    "preview": "<!doctype html><html><body style=\"font:13px -apple-system;margin:12px\"><h3 style=\"margin:0 0 8px\">段 1</h3><div style=\"display:flex;gap:8px\"><span style=\"border:1px solid #c7c7cc;border-radius:12px;padding:1px 10px\">上げてよい</span><span style=\"border:1px solid #c7c7cc;border-radius:12px;padding:1px 10px\">今は上げない</span></div><img src=\"https://example.com/x.png\" alt=\"外部の画像（読み込まない）\"></body></html>"
+                  }
+                ]
+              },
+              {
+                "id": "q1",
+                "question": "確かめる端末を選んでください。",
+                "header": "端末",
+                "multiSelect": true,
+                "options": [
+                  {
+                    "label": "この Mac"
+                  },
+                  {
+                    "label": "iPhone"
+                  },
+                  {
+                    "label": "iPad"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:01:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z"
+    },
+    {
+      "id": "c-perm",
+      "machine": "fixture-studio",
+      "taskNumber": 131,
+      "engine": "claude",
+      "agentSessionID": "agent-c-perm",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "レビュー対応を push する",
+      "runner": "host",
+      "phase": "waiting",
+      "pending": [
+        {
+          "id": "req-p",
+          "kind": "permission",
+          "toolName": "Bash",
+          "toolUseID": "toolu_p1",
+          "waiting": {
+            "id": "toolu_p1",
+            "since": "2026-10-07T08:00:00Z",
+            "permission": {
+              "tool": "Bash",
+              "summary": "git push origin main",
+              "detail": "main を GitHub に push する"
+            }
+          }
+        }
+      ],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:00:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z"
+    },
+    {
+      "id": "c-plan",
+      "machine": "fixture-studio",
+      "taskNumber": 125,
+      "engine": "claude",
+      "agentSessionID": "agent-c-plan",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "iPad の殻の計画",
+      "runner": "host",
+      "phase": "waiting",
+      "pending": [
+        {
+          "id": "req-plan",
+          "kind": "plan",
+          "toolName": "ExitPlanMode",
+          "toolUseID": "toolu_plan",
+          "waiting": {
+            "id": "toolu_plan",
+            "since": "2026-10-07T08:00:00Z"
+          },
+          "plan": "## 計画\n\n1. `ConversationTimeline` に発言を重ねる\n2. 会話の画面を足す\n3. snapshot test で状態を見る"
+        }
+      ],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:00:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z"
+    },
+    {
+      "id": "c-stop",
+      "machine": "fixture-studio",
+      "taskNumber": null,
+      "engine": "claude",
+      "agentSessionID": "agent-c-stop",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "ログを調べる",
+      "runner": "none",
+      "phase": "stopped",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:00:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z",
+      "digest": {
+        "now": "上限を上げてよいかの答えを待っている",
+        "at": "2026-10-07T08:05:00Z",
+        "requests": [
+          {
+            "id": 901,
+            "kind": "decision",
+            "quote": "接続の上限を 64 に上げてよいですか。",
+            "messageID": "a1",
+            "createdAt": "2026-10-07T08:05:00Z",
+            "options": [
+              {
+                "label": "上げてよい",
+                "reply": "接続の上限を 64 に上げてください"
+              },
+              {
+                "label": "今は上げない",
+                "reply": "接続の上限はまだ上げないでください"
+              }
+            ]
+          },
+          {
+            "id": 902,
+            "kind": "task",
+            "quote": "入れ替えたら、Mac で会話を 1 本開いて応答が返るかを見てください。",
+            "messageID": "a1",
+            "createdAt": "2026-10-07T08:05:00Z",
+            "options": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "c-failed",
+      "machine": "fixture-studio",
+      "taskNumber": null,
+      "engine": "claude",
+      "agentSessionID": "agent-c-failed",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "opus",
+      "title": "ログを調べる（起こせなかった）",
+      "runner": "none",
+      "phase": "stopped",
+      "lastExit": "起こせなかった",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T08:00:00Z",
+      "updatedAt": "2026-10-07T08:05:00Z"
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:00:00Z",
+      "updatedAt": "2026-10-07T09:10:00Z",
+      "id": "c-tools",
+      "taskNumber": 137,
+      "agentSessionID": "agent-c-tools",
+      "model": "claude-opus-5-5[1m]",
+      "effort": "high",
+      "permissionMode": "acceptEdits",
+      "title": "差分の画面を確かめる",
+      "customTitle": "差分の画面を確かめる",
+      "runner": "host",
+      "phase": "idle",
+      "contextPercent": 47,
+      "diff": {
+        "isRepo": true,
+        "branch": "feature/e3-conversation-app",
+        "files": 3,
+        "insertions": 42,
+        "deletions": 7
+      },
+      "canUndoRewind": true,
+      "stats": {
+        "agentSessionID": "agent-c-tools",
+        "model": "claude-opus-5-5[1m]",
+        "engineVersion": "2.1.303",
+        "costUSD": 0.2481,
+        "tokens": {
+          "input": 1240,
+          "output": 18432,
+          "cacheRead": 1203440,
+          "cacheWrite": 88213
+        },
+        "contextTokens": 282000,
+        "contextWindow": 600000,
+        "at": "2026-10-07T09:10:00Z"
+      }
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:01:00Z",
+      "updatedAt": "2026-10-07T09:10:00Z",
+      "id": "c-term",
+      "taskNumber": 137,
+      "agentSessionID": "agent-c-term",
+      "model": "claude-opus-5-5[1m]",
+      "effort": "medium",
+      "title": "端末で続きを確かめる",
+      "runner": "none",
+      "phase": "stopped",
+      "contextPercent": 72,
+      "forkSource": "c-tools",
+      "forkAt": "a10"
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:20:00Z",
+      "updatedAt": "2026-10-07T09:30:00Z",
+      "id": "c-rewind",
+      "taskNumber": 128,
+      "agentSessionID": "agent-c-rewind",
+      "model": "claude-opus-5-5[1m]",
+      "effort": "medium",
+      "title": "README の書き直しを戻す",
+      "runner": "none",
+      "phase": "stopped",
+      "contextPercent": 72,
+      "canUndoRewind": true,
+      "rewindIncomplete": true
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:20:00Z",
+      "updatedAt": "2026-10-07T09:30:00Z",
+      "id": "c-limit",
+      "taskNumber": null,
+      "agentSessionID": "agent-c-limit",
+      "model": "claude-opus-5-5[1m]",
+      "effort": "medium",
+      "title": "依存の版を上げる",
+      "runner": "host",
+      "phase": "idle",
+      "contextPercent": 41,
+      "limitResumeAt": "2026-10-07T14:01:00Z"
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:20:00Z",
+      "updatedAt": "2026-10-07T09:30:00Z",
+      "id": "c-orch",
+      "taskNumber": null,
+      "agentSessionID": "agent-c-orch",
+      "model": "claude-opus-5-5[1m]",
+      "effort": "medium",
+      "title": "オーケストレーター",
+      "runner": "host",
+      "phase": "idle",
+      "contextPercent": 18,
+      "purpose": "orchestrator"
+    },
+    {
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:05:00Z",
+      "updatedAt": "2026-10-07T09:12:00Z",
+      "id": "c-helper",
+      "taskNumber": 137,
+      "agentSessionID": "agent-c-helper",
+      "model": "claude-sonnet-5",
+      "effort": "medium",
+      "title": "snapshotを撮り直す",
+      "runner": "host",
+      "phase": "running",
+      "contextPercent": 12,
+      "parentConversationID": "c-tools",
+      "plan": [
+        {
+          "id": "1",
+          "title": "撮り直す snapshot を洗い出す",
+          "status": "completed"
+        },
+        {
+          "id": "2",
+          "title": "ConversationToolsSnapshotTests を撮り直す",
+          "activeTitle": "ConversationToolsSnapshotTests を撮り直しています",
+          "status": "inProgress"
+        },
+        {
+          "id": "3",
+          "title": "差分の画像を見て写す",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "c-codex",
+      "machine": "fixture-studio",
+      "taskNumber": 118,
+      "engine": "codex",
+      "agentSessionID": "thread-c-codex",
+      "cwd": "/Users/ukwhatn/dev/wiki",
+      "model": "gpt-5.5-codex",
+      "effort": "medium",
+      "permissionMode": "default",
+      "title": "検索 index のテストを直す",
+      "runner": "host",
+      "phase": "idle",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 23,
+      "queuePaused": true,
+      "createdAt": "2026-10-07T10:00:00Z",
+      "updatedAt": "2026-10-07T10:06:00Z"
+    },
+    {
+      "id": "c-files",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-files",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "読んだ画像とファイルの札",
+      "runner": "host",
+      "phase": "idle",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "createdAt": "2026-10-07T09:00:00Z",
+      "updatedAt": "2026-10-07T09:07:00Z"
+    },
+    {
+      "id": "c-compact",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-compact",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "長い会話の圧縮",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 94,
+      "compaction": {
+        "startedAt": "2026-10-03T02:59:28Z",
+        "outputChars": 1830
+      },
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:28Z"
+    },
+    {
+      "id": "c-stall",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-stall",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "応答が止まった会話",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 94,
+      "stalledSince": "2026-10-03T02:54:48Z",
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:28Z"
+    },
+    {
+      "id": "c-retry",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-retry",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "API に届かず送り直している会話",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 41,
+      "apiRetry": {
+        "attempt": 3,
+        "maxRetries": 10,
+        "retryAt": "2026-10-03T03:00:12Z",
+        "kind": "unknown"
+      },
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:58Z"
+    },
+    {
+      "id": "c-retry-late",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-retry-late",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "送り直しの時刻を過ぎた会話",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 41,
+      "apiRetry": {
+        "attempt": 4,
+        "maxRetries": 10,
+        "retryAt": "2026-10-03T02:59:50Z",
+        "status": 529,
+        "kind": "overloaded"
+      },
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:58Z"
+    },
+    {
+      "id": "c-wait",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-wait",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "最初の応答を待っている会話",
+      "runner": "host",
+      "phase": "running",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 41,
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:58Z"
+    },
+    {
+      "id": "c-apierror",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-apierror",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "API の誤りで終わった会話",
+      "runner": "host",
+      "phase": "idle",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 41,
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:58Z"
+    },
+    {
+      "id": "c-offline",
+      "machine": "fixture-studio",
+      "engine": "claude",
+      "agentSessionID": "agent-c-offline",
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "model": "claude-opus-5-5[1m]",
+      "title": "ネットワークが切れて止まった会話",
+      "runner": "host",
+      "phase": "idle",
+      "pending": [],
+      "backgroundTasks": 0,
+      "backgroundTasksKnown": true,
+      "contextPercent": 41,
+      "networkResume": true,
+      "createdAt": "2026-10-03T01:00:00Z",
+      "updatedAt": "2026-10-03T02:59:58Z"
+    }
+  ],
+  "conversationChats": {
+    "c-retry": {
+      "messages": [
+        {
+          "id": "ru1",
+          "role": "user",
+          "kind": "text",
+          "text": "このリポジトリのテストを回して",
+          "isError": false,
+          "at": "2026-10-03T02:58:00Z"
+        }
+      ]
+    },
+    "c-retry-late": {
+      "messages": [
+        {
+          "id": "lu1",
+          "role": "user",
+          "kind": "text",
+          "text": "変更を要約して",
+          "isError": false,
+          "at": "2026-10-03T02:58:00Z"
+        }
+      ]
+    },
+    "c-wait": {
+      "messages": [
+        {
+          "id": "wu1",
+          "role": "user",
+          "kind": "text",
+          "text": "ビルドして結果を教えて",
+          "isError": false,
+          "at": "2026-10-03T02:59:00Z"
+        },
+        {
+          "id": "wa1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "ビルドします。",
+          "isError": false,
+          "at": "2026-10-03T02:59:30Z"
+        }
+      ]
+    },
+    "c-offline": {
+      "messages": [
+        {
+          "id": "ou1",
+          "role": "user",
+          "kind": "text",
+          "text": "テストを回して結果を教えて",
+          "isError": false,
+          "at": "2026-10-03T02:55:00Z"
+        },
+        {
+          "id": "oa1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "API Error: Connection refused — a firewall or proxy may be blocking it (ECONNREFUSED)",
+          "isError": true,
+          "at": "2026-10-03T02:58:00Z"
+        }
+      ]
+    },
+    "c-apierror": {
+      "messages": [
+        {
+          "id": "eu1",
+          "role": "user",
+          "kind": "text",
+          "text": "このリポジトリを調べて",
+          "isError": false,
+          "at": "2026-10-03T02:58:00Z"
+        },
+        {
+          "id": "ea1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "API Error: Can't reach the API server — check your internet or DNS (ENOTFOUND)",
+          "isError": true,
+          "at": "2026-10-03T02:58:40Z"
+        }
+      ]
+    },
+    "c-stall": {
+      "messages": [
+        {
+          "id": "su1",
+          "role": "user",
+          "kind": "text",
+          "text": "テストを全部回して",
+          "isError": false,
+          "at": "2026-10-03T02:58:00Z"
+        },
+        {
+          "id": "sa1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "テストを回し、結果を確かめます。",
+          "isError": false,
+          "at": "2026-10-03T02:58:30Z"
+        }
+      ]
+    },
+    "c-compact": {
+      "messages": [
+        {
+          "id": "pu1",
+          "role": "user",
+          "kind": "text",
+          "text": "残りの画面も同じ形に揃えて",
+          "isError": false,
+          "at": "2026-10-03T02:58:00Z"
+        },
+        {
+          "id": "pa1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "残りの3画面を同じ部品に移します。",
+          "isError": false,
+          "at": "2026-10-03T02:58:30Z"
+        }
+      ]
+    },
+    "c-files": {
+      "messages": [
+        {
+          "id": "cu1",
+          "role": "user",
+          "kind": "text",
+          "text": "<uploaded_files>\n<file><file_path>/Users/ukwhatn/Desktop/設定の仕様.md</file_path></file>\n</uploaded_files>\n\nこのスクリーンショットの設定の画面を直して",
+          "isError": false,
+          "at": "2026-10-07T09:01:00Z",
+          "images": [
+            {
+              "index": 0,
+              "mediaType": "image/png",
+              "bytes": 627,
+              "offset": 0
+            },
+            {
+              "index": 1,
+              "mediaType": "image/png",
+              "bytes": 609,
+              "offset": 0
+            }
+          ]
+        },
+        {
+          "id": "ca1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "画像と設定の画面を読みます。",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z"
+        },
+        {
+          "id": "ca2",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/Desktop/設定の画面.png",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z",
+          "toolName": "Read",
+          "toolID": "cr1"
+        },
+        {
+          "id": "cu2",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "[画像]",
+          "isError": false,
+          "at": "2026-10-07T09:03:00Z",
+          "toolID": "cr1",
+          "files": [
+            {
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 0,
+              "removed": 0,
+              "offset": 0,
+              "action": "image",
+              "mediaType": "image/png",
+              "bytes": 482133,
+              "width": 1800,
+              "height": 1150
+            }
+          ]
+        },
+        {
+          "id": "ca3",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+          "isError": false,
+          "at": "2026-10-07T09:03:00Z",
+          "toolName": "Read",
+          "toolID": "cr2"
+        },
+        {
+          "id": "cu3",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "1\timport SwiftUI",
+          "isError": false,
+          "at": "2026-10-07T09:04:00Z",
+          "toolID": "cr2",
+          "files": [
+            {
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 0,
+              "removed": 0,
+              "offset": 0,
+              "action": "read",
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+              "firstLine": 1,
+              "lineCount": 8,
+              "totalLines": 40
+            }
+          ]
+        },
+        {
+          "id": "ca4",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift",
+          "isError": false,
+          "at": "2026-10-07T09:05:00Z",
+          "toolName": "Edit",
+          "toolID": "ce1"
+        },
+        {
+          "id": "cu4",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "The file has been updated successfully.",
+          "isError": false,
+          "at": "2026-10-07T09:05:00Z",
+          "toolID": "ce1",
+          "files": [
+            {
+              "hunks": [
+                {
+                  "oldStart": 12,
+                  "oldLines": 4,
+                  "newStart": 12,
+                  "newLines": 5,
+                  "lines": [
+                    "     var body: some View {",
+                    "         Form {",
+                    "-            Section(\"端末\") {",
+                    "+            Section(\"保存\") {",
+                    "+                Toggle(\"閉じるときに保存\", isOn: $draft.saveOnClose)",
+                    "             }"
+                  ]
+                }
+              ],
+              "hunksOmitted": false,
+              "added": 2,
+              "removed": 1,
+              "offset": 0,
+              "action": "edited",
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/App/Sources/Settings/SettingsView.swift"
+            }
+          ]
+        },
+        {
+          "id": "ca5",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "/Users/ukwhatn/dev/8_tools/taskboard/docs/settings.md",
+          "isError": false,
+          "at": "2026-10-07T09:06:00Z",
+          "toolName": "Write",
+          "toolID": "cw1"
+        },
+        {
+          "id": "cu5",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "File created successfully",
+          "isError": false,
+          "at": "2026-10-07T09:06:00Z",
+          "toolID": "cw1",
+          "files": [
+            {
+              "hunks": [],
+              "hunksOmitted": false,
+              "added": 3,
+              "removed": 0,
+              "offset": 0,
+              "action": "created",
+              "path": "/Users/ukwhatn/dev/8_tools/taskboard/docs/settings.md"
+            }
+          ]
+        },
+        {
+          "id": "ca6",
+          "role": "assistant",
+          "kind": "text",
+          "text": "閉じるときに保存する欄を足しました。",
+          "isError": false,
+          "at": "2026-10-07T09:07:00Z"
+        }
+      ]
+    },
+    "c-codex": {
+      "mcpServers": [
+        {
+          "name": "taskboard",
+          "status": "connected",
+          "serverName": "taskboard",
+          "serverVersion": "0.1.0",
+          "toolCount": 42
+        },
+        {
+          "name": "context7",
+          "status": "connected",
+          "scope": "user",
+          "serverName": "Context7",
+          "serverVersion": "1.0.8",
+          "toolCount": 2,
+          "transport": "http",
+          "enabled": true
+        },
+        {
+          "name": "linear",
+          "status": "needs-auth",
+          "scope": "user",
+          "toolCount": 0,
+          "transport": "http",
+          "enabled": true
+        },
+        {
+          "name": "repo-tools",
+          "status": "failed",
+          "scope": "project",
+          "toolCount": 0,
+          "transport": "stdio",
+          "enabled": true
+        },
+        {
+          "name": "playwright",
+          "status": "disabled",
+          "scope": "user",
+          "toolCount": 0,
+          "transport": "stdio",
+          "enabled": false
+        }
+      ],
+      "permissionRules": {
+        "rules": [],
+        "directories": [
+          {
+            "path": "/Users/me/dev/search",
+            "source": "session"
+          }
+        ],
+        "settings": [
+          {
+            "key": "approval_policy",
+            "value": "on-request",
+            "source": "session"
+          },
+          {
+            "key": "sandbox_mode",
+            "value": "workspace-write",
+            "source": "session"
+          },
+          {
+            "key": "approval_policy",
+            "value": "never",
+            "source": "user"
+          },
+          {
+            "key": "sandbox_workspace_write.network_access",
+            "value": "false",
+            "source": "system"
+          },
+          {
+            "key": "projects./Users/me/dev/search.trust_level",
+            "value": "trusted",
+            "source": "user"
+          }
+        ]
+      },
+      "hooks": {
+        "hooks": [
+          {
+            "event": "SessionStart",
+            "matcher": "",
+            "source": "user",
+            "type": "command",
+            "command": "~/.codex/hooks/env.sh",
+            "enabled": true,
+            "trust": "trusted",
+            "sourcePath": "/Users/me/.codex/hooks.json",
+            "editKey": "ch-env"
+          },
+          {
+            "event": "PreToolUse",
+            "matcher": "shell",
+            "source": "project",
+            "type": "command",
+            "command": "scripts/guard.sh",
+            "enabled": true,
+            "trust": "untrusted",
+            "sourcePath": "/Users/me/dev/search/.codex/hooks.json",
+            "editKey": "ch-guard"
+          },
+          {
+            "event": "Stop",
+            "matcher": "",
+            "source": "user",
+            "type": "command",
+            "command": "say done",
+            "enabled": false,
+            "trust": "trusted",
+            "sourcePath": "/Users/me/.codex/config.toml",
+            "editKey": "ch-done"
+          }
+        ],
+        "problems": [
+          {
+            "path": "/Users/me/dev/search/.codex/hooks.local.json",
+            "message": "invalid type: string, expected a map"
+          }
+        ],
+        "warnings": [
+          "hook trust store missing"
+        ]
+      },
+      "plugins": {
+        "installed": [
+          {
+            "id": "github@openai-curated",
+            "name": "github",
+            "marketplace": "openai-curated",
+            "description": "GitHubのissueとPRを扱う",
+            "version": "2.1.0",
+            "installed": true,
+            "enabled": true
+          }
+        ],
+        "available": [
+          {
+            "id": "linear@openai-curated",
+            "name": "linear",
+            "marketplace": "openai-curated",
+            "description": "Linearの課題を扱う",
+            "installed": false
+          },
+          {
+            "id": "notion@openai-curated",
+            "name": "notion",
+            "marketplace": "openai-curated",
+            "description": "Notionのページを読む",
+            "installed": false
+          }
+        ],
+        "availableTotal": 2,
+        "marketplaces": [
+          {
+            "name": "openai-curated",
+            "source": "https://github.com/openai/plugins.git"
+          }
+        ]
+      },
+      "skills": {
+        "skills": [
+          {
+            "name": "search-index",
+            "displayName": "search-index",
+            "description": "",
+            "shortDescription": "検索の index を作り直す。",
+            "source": "repo",
+            "state": "on",
+            "path": "/Users/me/dev/search/.codex/skills/search-index/SKILL.md"
+          },
+          {
+            "name": "imagegen",
+            "displayName": "imagegen",
+            "description": "画像を作る。",
+            "source": "system",
+            "state": "on"
+          },
+          {
+            "name": "review",
+            "displayName": "review",
+            "description": "差分をレビューする。",
+            "source": "user",
+            "state": "off",
+            "plugin": "github"
+          }
+        ],
+        "problems": [
+          {
+            "path": "/Users/me/.codex/skills/broken/SKILL.md",
+            "message": "missing front matter"
+          }
+        ]
+      },
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "失敗している検索 index のテストを直して",
+          "isError": false,
+          "at": "2026-10-07T10:01:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "npm test -- search-index",
+          "isError": false,
+          "at": "2026-10-07T10:02:00Z",
+          "toolName": "Bash",
+          "toolID": "t1"
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "kind": "text",
+          "text": "待ち時間の上限が短すぎて落ちていました。上限を延ばして、テストが通ることを確かめました。",
+          "isError": false,
+          "at": "2026-10-07T10:06:00Z"
+        }
+      ]
+    },
+    "c-gen": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "会話の画面を作って。生成中の文と待機中の発言を出すところから",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "まず手元の型を読みます。",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "Sources/TaskboardKit/ConversationTimeline.swift",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z",
+          "toolName": "Read",
+          "toolID": "t1"
+        }
+      ],
+      "events": [
+        {
+          "blockStart": {
+            "messageID": "msg_1",
+            "index": 0,
+            "block": "thinking",
+            "toolName": null
+          }
+        },
+        {
+          "delta": {
+            "messageID": "msg_1",
+            "index": 0,
+            "block": "thinking",
+            "text": "履歴と生成中の block を重ねる順を決める。"
+          }
+        },
+        {
+          "blockStop": {
+            "messageID": "msg_1",
+            "index": 0
+          }
+        },
+        {
+          "blockStart": {
+            "messageID": "msg_1",
+            "index": 1,
+            "block": "text",
+            "toolName": null
+          }
+        },
+        {
+          "delta": {
+            "messageID": "msg_1",
+            "index": 1,
+            "block": "text",
+            "text": "手元の型は、履歴の発言の後ろに生成中の文を重ねて出します。送った発言は"
+          }
+        }
+      ],
+      "outgoing": [
+        {
+          "text": "画像の枚数も出して",
+          "queued": true
+        },
+        {
+          "text": "iPhone でも確かめて",
+          "failed": true
+        }
+      ]
+    },
+    "c-ask": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "会話の画面を作って。生成中の文と待機中の発言を出すところから",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "まず手元の型を読みます。",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a2",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "{\"name\":\"kairan-replacement.md\",\"questions\":[…2 問]}",
+          "toolName": "mcp__taskboard__ask_user",
+          "toolID": "ta1",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "u2",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "質問を出した\n- ask_id: 1\n- 質問: 2 問\n- 文書: [1] kairan-replacement.md ・ rev 2（既存の文書に質問だけ付けた。本文は変えていない）\n- タスク: #120\n- アプリ: taskboard://task/fixture-studio/120/doc/1\n- 回答: ブロックしない。taskboard がこのセッションに届ける。届かなければ feedback_list で取る",
+          "toolID": "ta1",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        }
+      ]
+    },
+    "c-perm": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "レビューの指摘を直して push して",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "直しました。push します。",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        }
+      ]
+    },
+    "c-plan": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "iPad の殻の計画を立てて",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        }
+      ]
+    },
+    "c-stop": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "daemon のログを調べて",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "原因は接続の上限でした。接続の上限を 64 に上げてよいですか。\n\n入れ替えたら、Mac で会話を 1 本開いて応答が返るかを見てください。",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        }
+      ]
+    },
+    "c-failed": {
+      "messages": [
+        {
+          "id": "u1",
+          "role": "user",
+          "kind": "text",
+          "text": "daemon のログを調べて",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        },
+        {
+          "id": "a1",
+          "role": "assistant",
+          "kind": "text",
+          "text": "原因は接続の上限でした。",
+          "isError": false,
+          "at": "2026-10-07T08:02:00Z"
+        }
+      ]
+    },
+    "c-tools": {
+      "export": {
+        "text": "\n❯ ボードの列の並びを直して。\n\n⏺ 列の並びを Kit の orderedColumns に寄せました。テストは全部通っています。\n\n❯ 差分を見せて\n\n⏺ 3 ファイルを変えました。\n",
+        "defaultFilename": "2026-10-20-091500-board-columns.txt"
+      },
+      "backgroundTasks": {
+        "tasks": [
+          {
+            "id": "bj8iibuj6",
+            "type": "local_bash",
+            "description": "swift test を裏で回す",
+            "backgrounded": true
+          },
+          {
+            "id": "a5k2m0p1q",
+            "type": "local_agent",
+            "description": "調査のサブエージェント",
+            "backgrounded": false
+          }
+        ],
+        "known": true
+      },
+      "taskOutputs": {
+        "bj8iibuj6": {
+          "output": "Building for debugging...\n[412/418] Compiling TaskboardKit Board.swift\n✔ Test run with 316 tests in 50 suites passed after 1.4 seconds.\n",
+          "totalBytes": 9120,
+          "truncated": true
+        }
+      },
+      "sandbox": {
+        "supported": true,
+        "locked": false,
+        "enabled": true,
+        "mode": "regular",
+        "autoAllowAvailable": true,
+        "allowUnsandboxedCommands": false,
+        "excludedCommands": [
+          "docker:*"
+        ],
+        "missingDependencies": false
+      },
+      "permissionRules": {
+        "rules": [
+          {
+            "behavior": "allow",
+            "source": "userSettings",
+            "rule": "Bash(swift test:*)",
+            "editable": true
+          },
+          {
+            "behavior": "allow",
+            "source": "session",
+            "rule": "Edit"
+          },
+          {
+            "behavior": "ask",
+            "source": "projectSettings",
+            "rule": "Bash(git push:*)",
+            "editable": true
+          },
+          {
+            "behavior": "deny",
+            "source": "policySettings",
+            "rule": "WebFetch(domain:example.com)"
+          }
+        ],
+        "directories": [
+          {
+            "path": "/Users/me/dev/taskboard/App",
+            "source": "session"
+          }
+        ]
+      },
+      "hooks": {
+        "hooks": [
+          {
+            "event": "PreToolUse",
+            "matcher": "Bash",
+            "source": "userSettings",
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/check-command.py",
+            "timeoutSeconds": 10,
+            "editKey": "h-check"
+          },
+          {
+            "event": "PreToolUse",
+            "matcher": "",
+            "source": "pluginHook",
+            "plugin": "taskboard",
+            "type": "command",
+            "command": "taskboard hook pre-tool"
+          },
+          {
+            "event": "Stop",
+            "matcher": "",
+            "source": "projectSettings",
+            "type": "command",
+            "command": "scripts/notify-done.sh",
+            "editKey": "h-notify"
+          }
+        ]
+      },
+      "memory": {
+        "autoMemory": {
+          "enabled": true,
+          "toggleable": true
+        },
+        "autoDream": {
+          "enabled": false,
+          "toggleable": true
+        },
+        "files": [
+          {
+            "kind": "user",
+            "path": "/Users/me/.claude/CLAUDE.md",
+            "exists": true
+          },
+          {
+            "kind": "project",
+            "path": "/Users/me/dev/taskboard/CLAUDE.md",
+            "exists": true
+          },
+          {
+            "kind": "local",
+            "path": "/Users/me/dev/taskboard/CLAUDE.local.md",
+            "exists": false
+          }
+        ]
+      },
+      "plugins": {
+        "installed": [
+          {
+            "id": "commit-tools@claude-plugins-official",
+            "name": "commit-tools",
+            "marketplace": "claude-plugins-official",
+            "description": "コミットとPRの作成を手伝うコマンド",
+            "version": "1.4.0",
+            "scope": "user",
+            "installed": true,
+            "enabled": true,
+            "source": "github"
+          },
+          {
+            "id": "lint-hooks@team-tools",
+            "name": "lint-hooks",
+            "marketplace": "team-tools",
+            "description": "保存のたびにlintを動かすフック",
+            "version": "0.3.2",
+            "scope": "project",
+            "installed": true,
+            "enabled": false,
+            "source": "local",
+            "hasOptions": true
+          }
+        ],
+        "available": [
+          {
+            "id": "frontend-design@claude-plugins-official",
+            "name": "frontend-design",
+            "marketplace": "claude-plugins-official",
+            "description": "画面の設計とモックの作成",
+            "installed": false,
+            "source": "github"
+          },
+          {
+            "id": "security-review@claude-plugins-official",
+            "name": "security-review",
+            "marketplace": "claude-plugins-official",
+            "description": "変更のセキュリティレビュー",
+            "installed": false,
+            "source": "github"
+          },
+          {
+            "id": "pr-helper@team-tools",
+            "name": "pr-helper",
+            "marketplace": "team-tools",
+            "description": "PRのテンプレートを埋める",
+            "installed": false,
+            "source": "command"
+          }
+        ],
+        "availableTotal": 3,
+        "marketplaces": [
+          {
+            "name": "claude-plugins-official",
+            "source": "anthropics/claude-plugins-official"
+          },
+          {
+            "name": "team-tools",
+            "source": "/Users/me/dev/team-tools"
+          }
+        ]
+      },
+      "skills": {
+        "skills": [
+          {
+            "name": "commit",
+            "displayName": "commit",
+            "description": "変更を git-cz 形式でコミットする。",
+            "source": "user",
+            "tokens": 182,
+            "state": "on"
+          },
+          {
+            "name": "taskboard:session",
+            "displayName": "session",
+            "description": "taskboard のタスクを進める。",
+            "source": "plugin",
+            "tokens": 240,
+            "state": "name-only"
+          },
+          {
+            "name": "old-review",
+            "displayName": "old-review",
+            "description": "",
+            "source": "project",
+            "tokens": 96,
+            "state": "off"
+          }
+        ]
+      },
+      "sideAnswer": {
+        "response": "列の並びを Kit の orderedColumns に寄せる作業をしています。テストは通っていて、次は差分の確認です。"
+      },
+      "contextBreakdown": {
+        "agentSessionID": "agent-c-tools",
+        "categories": [
+          {
+            "name": "System prompt",
+            "tokens": 3247,
+            "kind": "used"
+          },
+          {
+            "name": "System tools",
+            "tokens": 15583,
+            "kind": "used"
+          },
+          {
+            "name": "MCP tools",
+            "tokens": 41210,
+            "kind": "used"
+          },
+          {
+            "name": "Memory files",
+            "tokens": 9870,
+            "kind": "used"
+          },
+          {
+            "name": "Skills",
+            "tokens": 2093,
+            "kind": "used"
+          },
+          {
+            "name": "Messages",
+            "tokens": 209997,
+            "kind": "used"
+          },
+          {
+            "name": "System tools (deferred)",
+            "tokens": 28700,
+            "kind": "deferred"
+          },
+          {
+            "name": "Autocompact buffer",
+            "tokens": 33000,
+            "kind": "buffer"
+          },
+          {
+            "name": "Free space",
+            "tokens": 285000,
+            "kind": "free"
+          }
+        ],
+        "totalTokens": 282000,
+        "maxTokens": 600000,
+        "autoCompactThreshold": 567000
+      },
+      "messages": [
+        {
+          "id": "u10",
+          "role": "user",
+          "kind": "text",
+          "text": "差分の画面を作って、テストも回して",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z"
+        },
+        {
+          "id": "a10#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "一覧と diff を並べます。",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z"
+        },
+        {
+          "id": "a10#1",
+          "role": "assistant",
+          "kind": "toolUse",
+          "text": "App/Sources/Views/Conversation/ConversationDiffScreen.swift",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z",
+          "toolName": "Write",
+          "toolID": "t10"
+        },
+        {
+          "id": "u11#0",
+          "role": "user",
+          "kind": "toolResult",
+          "text": "書き込みました",
+          "isError": false,
+          "at": "2026-10-07T09:02:00Z",
+          "toolID": "t10"
+        },
+        {
+          "id": "u12",
+          "role": "user",
+          "kind": "text",
+          "text": "Run でテストを回せるようにして",
+          "isError": false,
+          "at": "2026-10-07T09:03:00Z"
+        },
+        {
+          "id": "a12#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "テストを回します。\n\n```bash\nswift test --filter ConversationSlashTests\n```\n\n通ったら差分を見てください。\n\n```swift\nlet x = 1\n```",
+          "isError": false,
+          "at": "2026-10-07T09:03:00Z"
+        }
+      ],
+      "workFiles": [
+        "Sources/TaskboardKit/Board.swift",
+        "Sources/TaskboardKit/BoardColumn.swift",
+        "Sources/TaskboardDaemon/Conversations/WorkFileIndex.swift",
+        "App/Sources/Views/ChatComposer.swift",
+        "App/Sources/Views/Conversation/ConversationComposerArea.swift",
+        "docs/ui-system.md",
+        "docs/メモ 一覧.md",
+        "README.md",
+        "App/Sources/Views/",
+        "docs/"
+      ],
+      "commands": [
+        {
+          "name": "clear",
+          "description": "会話の記録を消して始め直す",
+          "builtin": true,
+          "aliases": [
+            "reset",
+            "new"
+          ]
+        },
+        {
+          "name": "compact",
+          "description": "会話を要約して続ける",
+          "builtin": true
+        },
+        {
+          "name": "model",
+          "description": "Set the AI model",
+          "builtin": true
+        },
+        {
+          "name": "review",
+          "description": "PR をレビューする",
+          "builtin": true
+        },
+        {
+          "name": "pr-review",
+          "description": "PR をレビューするとき。差分を読み、指摘を観点ごとにまとめる"
+        },
+        {
+          "name": "rewind",
+          "description": "Restore the code and/or conversation",
+          "builtin": true,
+          "aliases": [
+            "checkpoint"
+          ]
+        }
+      ],
+      "mcpServers": [
+        {
+          "name": "taskboard",
+          "status": "connected",
+          "scope": "user",
+          "serverName": "taskboard",
+          "serverVersion": "0.1.0",
+          "toolCount": 42
+        },
+        {
+          "name": "github-personal",
+          "status": "failed",
+          "scope": "user",
+          "toolCount": null
+        },
+        {
+          "name": "atlassian-http",
+          "status": "needs-auth",
+          "scope": "user"
+        },
+        {
+          "name": "playwright",
+          "status": "disabled",
+          "scope": "project"
+        },
+        {
+          "name": "context7",
+          "status": "connected",
+          "scope": "user",
+          "toolCount": 2
+        },
+        {
+          "name": "chrome-devtools",
+          "status": "connected",
+          "scope": "user",
+          "toolCount": 26
+        },
+        {
+          "name": "figma",
+          "status": "connected",
+          "scope": "user",
+          "toolCount": 31
+        },
+        {
+          "name": "slack",
+          "status": "pending",
+          "scope": "user"
+        },
+        {
+          "name": "kairan",
+          "status": "disabled",
+          "scope": "user"
+        },
+        {
+          "name": "claude.ai Asana",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Box",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Canva",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Gmail",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Google Calendar",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Google Drive",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Linear",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        },
+        {
+          "name": "claude.ai Notion",
+          "status": "needs-auth",
+          "scope": "claudeai"
+        }
+      ],
+      "diff": {
+        "summary": {
+          "isRepo": true,
+          "branch": "feature/e3-conversation-app",
+          "files": 3,
+          "insertions": 42,
+          "deletions": 7
+        },
+        "files": [
+          {
+            "path": "App/Sources/Views/Conversation/ConversationDiffScreen.swift",
+            "change": "added",
+            "insertions": 30,
+            "deletions": 0
+          },
+          {
+            "path": "App/Sources/Views/Conversation/ConversationView.swift",
+            "change": "modified",
+            "insertions": 12,
+            "deletions": 7
+          },
+          {
+            "path": "docs/差分の画面.md",
+            "oldPath": "docs/diff.md",
+            "change": "renamed",
+            "insertions": 0,
+            "deletions": 0
+          }
+        ]
+      },
+      "fileDiffs": {
+        "App/Sources/Views/Conversation/ConversationView.swift": "@@ -10,6 +10,8 @@ struct ConversationView: View {\n     let key: ConversationKey\n     let feed: ConversationFeed\n-    @State private var draft = \"\"\n+    @State private var draft: String\n+    /// 巻き戻した指示を戻す\n+    @State private var confirmingUndo = false\n     @State private var images: [ChatDraftImage] = []\n@@ -40,4 +42,4 @@\n-        VStack(spacing: 0) {\n+        VStack(spacing: 0) { // 上の帯\n             ChatTranscript()\n"
+      },
+      "runs": [
+        {
+          "id": "run-1",
+          "conversationID": "c-tools",
+          "messageID": "a12#0",
+          "language": "bash",
+          "code": "swift test --filter ConversationSlashTests",
+          "status": "succeeded",
+          "exitCode": 0,
+          "output": "◇ Test run started.\n✔ Suite \"会話の / の候補\" passed after 0.001 seconds.\n✔ Test run with 6 tests in 1 suite passed after 0.001 seconds.\n",
+          "truncated": false,
+          "startedAt": "2026-10-07T09:04:00Z",
+          "endedAt": "2026-10-07T09:04:03Z"
+        }
+      ],
+      "rewind": {
+        "canRewind": true,
+        "filesChanged": [
+          "App/Sources/Views/Conversation/ConversationDiffScreen.swift",
+          "App/Sources/Views/Conversation/ConversationView.swift"
+        ],
+        "insertions": 42,
+        "deletions": 7
+      }
+    },
+    "c-term": {
+      "messages": [
+        {
+          "id": "u20",
+          "role": "user",
+          "kind": "text",
+          "text": "端末で /mcp を確かめて",
+          "isError": false,
+          "at": "2026-10-07T09:05:00Z"
+        },
+        {
+          "id": "a20#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "端末で開いて続けます。",
+          "isError": false,
+          "at": "2026-10-07T09:05:00Z"
+        }
+      ]
+    },
+    "c-rewind": {
+      "messages": [
+        {
+          "id": "u30",
+          "role": "user",
+          "kind": "text",
+          "text": "README の見出しを直して",
+          "isError": false,
+          "at": "2026-10-07T09:21:00Z"
+        },
+        {
+          "id": "a30#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "見出しを 3 つ直しました。",
+          "isError": false,
+          "at": "2026-10-07T09:22:00Z"
+        }
+      ]
+    },
+    "c-limit": {
+      "messages": [
+        {
+          "id": "u40",
+          "role": "user",
+          "kind": "text",
+          "text": "依存の版を上げて、テストを回して",
+          "isError": false,
+          "at": "2026-10-07T09:31:00Z"
+        },
+        {
+          "id": "a40#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "Package.resolved の 3 つの依存を上げました。テストを回しています。",
+          "isError": false,
+          "at": "2026-10-07T09:33:00Z"
+        }
+      ]
+    },
+    "c-orch": {
+      "messages": [
+        {
+          "id": "u50",
+          "role": "user",
+          "kind": "text",
+          "text": "PR の棚卸しをして",
+          "isError": false,
+          "at": "2026-10-07T09:40:00Z"
+        },
+        {
+          "id": "a50#0",
+          "role": "assistant",
+          "kind": "text",
+          "text": "開いている PR は 4 本です。2 本がレビュー待ちで、#212 は CI が落ちています。",
+          "isError": false,
+          "at": "2026-10-07T09:41:00Z"
+        }
+      ]
+    }
+  },
+  "chatFiles": {
+    "image|cu1#0": {
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAWgAAADmCAIAAAB3SoieAAACOklEQVR42u3UMQ0AMAgAQSQhvS6ww8JeDYwkl5yCHz7yFcBKSAAYB2AcgHEAxgEYB4BxAMYBGAdgHIBxABgHYByAcQDGARgHgHEAxgEYB2AcgHEAxgFgHIBxAMYBGAdgHADGARgHYByAcQDGAWAcgHEAxgEYB2AcAMYBGAdgHIBxAMYBGAeAcQDGARgHYByAcQAYB2AcgHEAxgEYB4BxAMYBGAdgHIBxABgHYByAcQDGARgHYBwAxgEYB2AcgHEAxgFgHIBxAMYBGAdgHADGARgHYByAcQDGAWAcgHEAxgEYB2AcgHEAGAdgHIBxAMYBGAeAcQDGARgHYByAcQAYB2AcgHEAxgEYB2AcKgDGARgHYByAcQDGAWAcgHEAxgEYB2AcAMYBGAdgHMCVcXQPwIpxAMYBGAdgHIBxAMYBYByAcQDGARgHYBwAxgEYB2AcgHEAxgFgHIBxAMYBGAdgHIBxqAAYB2AcgHEAxgEYB4BxAMYBGAdgHIBxABgHYByAcQDGARgHgHEAxgEYB2AcgHEAxgFgHIBxAMYBGAdgHADGARgHYByAcQDGAWAcgHEAxgEYB2AcAMYBGAdgHIBxAMYBGAeAcQDGARgHYByAcQAYB2AcgHEAxgEYB4BxAMYBGAdgHIBxABgHYByAcQDGARgHYBwAxgEYB2AcgHEAxgFgHIBxAMYBGAdgHADGARgHYByAcQDGARiHCoBxAMYBGAdgHIBxABgHYByAcQDGARgHgHEAxgEYB3DFB7YOX5yRiQOqAAAAAElFTkSuQmCC"
+    },
+    "image|cu1#1": {
+      "image": "iVBORw0KGgoAAAANSUhEUgAAAMgAAAEsCAIAAAAJmGvpAAACKElEQVR42u3SMQ0AMAgAQebqYcBtpYICNsZLTsHno/+DcyEBxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFsTCWChgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbHAWBgLY8EyVmbBOWNhLIyFsVTAWBgLY4GxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJYGAtjqYCxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYsBlsgZSbobAniAAAAAElFTkSuQmCC"
+    },
+    "cr2": {
+      "text": "import SwiftUI\nimport TaskboardKit\n\n/// 設定の窓\nstruct SettingsView: View {\n    @State private var draft = SettingsDraft()\n\n    var body: some View {\n"
+    },
+    "cw1": {
+      "text": "# 設定の保存\n\n設定の窓を閉じたときに保存する。\n"
+    }
+  },
+  "codex": {
+    "connected": true,
+    "version": "0.130.0",
+    "account": {
+      "kind": "chatgpt",
+      "planType": "pro"
+    },
+    "models": [
+      {
+        "id": "gpt-5.5-codex",
+        "displayName": "GPT-5.5-Codex",
+        "isDefault": true,
+        "hidden": false,
+        "defaultEffort": "medium",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ]
+      },
+      {
+        "id": "gpt-5.5",
+        "displayName": "GPT-5.5",
+        "isDefault": false,
+        "hidden": false,
+        "defaultEffort": "medium",
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      {
+        "id": "gpt-5-legacy",
+        "displayName": "GPT-5 (legacy)",
+        "isDefault": false,
+        "hidden": true,
+        "defaultEffort": null,
+        "efforts": [
+          "medium"
+        ]
+      }
+    ],
+    "connectors": []
+  },
+  "orchestrator": {
+    "enabled": true,
+    "lastError": null,
+    "lastReply": null,
+    "conversationID": "c-orch"
+  },
+  "claude": {
+    "models": [
+      {
+        "value": "opus",
+        "resolvedModel": "claude-opus-5-5[1m]",
+        "displayName": "Opus 5.5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "claude-opus-5",
+        "resolvedModel": "claude-opus-5",
+        "displayName": "Opus 5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "sonnet",
+        "resolvedModel": "claude-sonnet-5-5",
+        "displayName": "Sonnet 5.5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "claude-sonnet-5",
+        "resolvedModel": "claude-sonnet-5",
+        "displayName": "Sonnet 5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "fable",
+        "resolvedModel": "claude-fable-5-1",
+        "displayName": "Fable 5.1",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "haiku",
+        "resolvedModel": "claude-haiku-5-5",
+        "displayName": "Haiku 5.5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "claude-haiku-4-5-20251001",
+        "resolvedModel": "claude-haiku-4-5-20251001",
+        "displayName": "Haiku 4.5"
+      },
+      {
+        "value": "claude-fable-5",
+        "resolvedModel": "claude-fable-5",
+        "displayName": "Fable 5",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "claude-opus-4-8",
+        "resolvedModel": "claude-opus-4-8",
+        "displayName": "Opus 4.8",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ]
+      },
+      {
+        "value": "claude-opus-4-6",
+        "resolvedModel": "claude-opus-4-6",
+        "displayName": "Opus 4.6",
+        "efforts": [
+          "low",
+          "medium",
+          "high",
+          "max"
+        ]
+      }
+    ],
+    "version": "2.1.304"
+  }
+}

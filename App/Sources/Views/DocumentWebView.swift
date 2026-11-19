@@ -1,0 +1,377 @@
+import Markdown
+import SwiftUI
+import TaskboardKit
+import WebKit
+
+/// 文書本文の描画。markdown は swift-markdown で HTML にしてから、html はそのまま WKWebView に載せる。
+/// 外部リソースは content rule list で全部止める。止める規則を用意できなければ本文を載せない。
+/// 押したリンクだけをブラウザへ渡し、文書の script・meta refresh・iframe による遷移は止める（文書の script は動く。kairan と同じ割り切り）。
+@MainActor
+@Observable
+final class DocumentWebController: NSObject {
+    let webView: WKWebView
+    /// 文書内で文字が選ばれている（「選択範囲にコメント」を出せる）
+    private(set) var hasSelection = false
+    /// 選んだ所の枠（web view の座標）。スクロールすると付いて動くので、読むのは浮かせる［コメント］だけにする（上の帯は `hasSelection`）
+    private(set) var selectionRect: CGRect? {
+        didSet {
+            if hasSelection != (selectionRect != nil) { hasSelection = selectionRect != nil }
+        }
+    }
+    private(set) var ready = false
+    /// 読み込んだ本文の高さ（概況の自由の部品が、中身に合わせて欄の高さを決める）
+    private(set) var contentHeight: CGFloat = 0
+    /// 外部の読み込みを止める規則を用意できなかった。本文は載せない
+    private(set) var failure: UserFacingError?
+    private var pending: (html: String, highlights: [HighlightItem])?
+    private var highlights: [HighlightItem] = []
+    private var activeID: Int64?
+
+    struct HighlightItem: Hashable {
+        var id: Int64
+        var anchor: CommentAnchor
+    }
+
+    /// 文書の中の `taskboard://` を押したときの開き先（`AppModel.open(_:)`）。チャットと PR の本文と同じくアプリの中で開く
+    var openInApp: (@MainActor (URL) -> Void)?
+
+    /// 最後に作られた文書ビュー（DebugServer の `/doc/text` `/doc/screenshot` が読む）
+    static weak var current: DocumentWebController?
+
+    /// `tracksCurrent` が false なら debug の `/doc/*` の対象にしない（質問の選択肢の見本）
+    init(tracksCurrent: Bool = true) {
+        let config = WKWebViewConfiguration()
+        config.preferences.isFraudulentWebsiteWarningEnabled = false
+        webView = WKWebView(frame: .zero, configuration: config)
+        super.init()
+        if tracksCurrent { Self.current = self }
+        config.userContentController.add(MessageProxy(owner: self), name: "tb")
+        webView.navigationDelegate = self
+        webView.allowsLinkPreview = false
+        #if os(macOS)
+        webView.setValue(false, forKey: "drawsBackground")
+        #else
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        #endif
+        Task { await prepare() }
+    }
+
+    /// 外部読み込みを止める規則をコンパイルしてから最初の文書を載せる（ネットワークに出さないことを先に確定する）
+    private func prepare() async {
+        guard let list = await Self.blockList() else {
+            pending = nil
+            failure = UserFacingError(
+                "本文を表示できませんでした", cause: String(localized: "外部の読み込みを防ぐ設定を用意できませんでした"),
+                remedy: String(localized: "アプリを開き直してください"))
+            return
+        }
+        webView.configuration.userContentController.add(list)
+        ready = true
+        if let pending {
+            self.pending = nil
+            load(html: pending.html, highlights: pending.highlights)
+        }
+    }
+
+    private static func blockList() async -> WKContentRuleList? {
+        let rules = """
+            [{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","raw","svg-document","media","popup","ping","fetch","websocket","other"]},"action":{"type":"block"}}]
+            """
+        return try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "tb-block-external", encodedContentRuleList: rules)
+    }
+
+    /// 組み立てた HTML をそのまま載せる（概況の自由の部品。文書の選択とハイライトの橋渡しは入れない）
+    func load(page html: String) {
+        load(html: html, highlights: [])
+    }
+
+    func load(content: DocContent, highlights: [HighlightItem], textSize: Double) {
+        load(html: Self.html(for: content, textSize: textSize), highlights: highlights)
+    }
+
+    /// 文字の大きさ（pt）を変える。markdown の文書だけが従う（html の文書は見た目を変えない）
+    func setTextSize(_ size: Double) {
+        webView.evaluateJavaScript("document.documentElement.style.setProperty('--tb-size', '\(size)px')") { _, _ in }
+    }
+
+    private func load(html: String, highlights: [HighlightItem]) {
+        guard failure == nil else { return }
+        guard ready else {
+            pending = (html, highlights)
+            return
+        }
+        self.highlights = highlights
+        selectionRect = nil
+        webView.loadHTMLString(html, baseURL: nil)
+    }
+
+    /// 引用のハイライトを引き直す。`active` は濃く出す
+    func setHighlights(_ items: [HighlightItem], active: Int64?) {
+        highlights = items
+        activeID = active
+        applyHighlights()
+    }
+
+    private func applyHighlights() {
+        let payload = highlights.map { ["id": $0.id, "exact": $0.anchor.exact, "prefix": $0.anchor.prefix] as [String: Any] }
+        guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__tb && __tb.highlight(\(json), \(activeID.map(String.init) ?? "null"))") { _, _ in }
+    }
+
+    func scroll(to commentID: Int64) {
+        webView.evaluateJavaScript("window.__tb && __tb.scrollTo(\(commentID))") { _, _ in }
+    }
+
+    /// 今の選択範囲（引用のアンカー）。無ければ nil
+    func selection() async -> CommentAnchor? {
+        guard let result = try? await webView.evaluateJavaScript("window.__tb ? __tb.selection() : null"), let dict = result as? [String: Any],
+            let exact = dict["exact"] as? String, !exact.isEmpty
+        else { return nil }
+        return CommentAnchor(exact: exact, prefix: dict["prefix"] as? String ?? "", suffix: dict["suffix"] as? String ?? "")
+    }
+
+    func clearSelection() {
+        webView.evaluateJavaScript("window.getSelection() && window.getSelection().removeAllRanges()") { _, _ in }
+        selectionRect = nil
+    }
+
+    /// 本文の文字と、画像が読み込まれたか（外部遮断の確認用）
+    func debugProbe() async -> [String: Any] {
+        let script = "JSON.stringify({text: document.body ? document.body.innerText : null, images: Array.from(document.images).map(i => ({src: i.src, loaded: i.complete && i.naturalWidth > 0})), highlights: ('highlights' in CSS) ? Array.from(CSS.highlights.keys()) : null})"
+        guard let result = try? await webView.evaluateJavaScript(script) as? String, let data = result.data(using: .utf8),
+            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return ["error": "評価できない"] }  // ui-copy:ignore（画面に出ない。接続の記録と debug の口だけが読む）
+        return object
+    }
+
+    #if DEBUG
+    /// 本文の最初の一致を選ぶ（DebugServer の `/doc/select`）
+    func debugSelect(_ text: String) async -> Bool {
+        guard let data = try? JSONSerialization.data(withJSONObject: [text]), let json = String(data: data, encoding: .utf8) else { return false }
+        let result = try? await webView.evaluateJavaScript("window.getSelection().removeAllRanges(); window.find(\(json)[0])")
+        return result as? Bool ?? false
+    }
+    #endif
+
+    /// 表示中の本文を 1 枚の PDF にする
+    func pdf() async throws -> Data {
+        try await webView.pdf()
+    }
+
+    /// WKWebView 自身の描画（ウィンドウのスクリーンショットには写らないため）
+    func debugSnapshot() async -> Data? {
+        guard let image = try? await webView.takeSnapshot(configuration: nil) else { return nil }
+        #if os(macOS)
+        guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) else { return nil }
+        return rep.representation(using: .png, properties: [:])
+        #else
+        return image.pngData()
+        #endif
+    }
+
+    // MARK: HTML
+
+    static func html(for content: DocContent, textSize: Double) -> String {
+        switch content.format {
+        case .markdown:
+            var escaping = HTMLEscaping()
+            let document = Markdown.Document(parsing: content.content, options: [.parseBlockDirectives, .parseSymbolLinks])
+            let body = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
+            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)</style></head><body class=\"tb-markdown\"><main>\(body)</main><script>\(bridgeScript)</script></body></html>"
+        case .html:
+            // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡しだけ足す。viewport が無ければ足す（iPhone で縮んで出る）
+            var html = content.content
+            if html.range(of: "name=\"viewport\"", options: .caseInsensitive) == nil && html.range(of: "name=viewport", options: .caseInsensitive) == nil {
+                if let head = html.range(of: "<head>", options: .caseInsensitive) {
+                    html.replaceSubrange(head, with: "<head>" + viewport)
+                } else {
+                    html = viewport + html
+                }
+            }
+            let injection = "<style>\(highlightStyle)</style><script>\(bridgeScript)</script>"
+            if let range = html.range(of: "</body>", options: [.caseInsensitive, .backwards]) {
+                return html.replacingCharacters(in: range, with: injection + "</body>")
+            }
+            return html + injection
+        }
+    }
+
+    static let viewport = "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+
+    static let markdownStyle = """
+        :root{color-scheme:light dark}
+        body{margin:0;padding:24px 20px 64px;font:var(--tb-size,14px)/1.7 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:CanvasText;background:transparent;overflow-wrap:anywhere}
+        main{max-width:760px;margin:0 auto}
+        h1{font-size:1.5em;margin:.2em 0 .6em} h2{font-size:1.2em;margin:1.6em 0 .5em;padding-bottom:.2em;border-bottom:.5px solid rgba(127,127,127,.35)} h3{font-size:1.05em;margin:1.3em 0 .4em}
+        p,ul,ol,pre,table,blockquote{margin:.5em 0} li{margin:.15em 0}
+        code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:rgba(127,127,127,.15);padding:.1em .35em;border-radius:4px}
+        pre{background:rgba(127,127,127,.12);padding:10px 12px;border-radius:8px;white-space:pre-wrap} pre code{background:none;padding:0}
+        pre code:has(> [class^=tb-diff-]){display:block;width:max-content;min-width:100%} [class^=tb-diff-]{display:block}
+        .tb-diff-added{background:rgba(52,199,89,.12)} .tb-diff-removed{background:rgba(255,59,48,.12)} .tb-diff-hunk,.tb-diff-header{color:GrayText}
+        .tb-diff-added>.tb-sign{color:#28a745} .tb-diff-removed>.tb-sign{color:#d73a49}
+        table{border-collapse:collapse;font-size:.95em} td,th{border:.5px solid rgba(127,127,127,.4);padding:4px 8px;text-align:left;vertical-align:top} th{background:rgba(127,127,127,.1)}
+        blockquote{padding-left:12px;border-left:3px solid rgba(127,127,127,.4);color:GrayText}
+        a{color:LinkText} img{max-width:100%} hr{border:0;border-top:.5px solid rgba(127,127,127,.4)}
+        input[type=checkbox]{margin-right:.4em}
+        """
+
+    static let highlightStyle = """
+        ::highlight(tb-comment){background:rgba(255,204,0,.38)} ::highlight(tb-comment-active){background:rgba(255,140,0,.7);color:CanvasText}
+        """
+
+    /// 引用の検索とハイライト（CSS Custom Highlight API）、選択範囲の取り出し
+    static let bridgeScript = """
+        (function(){
+        const TB = window.__tb = { ranges: {} };
+        function textNodes(){ const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const nodes = []; let n; while ((n = w.nextNode())) { if (n.parentElement && n.parentElement.closest('script,style')) continue; nodes.push(n); } return nodes; }
+        function rangeFor(exact, prefix){
+          const nodes = textNodes(); let full = ''; const starts = [];
+          for (const n of nodes) { starts.push(full.length); full += n.nodeValue; }
+          let idx = -1;
+          if (prefix) { const p = full.indexOf(prefix + exact); if (p >= 0) idx = p + prefix.length; }
+          if (idx < 0) idx = full.indexOf(exact);
+          if (idx < 0) return null;
+          const end = idx + exact.length; const r = document.createRange(); let started = false;
+          for (let i = 0; i < nodes.length; i++) {
+            const s = starts[i], e = s + nodes[i].nodeValue.length;
+            if (!started && idx >= s && idx < e) { r.setStart(nodes[i], idx - s); started = true; }
+            if (started && end > s && end <= e) { r.setEnd(nodes[i], end - s); return r; }
+          }
+          return null;
+        }
+        TB.highlight = function(items, activeId){
+          TB.ranges = {}; if (!('highlights' in CSS)) return;
+          const all = [], active = [];
+          for (const it of items) { const r = rangeFor(it.exact, it.prefix); if (!r) continue; TB.ranges[it.id] = r; (it.id === activeId ? active : all).push(r); }
+          CSS.highlights.set('tb-comment', new Highlight(...all)); CSS.highlights.set('tb-comment-active', new Highlight(...active));
+        };
+        TB.scrollTo = function(id){ const r = TB.ranges[id]; if (!r) return false; const el = r.startContainer.parentElement || document.body; el.scrollIntoView({ block: 'center', behavior: 'smooth' }); return true; };
+        TB.selection = function(){
+          const s = window.getSelection(); if (!s || s.isCollapsed || s.rangeCount === 0) return null;
+          const r = s.getRangeAt(0); const exact = r.toString(); if (!exact.trim()) return null;
+          const pre = document.createRange(); pre.setStart(document.body, 0); pre.setEnd(r.startContainer, r.startOffset);
+          const post = document.createRange(); post.setStart(r.endContainer, r.endOffset); post.setEnd(document.body, document.body.childNodes.length);
+          return { exact: exact, prefix: pre.toString().slice(-64), suffix: post.toString().slice(0, 64) };
+        };
+        let queued = false;
+        function report(){
+          queued = false;
+          const s = window.getSelection(); const has = !!(s && !s.isCollapsed && s.rangeCount > 0 && s.toString().trim().length > 0);
+          const b = has ? s.getRangeAt(0).getBoundingClientRect() : null;
+          const rect = b ? { x: b.left, y: b.top, width: b.width, height: b.height } : null;
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tb) window.webkit.messageHandlers.tb.postMessage({ type: 'selection', has: has, rect: rect });
+        }
+        function queue(){ if (!queued) { queued = true; requestAnimationFrame(report); } }
+        document.addEventListener('selectionchange', queue);
+        window.addEventListener('scroll', queue, true);
+        window.addEventListener('resize', queue);
+        })();
+        """
+
+    /// WKScriptMessageHandler は強参照で持たれるので、controller を弱く持つ代理を挟む
+    private final class MessageProxy: NSObject, WKScriptMessageHandler {
+        weak var owner: DocumentWebController?
+        init(owner: DocumentWebController) { self.owner = owner }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard let body = message.body as? [String: Any], body["type"] as? String == "selection" else { return }
+            let rect = (body["has"] as? Bool ?? false) ? (body["rect"] as? [String: Double]).map {
+                CGRect(x: $0["x"] ?? 0, y: $0["y"] ?? 0, width: $0["width"] ?? 0, height: $0["height"] ?? 0)
+            } : nil
+            Task { @MainActor in self.owner?.selectionRect = rect }
+        }
+    }
+}
+
+extension DocumentWebController: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
+        // 文書自身の読み込み（about:blank）だけ通す。押したリンクだけをブラウザかアプリの中へ渡し、
+        // script・meta refresh・iframe・フォームによる遷移は止める（ユーザーの操作なしに外のアプリが開かないように）
+        guard let url = navigationAction.request.url, url.scheme != "about" else { return decisionHandler(.allow) }
+        let pressed = navigationAction.navigationType == .linkActivated && navigationAction.targetFrame?.isMainFrame != false
+        switch Self.destination(of: url, pressed: pressed) {
+        case .browser: ExternalLinks.open(url)
+        case .app: openInApp?(url)
+        case .ignore: break
+        }
+        decisionHandler(.cancel)
+    }
+
+    /// 文書の中の遷移の開き先。押したリンクだけをチャットと同じ規則（`LinkDestination`）で振り分け、それ以外は開かない
+    nonisolated static func destination(of url: URL, pressed: Bool) -> LinkDestination {
+        pressed ? LinkDestination(url) : .ignore
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        applyHighlights()
+        webView.evaluateJavaScript("document.documentElement.scrollHeight") { [weak self] value, _ in
+            guard let height = value as? Double else { return }
+            MainActor.assumeIsolated { self?.contentHeight = CGFloat(height) }
+        }
+    }
+}
+
+#if os(macOS)
+struct DocumentWebView: NSViewRepresentable {
+    let controller: DocumentWebController
+    func makeNSView(context: Context) -> WKWebView { controller.webView }
+    func updateNSView(_ nsView: WKWebView, context: Context) {}
+}
+#else
+struct DocumentWebView: UIViewRepresentable {
+    let controller: DocumentWebController
+    func makeUIView(context: Context) -> WKWebView { controller.webView }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+}
+#endif
+
+/// swift-markdown の `HTMLFormatter` は文字・コード・リンクとイメージの属性を escape しないまま出す（`a <b` の `<b` がタグになる）。
+/// 渡す前に木の葉の文字を escape しておく。Markdown の中に書いた HTML（`HTMLBlock`・`InlineHTML`）はそのまま通す
+struct HTMLEscaping: MarkupRewriter {
+    static func escape(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+
+    mutating func visitText(_ text: Markdown.Text) -> Markup? {
+        var text = text
+        text.string = Self.escape(text.string)
+        return text
+    }
+
+    mutating func visitInlineCode(_ inlineCode: InlineCode) -> Markup? {
+        var inlineCode = inlineCode
+        inlineCode.code = Self.escape(inlineCode.code)
+        return inlineCode
+    }
+
+    mutating func visitCodeBlock(_ codeBlock: CodeBlock) -> Markup? {
+        var codeBlock = codeBlock
+        codeBlock.code = Self.escape(codeBlock.code)
+        codeBlock.language = codeBlock.language.map(Self.escape)
+        return codeBlock
+    }
+
+    mutating func visitSymbolLink(_ symbolLink: SymbolLink) -> Markup? {
+        var symbolLink = symbolLink
+        symbolLink.destination = symbolLink.destination.map(Self.escape)
+        return symbolLink
+    }
+
+    mutating func visitLink(_ link: Markdown.Link) -> Markup? {
+        var link = link
+        link.destination = link.destination.map(Self.escape)
+        return defaultVisit(link)
+    }
+
+    mutating func visitImage(_ image: Markdown.Image) -> Markup? {
+        var image = image
+        image.source = image.source.map(Self.escape)
+        image.title = image.title.map(Self.escape)
+        return defaultVisit(image)
+    }
+}

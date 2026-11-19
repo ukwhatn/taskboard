@@ -1,0 +1,874 @@
+[
+  {
+    "data" : {
+      "asks" : [
+
+      ],
+      "boards" : [
+
+      ],
+      "conversationActivities" : [
+
+      ],
+      "conversations" : [
+
+      ],
+      "documents" : [
+
+      ],
+      "generatedAt" : "2026-10-03T05:00:00Z",
+      "inboxDismissals" : [
+
+      ],
+      "links" : [
+
+      ],
+      "machine" : {
+        "codexCLI" : {
+          "newest" : "0.130.0",
+          "using" : "0.130.0"
+        },
+        "daemonVersion" : "0.1.0",
+        "herdrConnected" : false,
+        "id" : "fixture-studio",
+        "name" : "Mac Studio"
+      },
+      "panels" : [
+
+      ],
+      "reviewRequests" : [
+
+      ],
+      "schedules" : [
+
+      ],
+      "sessions" : [
+
+      ],
+      "tasks" : [
+
+      ],
+      "wakes" : [
+
+      ],
+      "watches" : [
+
+      ],
+      "workItems" : [
+
+      ]
+    },
+    "event" : "state.snapshot"
+  },
+  {
+    "data" : {
+      "codexCLI" : {
+        "newest" : "0.130.0",
+        "using" : "0.130.0"
+      },
+      "daemonVersion" : "0.1.0",
+      "herdrConnected" : false,
+      "id" : "fixture-studio",
+      "name" : "Mac Studio"
+    },
+    "event" : "machine.updated"
+  },
+  {
+    "data" : {
+      "archived" : false,
+      "columns" : [
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "review_req",
+          "kind" : "open",
+          "label" : "レビュー依頼",
+          "position" : 0,
+          "promptTemplate" : "/pr-review {{links}}\n#{{id}} {{title}}"
+        },
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "todo",
+          "kind" : "open",
+          "label" : "未着手",
+          "position" : 1
+        },
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "planning",
+          "kind" : "open",
+          "label" : "計画",
+          "position" : 2
+        },
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "working",
+          "kind" : "open",
+          "label" : "作業中",
+          "position" : 3
+        },
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "review",
+          "kind" : "open",
+          "label" : "レビュー中",
+          "position" : 4
+        },
+        {
+          "collapsed" : false,
+          "description" : "",
+          "id" : "deploying",
+          "kind" : "open",
+          "label" : "デプロイ中",
+          "position" : 5
+        },
+        {
+          "collapsed" : true,
+          "description" : "",
+          "id" : "done",
+          "kind" : "terminal",
+          "label" : "完了",
+          "position" : 6
+        },
+        {
+          "collapsed" : true,
+          "description" : "",
+          "id" : "wontfix",
+          "kind" : "terminal",
+          "label" : "見送り",
+          "position" : 7
+        }
+      ],
+      "createdAt" : "2026-09-01T00:00:00Z",
+      "delegation" : {
+
+      },
+      "id" : "fixture-board",
+      "machine" : "fixture-studio",
+      "mergeTarget" : "deploying",
+      "name" : "default",
+      "position" : 0,
+      "promptTemplate" : "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    },
+    "event" : "board.updated"
+  },
+  {
+    "data" : "fixture-board",
+    "event" : "board.removed"
+  },
+  {
+    "data" : {
+      "boardID" : "fixture-board",
+      "columnID" : "working",
+      "createdAt" : "2026-09-20T01:00:00Z",
+      "delegation" : {
+
+      },
+      "links" : [
+        {
+          "addedAt" : "2026-09-20T01:00:00Z",
+          "id" : 1,
+          "kind" : "github_pr",
+          "note" : "",
+          "url" : "https://github.com/ukwhatn/taskboard/pull/3"
+        }
+      ],
+      "machine" : "fixture-studio",
+      "note" : "daemon の SQLite に持ち、taskherd から取り込む",
+      "number" : 137,
+      "sessions" : [
+        {
+          "agent" : "claude",
+          "cwd" : "/Users/ukwhatn/dev/8_tools/taskboard",
+          "id" : 1,
+          "label" : "",
+          "launchArgs" : [
+
+          ],
+          "linkedAt" : "2026-09-20T01:00:00Z",
+          "sessionID" : "sess-lead-0001"
+        }
+      ],
+      "title" : "taskboard フェーズ 3: ボードとカード",
+      "updatedAt" : "2026-10-02T09:00:00Z"
+    },
+    "event" : "task.updated"
+  },
+  {
+    "data" : {
+      "machine" : "fixture-studio",
+      "number" : 137
+    },
+    "event" : "task.removed"
+  },
+  {
+    "data" : {
+      "blockerText" : "",
+      "code" : "",
+      "createdAt" : "2026-10-01T01:00:00Z",
+      "deliverableKind" : "commit",
+      "deliverableRef" : "a1b2c3d4e5f6",
+      "dependsOn" : [
+
+      ],
+      "group" : "",
+      "itemID" : 1,
+      "machine" : "fixture-studio",
+      "owner" : "",
+      "position" : 0,
+      "source" : "session",
+      "state" : "done",
+      "taskNumber" : 137,
+      "title" : "Store の v2 migration と作業項目の CRUD",
+      "updatedAt" : "2026-10-01T01:00:00Z"
+    },
+    "event" : "work.updated"
+  },
+  {
+    "data" : {
+      "id" : 1,
+      "machine" : "fixture-studio"
+    },
+    "event" : "work.removed"
+  },
+  {
+    "data" : {
+      "createdAt" : "2026-10-03T01:00:00Z",
+      "docID" : 1,
+      "draftComments" : 0,
+      "format" : "markdown",
+      "hasSourceFile" : true,
+      "latestRev" : 2,
+      "machine" : "fixture-studio",
+      "name" : "kairan-replacement.md",
+      "openComments" : 0,
+      "taskNumber" : 120,
+      "title" : "kairan の置き換え方針",
+      "updatedAt" : "2026-10-03T02:30:00Z"
+    },
+    "event" : "doc.updated"
+  },
+  {
+    "data" : {
+      "id" : 1,
+      "machine" : "fixture-studio"
+    },
+    "event" : "doc.removed"
+  },
+  {
+    "data" : {
+      "askID" : 1,
+      "createdAt" : "2026-10-03T02:30:00Z",
+      "docID" : 1,
+      "machine" : "fixture-studio",
+      "questions" : [
+        {
+          "header" : "所属",
+          "id" : "q1",
+          "multiSelect" : false,
+          "options" : [
+            {
+              "description" : "受信箱・カードから辿れる",
+              "label" : "タスクに属させる"
+            },
+            {
+              "description" : "kairan と同じ",
+              "label" : "セッションに属させる"
+            }
+          ],
+          "question" : "文書をタスクに属させる案でよいか"
+        },
+        {
+          "header" : "HTML",
+          "id" : "q2",
+          "multiSelect" : true,
+          "options" : [
+            {
+              "label" : "script"
+            },
+            {
+              "label" : "外部画像"
+            },
+            {
+              "label" : "外部 CSS"
+            }
+          ],
+          "question" : "HTML 文書で許す機能"
+        }
+      ],
+      "status" : "open",
+      "taskNumber" : 120
+    },
+    "event" : "ask.updated"
+  },
+  {
+    "data" : {
+      "machine" : "fixture-studio",
+      "note" : "移行スクリプトの 2 章を見てほしい",
+      "requestedAt" : "2026-10-03T02:00:00Z",
+      "taskNumber" : 128
+    },
+    "event" : "review_request.updated"
+  },
+  {
+    "data" : {
+      "machine" : "fixture-studio",
+      "number" : 128
+    },
+    "event" : "review_request.removed"
+  },
+  {
+    "data" : {
+      "accounts" : [
+        {
+          "account" : "ukwhatn",
+          "fetchedAt" : "2026-10-03T02:58:00Z",
+          "host" : "github.com",
+          "nextFetchAt" : "2026-10-03T03:03:00Z",
+          "rateLimited" : false
+        }
+      ],
+      "notices" : [
+        {
+          "at" : "2026-10-03T02:00:00Z",
+          "detail" : "dave",
+          "id" : "https://github.com/ukwhatn/taskboard/pull/55#approved#1791000000",
+          "kind" : "approved",
+          "label" : "ukwhatn/taskboard#55",
+          "machine" : "fixture-studio",
+          "title" : "フェーズ 6: 受信箱と文書",
+          "url" : "https://github.com/ukwhatn/taskboard/pull/55"
+        }
+      ],
+      "pullRequests" : [
+        {
+          "account" : "ukwhatn",
+          "additions" : 40,
+          "author" : "alice",
+          "category" : "reviewRequested",
+          "changedFiles" : 3,
+          "checks" : "PENDING",
+          "createdAt" : "2026-10-01T01:00:00Z",
+          "deletions" : 8,
+          "headRef" : "feature/41",
+          "host" : "github.com",
+          "isDraft" : false,
+          "latestReviews" : [
+
+          ],
+          "machine" : "fixture-studio",
+          "number" : 41,
+          "repository" : "scpwiki/console",
+          "requestedReviewers" : [
+            "ukwhatn"
+          ],
+          "title" : "console の権限設計",
+          "updatedAt" : "2026-10-03T02:40:00Z",
+          "url" : "https://github.com/scpwiki/console/pull/41"
+        },
+        {
+          "account" : "ukwhatn",
+          "additions" : 40,
+          "author" : "bob",
+          "category" : "reviewRequested",
+          "changedFiles" : 3,
+          "checks" : "FAILURE",
+          "createdAt" : "2026-10-01T01:00:00Z",
+          "deletions" : 8,
+          "headRef" : "feature/9",
+          "host" : "github.com",
+          "isDraft" : false,
+          "latestReviews" : [
+
+          ],
+          "machine" : "fixture-studio",
+          "number" : 9,
+          "repository" : "scpwiki/search",
+          "requestedReviewers" : [
+            "ukwhatn"
+          ],
+          "title" : "検索 index の再構築",
+          "updatedAt" : "2026-10-03T00:00:00Z",
+          "url" : "https://github.com/scpwiki/search/pull/9"
+        },
+        {
+          "account" : "ukwhatn",
+          "additions" : 40,
+          "author" : "carol",
+          "category" : "reviewed",
+          "changedFiles" : 3,
+          "checks" : "SUCCESS",
+          "createdAt" : "2026-10-01T01:00:00Z",
+          "deletions" : 8,
+          "headRef" : "feature/12",
+          "host" : "github.com",
+          "isDraft" : false,
+          "latestReviews" : [
+            {
+              "login" : "ukwhatn",
+              "state" : "COMMENTED"
+            }
+          ],
+          "machine" : "fixture-studio",
+          "number" : 12,
+          "repository" : "scpwiki/wiki",
+          "requestedReviewers" : [
+
+          ],
+          "reviewDecision" : "REVIEW_REQUIRED",
+          "title" : "wiki の差分表示",
+          "updatedAt" : "2026-10-02T09:00:00Z",
+          "url" : "https://github.com/scpwiki/wiki/pull/12"
+        },
+        {
+          "account" : "ukwhatn",
+          "additions" : 40,
+          "author" : "ukwhatn",
+          "category" : "myDraft",
+          "changedFiles" : 3,
+          "checks" : "PENDING",
+          "createdAt" : "2026-10-01T01:00:00Z",
+          "deletions" : 8,
+          "headRef" : "feature/57",
+          "host" : "github.com",
+          "isDraft" : true,
+          "latestReviews" : [
+
+          ],
+          "machine" : "fixture-studio",
+          "number" : 57,
+          "repository" : "ukwhatn/taskboard",
+          "requestedReviewers" : [
+
+          ],
+          "title" : "フェーズ 7: PR 一覧",
+          "updatedAt" : "2026-10-03T02:50:00Z",
+          "url" : "https://github.com/ukwhatn/taskboard/pull/57"
+        },
+        {
+          "account" : "ukwhatn",
+          "additions" : 2400,
+          "author" : "ukwhatn",
+          "category" : "myReady",
+          "changedFiles" : 31,
+          "checks" : "SUCCESS",
+          "createdAt" : "2026-10-01T01:00:00Z",
+          "deletions" : 120,
+          "headRef" : "feature/55",
+          "host" : "github.com",
+          "isDraft" : false,
+          "latestReviews" : [
+            {
+              "login" : "dave",
+              "state" : "APPROVED"
+            }
+          ],
+          "machine" : "fixture-studio",
+          "number" : 55,
+          "repository" : "ukwhatn/taskboard",
+          "requestedReviewers" : [
+
+          ],
+          "reviewDecision" : "APPROVED",
+          "title" : "フェーズ 6: 受信箱と文書",
+          "updatedAt" : "2026-10-02T23:00:00Z",
+          "url" : "https://github.com/ukwhatn/taskboard/pull/55"
+        }
+      ]
+    },
+    "event" : "prs.updated"
+  },
+  {
+    "data" : {
+      "claude" : {
+        "at" : "2026-10-03T02:59:00Z",
+        "fiveHour" : {
+          "resetsAt" : "2026-10-03T05:13:00Z",
+          "usedPercent" : 42,
+          "windowSeconds" : 18000
+        },
+        "sevenDay" : {
+          "resetsAt" : "2026-10-06T00:00:00Z",
+          "usedPercent" : 57,
+          "windowSeconds" : 604800
+        }
+      },
+      "codex" : {
+        "fetchedAt" : "2026-10-03T02:55:00Z",
+        "primary" : {
+          "resetsAt" : "2026-10-03T07:12:00Z",
+          "usedPercent" : 13,
+          "windowSeconds" : 18000
+        },
+        "secondary" : {
+          "resetsAt" : "2026-10-05T09:00:00Z",
+          "usedPercent" : 31,
+          "windowSeconds" : 604800
+        }
+      },
+      "contexts" : [
+        {
+          "agentSessionID" : "sess-lead-0001",
+          "at" : "2026-10-03T02:59:00Z",
+          "effort" : "high",
+          "inputTokens" : 155000,
+          "model" : "Fable 5.1",
+          "usedPercent" : 31,
+          "windowSize" : 500000
+        },
+        {
+          "agentSessionID" : "sess-doorman-0001",
+          "at" : "2026-10-03T02:59:00Z",
+          "effort" : "medium",
+          "inputTokens" : 110000,
+          "model" : "Opus 5.5",
+          "usedPercent" : 22,
+          "windowSize" : 500000
+        },
+        {
+          "agentSessionID" : "sess-t131-0002",
+          "at" : "2026-10-03T02:59:00Z",
+          "effort" : "medium",
+          "inputTokens" : 640000,
+          "model" : "Opus 5.5",
+          "usedPercent" : 64,
+          "windowSize" : 1000000
+        },
+        {
+          "agentSessionID" : "sess-ask-1",
+          "at" : "2026-10-03T02:59:00Z",
+          "effort" : "medium",
+          "inputTokens" : 36000,
+          "model" : "Opus 5.5",
+          "usedPercent" : 18,
+          "windowSize" : 200000
+        }
+      ]
+    },
+    "event" : "usage.updated"
+  },
+  {
+    "data" : [
+      {
+        "fetchedAt" : "2026-10-03T04:58:00Z",
+        "pullRequest" : {
+          "checks" : "SUCCESS",
+          "isDraft" : false,
+          "reviewDecision" : "REVIEW_REQUIRED",
+          "state" : "OPEN"
+        },
+        "url" : "https://ghe.example.com/console/console/pull/552"
+      },
+      {
+        "fetchedAt" : "2026-10-03T04:58:00Z",
+        "jira" : {
+          "category" : "indeterminate",
+          "key" : "PROJ-807",
+          "statusName" : "進行中",
+          "summary" : "権限設計"
+        },
+        "url" : "https://example.atlassian.net/browse/PROJ-807"
+      },
+      {
+        "fetchedAt" : "2026-10-03T04:58:00Z",
+        "pullRequest" : {
+          "checks" : "SUCCESS",
+          "isDraft" : false,
+          "reviewDecision" : "APPROVED",
+          "state" : "MERGED"
+        },
+        "url" : "https://github.com/scpwiki/search/pull/9"
+      }
+    ],
+    "event" : "links.updated"
+  },
+  {
+    "data" : {
+      "agentArgs" : [
+        "--model",
+        "sonnet"
+      ],
+      "createdAt" : "2026-09-28T01:00:00Z",
+      "cwd" : "/Users/ukwhatn/dev/8_tools/taskboard",
+      "enabled" : true,
+      "kind" : "claude",
+      "lastRun" : {
+        "createdAt" : "2026-10-03T00:00:02Z",
+        "id" : 12,
+        "requestID" : "sched-1-12",
+        "scheduleID" : 1,
+        "scheduledAt" : "2026-10-03T00:00:00Z",
+        "stage" : "done",
+        "trigger" : "schedule"
+      },
+      "machine" : "fixture-studio",
+      "name" : "朝の PR 棚卸し",
+      "nextAt" : "2026-10-04T00:00:00Z",
+      "overlap" : "skip",
+      "prompt" : "自分宛てのレビュー依頼と、自分の PR の CI を見て、今日やることを 3 行で残して",
+      "rule" : {
+        "cron" : "0 9 * * 1-5"
+      },
+      "scheduleID" : 1,
+      "taskNumber" : 118,
+      "updatedAt" : "2026-09-28T01:00:00Z"
+    },
+    "event" : "schedule.updated"
+  },
+  {
+    "data" : {
+      "id" : 1,
+      "machine" : "fixture-studio"
+    },
+    "event" : "schedule.removed"
+  },
+  {
+    "data" : {
+      "idleStopMinutes" : 120,
+      "orchestrator" : {
+        "agentArgs" : [
+          "--dangerously-skip-permissions",
+          "--model",
+          "claude-opus-5-5[1m]",
+          "--effort",
+          "medium"
+        ],
+        "enabled" : true
+      },
+      "usagePause" : {
+        "fiveHourPercent" : 90,
+        "sevenDayPercent" : 99
+      }
+    },
+    "event" : "settings.updated"
+  },
+  {
+    "data" : {
+      "conversationID" : "c-orch",
+      "enabled" : true
+    },
+    "event" : "orchestrator.updated"
+  },
+  {
+    "data" : [
+
+    ],
+    "event" : "devices.updated"
+  },
+  {
+    "data" : [
+
+    ],
+    "event" : "inbox.dismissals_updated"
+  },
+  {
+    "data" : {
+      "agentSessionID" : "agent-c-tools",
+      "backgroundTasks" : 0,
+      "backgroundTasksKnown" : true,
+      "canRedoRewind" : false,
+      "canUndoRewind" : true,
+      "contextPercent" : 47,
+      "createdAt" : "2026-10-07T09:00:00Z",
+      "customTitle" : "差分の画面を確かめる",
+      "cwd" : "/Users/ukwhatn/dev/8_tools/taskboard",
+      "diff" : {
+        "branch" : "feature/e3-conversation-app",
+        "deletions" : 7,
+        "files" : 3,
+        "insertions" : 42,
+        "isRepo" : true
+      },
+      "effort" : "high",
+      "engine" : "claude",
+      "forkPending" : false,
+      "id" : "c-tools",
+      "lastReply" : {
+        "at" : "2026-10-03T05:00:00Z",
+        "text" : "テストを通しました。"
+      },
+      "limitPaused" : false,
+      "machine" : "fixture-studio",
+      "model" : "claude-opus-5-5[1m]",
+      "parentNoticePending" : false,
+      "pending" : [
+
+      ],
+      "permissionMode" : "acceptEdits",
+      "phase" : "idle",
+      "rewindIncomplete" : false,
+      "runner" : "host",
+      "stats" : {
+        "agentSessionID" : "agent-c-tools",
+        "at" : "2026-10-07T09:10:00Z",
+        "contextTokens" : 282000,
+        "contextWindow" : 600000,
+        "costUSD" : 0.2481,
+        "engineVersion" : "2.1.303",
+        "model" : "claude-opus-5-5[1m]",
+        "tokens" : {
+          "cacheRead" : 1203440,
+          "cacheWrite" : 88213,
+          "input" : 1240,
+          "output" : 18432
+        }
+      },
+      "taskNumber" : 137,
+      "title" : "差分の画面を確かめる",
+      "turnStartedAt" : "2026-10-03T04:58:30Z",
+      "updatedAt" : "2026-10-07T09:10:00Z"
+    },
+    "event" : "conversation.updated"
+  },
+  {
+    "data" : {
+      "id" : "c-tools",
+      "machine" : "fixture-studio"
+    },
+    "event" : "conversation.removed"
+  },
+  {
+    "data" : {
+      "at" : "2026-10-03T06:00:00Z",
+      "closesCreator" : true,
+      "createdAt" : "2026-10-03T05:00:00Z",
+      "createdBy" : "c-tools",
+      "failure" : "タスクがありません",
+      "machine" : "fixture-studio",
+      "prompt" : "デプロイの結果を確かめる",
+      "state" : "failed",
+      "taskNumber" : 137,
+      "updatedAt" : "2026-10-03T05:00:00Z",
+      "wakeID" : 3
+    },
+    "event" : "wake.updated"
+  },
+  {
+    "data" : {
+      "id" : 3,
+      "machine" : "fixture-studio"
+    },
+    "event" : "wake.removed"
+  },
+  {
+    "data" : {
+      "conversationID" : "c-tools",
+      "createdAt" : "2026-10-03T05:00:00Z",
+      "createdBy" : "c-tools",
+      "ending" : "delivered",
+      "error" : "gh が PATH に無い",
+      "events" : [
+        "merged",
+        "checks_failed"
+      ],
+      "expiresAt" : "2026-10-04T05:00:00Z",
+      "fetchedAt" : "2026-10-03T05:00:00Z",
+      "kind" : "item",
+      "machine" : "fixture-studio",
+      "once" : true,
+      "prompt" : "マージされたらデプロイを確かめる",
+      "state" : "ended",
+      "updatedAt" : "2026-10-03T05:00:00Z",
+      "url" : "https://github.com/o/r/pull/12",
+      "watchID" : 4
+    },
+    "event" : "watch.updated"
+  },
+  {
+    "data" : {
+      "id" : 4,
+      "machine" : "fixture-studio"
+    },
+    "event" : "watch.removed"
+  },
+  {
+    "data" : {
+      "conversation" : {
+        "id" : "c-tools",
+        "machine" : "fixture-studio"
+      },
+      "toolName" : "Bash"
+    },
+    "event" : "conversation.activity"
+  },
+  {
+    "data" : {
+      "machine" : "fixture-studio",
+      "parts" : [
+        {
+          "spec" : {
+            "amount" : 4,
+            "basis" : {
+              "amount" : 6,
+              "kind" : "denominator",
+              "value" : "6"
+            },
+            "id" : "answers",
+            "kind" : "gauge",
+            "label" : "回答",
+            "note" : "",
+            "tone" : "attention",
+            "value" : "4"
+          },
+          "updatedAt" : "2026-10-03T05:00:00Z",
+          "updatedTurn" : 1
+        },
+        {
+          "spec" : {
+            "bind" : {
+              "group" : "",
+              "source" : "work"
+            },
+            "groups" : [
+              "M3"
+            ],
+            "id" : "plan",
+            "kind" : "plan",
+            "title" : ""
+          },
+          "updatedAt" : "2026-10-03T05:00:00Z",
+          "updatedTurn" : 0
+        },
+        {
+          "answer" : {
+            "answerID" : 2,
+            "answeredAt" : "2026-10-03T05:00:00Z",
+            "body" : "改定しました。",
+            "edited" : false
+          },
+          "spec" : {
+            "body" : "改定しました。",
+            "checks" : [
+              {
+                "label" : "敬体",
+                "note" : "",
+                "ok" : true
+              }
+            ],
+            "id" : "notice",
+            "kind" : "draft",
+            "title" : "",
+            "to" : "フォーラム"
+          },
+          "updatedAt" : "2026-10-03T05:00:00Z",
+          "updatedTurn" : 1
+        }
+      ],
+      "taskNumber" : 137,
+      "turn" : 3,
+      "updatedAt" : "2026-10-03T05:00:00Z"
+    },
+    "event" : "panel.updated"
+  },
+  {
+    "data" : {
+      "machine" : "fixture-studio",
+      "number" : 137
+    },
+    "event" : "panel.removed"
+  }
+]

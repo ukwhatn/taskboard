@@ -1,0 +1,146 @@
+{
+ "generatedAt": "2026-10-03T05:00:00Z",
+ "machine": {
+  "id": "fixture-second",
+  "name": "Mac mini",
+  "daemonVersion": "0.1.0"
+ },
+ "boards": [
+  {
+   "id": "second-board",
+   "machine": "fixture-second",
+   "name": "das",
+   "position": 0,
+   "createdAt": "2026-09-01T09:00:00+09:00",
+   "columns": [
+    {
+     "id": "review_req",
+     "label": "レビュー依頼",
+     "kind": "open",
+     "position": 0,
+     "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+    },
+    {
+     "id": "todo",
+     "label": "未着手",
+     "kind": "open",
+     "position": 1
+    },
+    {
+     "id": "planning",
+     "label": "計画",
+     "kind": "open",
+     "position": 2
+    },
+    {
+     "id": "working",
+     "label": "作業中",
+     "kind": "open",
+     "position": 3
+    },
+    {
+     "id": "review",
+     "label": "レビュー中",
+     "kind": "open",
+     "position": 4
+    },
+    {
+     "id": "deploying",
+     "label": "デプロイ中",
+     "kind": "open",
+     "position": 5
+    },
+    {
+     "id": "done",
+     "label": "完了",
+     "kind": "terminal",
+     "position": 6
+    },
+    {
+     "id": "wontfix",
+     "label": "見送り",
+     "kind": "terminal",
+     "position": 7
+    }
+   ],
+   "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+  }
+ ],
+ "tasks": [
+  {
+   "machine": "fixture-second",
+   "number": 19,
+   "boardID": "second-board",
+   "columnID": "todo",
+   "title": "通知の URL を差し替える",
+   "note": "",
+   "due": null,
+   "links": [],
+   "sessions": [],
+   "importedID": null,
+   "createdAt": "2026-09-30T10:00:00+09:00",
+   "updatedAt": "2026-10-02T18:00:00+09:00"
+  },
+  {
+   "machine": "fixture-second",
+   "number": 20,
+   "boardID": "second-board",
+   "columnID": "working",
+   "title": "管理画面の権限を分ける",
+   "note": "",
+   "due": null,
+   "links": [],
+   "sessions": [],
+   "importedID": null,
+   "createdAt": "2026-09-30T10:00:00+09:00",
+   "updatedAt": "2026-10-02T18:00:00+09:00"
+  }
+ ],
+ "workItems": [],
+ "documents": [],
+ "asks": [],
+ "reviewRequests": [],
+ "links": [],
+ "schedules": [],
+ "settings": {
+  "orchestrator": {
+   "enabled": true,
+   "agentArgs": [
+    "--model",
+    "opus",
+    "--effort",
+    "medium"
+   ]
+  },
+  "idleStopMinutes": 120
+ },
+ "orchestrator": {
+  "enabled": true,
+  "lastError": null,
+  "conversationID": "c-orch-second",
+  "lastReply": {
+   "text": "#19 と #20 の進み具合を確かめました。#20 は作業中で、レビューの依頼はまだです。#19 は未着手のままなので、起動の候補にしました。",
+   "at": "2026-10-03T04:52:00Z"
+  }
+ },
+ "conversations": [
+  {
+   "id": "c-orch-second",
+   "machine": "fixture-second",
+   "taskNumber": null,
+   "engine": "claude",
+   "agentSessionID": "sess-orch-second",
+   "cwd": "/Users/ukwhatn",
+   "model": "opus",
+   "title": "オーケストレーター",
+   "runner": "host",
+   "phase": "idle",
+   "pending": [],
+   "backgroundTasks": 0,
+   "backgroundTasksKnown": true,
+   "purpose": "orchestrator",
+   "createdAt": "2026-10-03T04:00:00Z",
+   "updatedAt": "2026-10-03T04:52:00Z"
+  }
+ ]
+}

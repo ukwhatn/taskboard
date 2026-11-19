@@ -1,0 +1,336 @@
+{
+ "generatedAt": "2026-10-03T05:00:00Z",
+ "links": [],
+ "machine": {
+  "codexCLI": {
+   "using": "0.130.0",
+   "newest": "0.130.0"
+  },
+  "id": "fixture-studio",
+  "name": "Mac Studio",
+  "daemonVersion": "0.1.0"
+ },
+ "boards": [
+  {
+   "id": "fixture-board",
+   "machine": "fixture-studio",
+   "name": "default",
+   "position": 0,
+   "createdAt": "2026-09-01T09:00:00+09:00",
+   "columns": [
+    {
+     "id": "review_req",
+     "label": "レビュー依頼",
+     "kind": "open",
+     "position": 0,
+     "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}"
+    },
+    {
+     "id": "todo",
+     "label": "未着手",
+     "kind": "open",
+     "position": 1
+    },
+    {
+     "id": "planning",
+     "label": "計画",
+     "kind": "open",
+     "position": 2
+    },
+    {
+     "id": "working",
+     "label": "作業中",
+     "kind": "open",
+     "position": 3
+    },
+    {
+     "id": "review",
+     "label": "レビュー中",
+     "kind": "open",
+     "position": 4
+    },
+    {
+     "id": "deploying",
+     "label": "デプロイ中",
+     "kind": "open",
+     "position": 5
+    },
+    {
+     "id": "done",
+     "label": "完了",
+     "kind": "terminal",
+     "position": 6
+    },
+    {
+     "id": "wontfix",
+     "label": "見送り",
+     "kind": "terminal",
+     "position": 7
+    }
+   ],
+   "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+  }
+ ],
+ "tasks": [
+  {
+   "machine": "fixture-studio",
+   "number": 128,
+   "boardID": "fixture-board",
+   "columnID": "review_req",
+   "title": "console の権限設計をレビューしてもらう",
+   "note": "",
+   "due": "2026-10-03",
+   "links": [
+    {
+     "id": 1,
+     "url": "https://ghe.example.com/console/console/pull/552",
+     "kind": "github_pr",
+     "note": "",
+     "addedAt": "2026-09-20T10:00:00+09:00"
+    },
+    {
+     "id": 2,
+     "url": "https://example.atlassian.net/browse/PROJ-807",
+     "kind": "jira",
+     "note": "",
+     "addedAt": "2026-09-20T10:00:00+09:00"
+    }
+   ],
+   "sessions": [
+    {
+     "id": 1,
+     "agent": "claude",
+     "sessionID": "sess-reviewer-0003",
+     "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+     "label": "",
+     "linkedAt": "2026-09-20T10:00:00+09:00"
+    }
+   ],
+   "importedID": null,
+   "createdAt": "2026-09-20T10:00:00+09:00",
+   "updatedAt": "2026-10-02T18:00:00+09:00"
+  }
+ ],
+ "workItems": [],
+ "documents": [],
+ "asks": [],
+ "reviewRequests": [],
+ "prs": null,
+ "usage": null,
+ "schedules": [],
+ "conversations": [
+  {
+   "machine": "fixture-studio",
+   "engine": "claude",
+   "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+   "pending": [],
+   "backgroundTasks": 0,
+   "backgroundTasksKnown": true,
+   "createdAt": "2026-10-07T09:20:00Z",
+   "updatedAt": "2026-10-07T09:30:00Z",
+   "id": "c-rewind",
+   "taskNumber": 128,
+   "agentSessionID": "agent-c-rewind",
+   "model": "claude-opus-5-5[1m]",
+   "effort": "medium",
+   "title": "README の書き直しを戻す",
+   "runner": "none",
+   "phase": "stopped",
+   "contextPercent": 72
+  },
+  {
+   "machine": "fixture-studio",
+   "engine": "claude",
+   "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+   "pending": [],
+   "backgroundTasks": 0,
+   "backgroundTasksKnown": true,
+   "createdAt": "2026-10-07T09:20:00Z",
+   "updatedAt": "2026-10-02T09:30:00Z",
+   "id": "c-done",
+   "taskNumber": 128,
+   "agentSessionID": "agent-c-done",
+   "model": "claude-opus-5-5[1m]",
+   "effort": "medium",
+   "title": "権限の表を見直す",
+   "runner": "none",
+   "phase": "stopped",
+   "contextPercent": 72,
+   "lastExit": "終了した"
+  },
+  {
+   "machine": "fixture-studio",
+   "engine": "claude",
+   "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+   "pending": [],
+   "backgroundTasks": 0,
+   "backgroundTasksKnown": true,
+   "createdAt": "2026-10-07T09:20:00Z",
+   "updatedAt": "2026-10-07T09:30:00Z",
+   "id": "c-live",
+   "taskNumber": 128,
+   "agentSessionID": "agent-c-live",
+   "model": "claude-opus-5-5[1m]",
+   "effort": "medium",
+   "title": "レビューの指摘に答える",
+   "runner": "none",
+   "phase": "idle",
+   "contextPercent": 72
+  }
+ ],
+ "wakes": [
+  {
+   "wakeID": 1,
+   "machine": "fixture-studio",
+   "at": "2026-10-03T15:00:00+09:00",
+   "prompt": "CI の結果を見て、落ちていたら直す",
+   "closesCreator": false,
+   "state": "pending",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "conversationID": "c-rewind"
+  },
+  {
+   "wakeID": 2,
+   "machine": "fixture-studio",
+   "at": "2026-10-03T11:00:00+09:00",
+   "prompt": "レビューの返事が来ているか確かめて、来ていれば答える",
+   "closesCreator": false,
+   "state": "pending",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "taskNumber": 128,
+   "failure": "タスクのセッションが応答待ちではありません"
+  },
+  {
+   "wakeID": 3,
+   "machine": "fixture-studio",
+   "at": "2026-10-02T09:00:00+09:00",
+   "prompt": "権限の表をもう一度見直す",
+   "closesCreator": false,
+   "state": "failed",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "conversationID": "c-done",
+   "failure": "24時間届けられませんでした。会話が生成中か、質問への回答を待っています。"
+  },
+  {
+   "wakeID": 4,
+   "machine": "fixture-studio",
+   "at": "2026-10-06T09:00:00+09:00",
+   "prompt": "週明けに、承認された権限で表を作り直す",
+   "closesCreator": false,
+   "state": "pending",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "conversationID": "c-done"
+  },
+  {
+   "wakeID": 5,
+   "machine": "fixture-studio",
+   "at": "2026-10-03T13:00:00+09:00",
+   "prompt": "届けたもの",
+   "closesCreator": false,
+   "state": "delivered",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "conversationID": "c-rewind"
+  }
+ ],
+ "watches": [
+  {
+   "watchID": 1,
+   "machine": "fixture-studio",
+   "kind": "item",
+   "events": [
+    "tagged"
+   ],
+   "once": false,
+   "state": "active",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "fetchedAt": "2026-10-03T11:55:00+09:00",
+   "url": "https://ghe.example.com/console/console/pull/552",
+   "tagPattern": "v*-prod",
+   "taskNumber": 128,
+   "prompt": "本番に入ったら、確認の手順を回す"
+  },
+  {
+   "watchID": 2,
+   "machine": "fixture-studio",
+   "kind": "item",
+   "events": [],
+   "once": true,
+   "state": "active",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "url": "https://github.com/ukwhatn/taskboard/issues/42",
+   "conversationID": "c-rewind",
+   "expiresAt": "2026-10-10T18:00:00+09:00",
+   "error": "HTTP 404"
+  },
+  {
+   "watchID": 3,
+   "machine": "fixture-studio",
+   "kind": "repo",
+   "events": [],
+   "once": false,
+   "state": "active",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "fetchedAt": "2026-10-03T11:55:00+09:00",
+   "repo": "console/console",
+   "query": "label:security",
+   "taskNumber": 128
+  },
+  {
+   "watchID": 4,
+   "machine": "fixture-studio",
+   "kind": "item",
+   "events": [
+    "tagged"
+   ],
+   "once": false,
+   "state": "ended",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "fetchedAt": "2026-10-03T11:55:00+09:00",
+   "url": "https://github.com/ukwhatn/taskboard/pull/40",
+   "tag": "v1.2.0-prod",
+   "taskNumber": 128,
+   "ending": "delivered"
+  },
+  {
+   "watchID": 5,
+   "machine": "fixture-studio",
+   "kind": "item",
+   "events": [],
+   "once": false,
+   "state": "cancelled",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "fetchedAt": "2026-10-03T11:55:00+09:00",
+   "url": "https://github.com/ukwhatn/taskboard/pull/39",
+   "taskNumber": 128
+  },
+  {
+   "watchID": 6,
+   "machine": "fixture-studio",
+   "kind": "command",
+   "events": [],
+   "once": false,
+   "state": "active",
+   "createdAt": "2026-10-02T09:00:00+09:00",
+   "updatedAt": "2026-10-03T11:00:00+09:00",
+   "fetchedAt": "2026-10-03T11:55:00+09:00",
+   "command": {
+    "command": "curl -fsS https://status.example.com/deploy\necho done",
+    "condition": "matches",
+    "pattern": "deployed",
+    "intervalSeconds": 1800
+   },
+   "taskNumber": 128,
+   "error": "コマンドを起こせない: ENOENT"
+  }
+ ]
+}

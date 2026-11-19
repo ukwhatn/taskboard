@@ -1,0 +1,8 @@
+// Taskboard の署名の値（project.yml が TASKBOARD_* を読む）。既定は ad hoc で、macOS とシミュレータはこのままビルドできる。
+// 自分の Apple Developer の Team で署名するときは、Signing.local.xcconfig（.gitignore 済み）に上書きする値を書く。
+// 例は Signing.local.xcconfig.example、手順は docs/getting-started.md「署名」。
+TASKBOARD_MAC_SIGN_IDENTITY = -
+TASKBOARD_TEAM_ID =
+TASKBOARD_IOS_BUNDLE_ID = uk.whatn.taskboard.ios
+
+#include? "Signing.local.xcconfig"

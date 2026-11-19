@@ -1,0 +1,1179 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [
+    {
+      "url": "https://ghe.example.com/console/console/pull/552",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "OPEN",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "REVIEW_REQUIRED"
+      }
+    },
+    {
+      "url": "https://example.atlassian.net/browse/PROJ-807",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "jira": {
+        "key": "PROJ-807",
+        "statusName": "進行中",
+        "category": "indeterminate",
+        "summary": "権限設計"
+      }
+    },
+    {
+      "url": "https://github.com/scpwiki/search/pull/9",
+      "fetchedAt": "2026-10-03T04:58:00Z",
+      "pullRequest": {
+        "state": "MERGED",
+        "isDraft": false,
+        "checks": "SUCCESS",
+        "reviewDecision": "APPROVED"
+      }
+    }
+  ],
+  "machine": {
+    "id": "fixture-studio",
+    "name": "Mac Studio",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [
+    {
+      "id": "fixture-board",
+      "machine": "fixture-studio",
+      "name": "default",
+      "position": 0,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "standing",
+          "label": "常設",
+          "kind": "open",
+          "position": 0,
+          "collapsed": false,
+          "description": "期限なく続く仕事（定常の運用・問い合わせ対応など）。完了にしない"
+        },
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 1,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}",
+          "description": "他人の PR・チケットのレビューを頼まれたタスク。レビューを出してもマージまでここに置き、自分の作業の列へ移さない"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 2,
+          "description": "やると決めたが、まだ始めていない"
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 3,
+          "description": "方針・設計を詰めている"
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 4,
+          "description": "実装・調査を進めている"
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 5,
+          "description": "PR を出してレビューを待っている"
+        },
+        {
+          "id": "c-verify",
+          "label": "動作確認待ち（実機とシミュレータの両方で確かめる）",
+          "kind": "open",
+          "position": 6,
+          "collapsed": false,
+          "description": "ステージングで動作を確かめる。確かめたらデプロイ中へ移す"
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 7,
+          "description": "承認され、反映・リリースを待っている"
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 8,
+          "description": "終わった"
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 9,
+          "description": "やらないと決めた"
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。",
+      "launchDefaults": {
+        "kind": "claude",
+        "agentArgs": [
+          "--dangerously-skip-permissions",
+          "--model",
+          "claude-opus-5-5[1m]",
+          "--effort",
+          "medium"
+        ],
+        "worktree": true,
+        "cwd": "~/dev/8_tools/taskboard"
+      }
+    },
+    {
+      "id": "fixture-long",
+      "machine": "fixture-studio",
+      "name": "とても長い名前の案件（社内ポータルの権限設計と監査ログの作り直し、2026年度下期）",
+      "position": 1,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "standing",
+          "label": "常設",
+          "kind": "open",
+          "position": 0,
+          "collapsed": false,
+          "description": "期限なく続く仕事（定常の運用・問い合わせ対応など）。完了にしない"
+        },
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 1,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}",
+          "description": "他人の PR・チケットのレビューを頼まれたタスク。レビューを出してもマージまでここに置き、自分の作業の列へ移さない"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 2,
+          "description": "やると決めたが、まだ始めていない"
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 3,
+          "description": "方針・設計を詰めている"
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 4,
+          "description": "実装・調査を進めている"
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 5,
+          "description": "PR を出してレビューを待っている"
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 7,
+          "description": "承認され、反映・リリースを待っている"
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 8,
+          "description": "終わった"
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 9,
+          "description": "やらないと決めた"
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。",
+      "mergeTarget": "done"
+    },
+    {
+      "id": "fixture-empty",
+      "machine": "fixture-studio",
+      "name": "空の案件",
+      "position": 2,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "standing",
+          "label": "常設",
+          "kind": "open",
+          "position": 0,
+          "collapsed": false,
+          "description": "期限なく続く仕事（定常の運用・問い合わせ対応など）。完了にしない"
+        },
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 1,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}",
+          "description": "他人の PR・チケットのレビューを頼まれたタスク。レビューを出してもマージまでここに置き、自分の作業の列へ移さない"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 2,
+          "description": "やると決めたが、まだ始めていない"
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 3,
+          "description": "方針・設計を詰めている"
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 4,
+          "description": "実装・調査を進めている"
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 5,
+          "description": "PR を出してレビューを待っている"
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 7,
+          "description": "承認され、反映・リリースを待っている"
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 8,
+          "description": "終わった"
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 9,
+          "description": "やらないと決めた"
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。"
+    },
+    {
+      "id": "fixture-archived",
+      "machine": "fixture-studio",
+      "name": "旧 taskherd",
+      "position": 3,
+      "createdAt": "2026-09-01T09:00:00+09:00",
+      "columns": [
+        {
+          "id": "standing",
+          "label": "常設",
+          "kind": "open",
+          "position": 0,
+          "collapsed": false,
+          "description": "期限なく続く仕事（定常の運用・問い合わせ対応など）。完了にしない"
+        },
+        {
+          "id": "review_req",
+          "label": "レビュー依頼",
+          "kind": "open",
+          "position": 1,
+          "promptTemplate": "/pr-review {{links}}\n#{{id}} {{title}}",
+          "description": "他人の PR・チケットのレビューを頼まれたタスク。レビューを出してもマージまでここに置き、自分の作業の列へ移さない"
+        },
+        {
+          "id": "todo",
+          "label": "未着手",
+          "kind": "open",
+          "position": 2,
+          "description": "やると決めたが、まだ始めていない"
+        },
+        {
+          "id": "planning",
+          "label": "計画",
+          "kind": "open",
+          "position": 3,
+          "description": "方針・設計を詰めている"
+        },
+        {
+          "id": "working",
+          "label": "作業中",
+          "kind": "open",
+          "position": 4,
+          "description": "実装・調査を進めている"
+        },
+        {
+          "id": "review",
+          "label": "レビュー中",
+          "kind": "open",
+          "position": 5,
+          "description": "PR を出してレビューを待っている"
+        },
+        {
+          "id": "deploying",
+          "label": "デプロイ中",
+          "kind": "open",
+          "position": 7,
+          "description": "承認され、反映・リリースを待っている"
+        },
+        {
+          "id": "done",
+          "label": "完了",
+          "kind": "terminal",
+          "position": 8,
+          "description": "終わった"
+        },
+        {
+          "id": "wontfix",
+          "label": "見送り",
+          "kind": "terminal",
+          "position": 9,
+          "description": "やらないと決めた"
+        }
+      ],
+      "promptTemplate": "タスク #{{id}} に着手してください。\n題: {{title}}\n列: {{status}}\n関連URL:\n{{links}}\n備考:\n{{note}}\nJira と Confluence のリンクは、解決済みを含むすべてのコメントとカスタムフィールドを読んで、文脈として使ってください。",
+      "archived": true
+    }
+  ],
+  "tasks": [
+    {
+      "machine": "fixture-studio",
+      "number": 137,
+      "boardID": "fixture-board",
+      "columnID": "working",
+      "title": "taskboard フェーズ 3: ボードとカード",
+      "note": "daemon の SQLite に持ち、taskherd から取り込む",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/3",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-lead-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 131,
+      "boardID": "fixture-board",
+      "columnID": "review",
+      "title": "doorman PR #41 のレビュー対応",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/doorman/pull/41",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-doorman-0001",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 128,
+      "boardID": "fixture-board",
+      "columnID": "review_req",
+      "title": "console の権限設計をレビューしてもらう",
+      "note": "",
+      "due": "2026-10-03",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://ghe.example.com/console/console/pull/552",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        },
+        {
+          "id": 2,
+          "url": "https://example.atlassian.net/browse/PROJ-807",
+          "kind": "jira",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [
+        {
+          "id": 1,
+          "agent": "claude",
+          "sessionID": "sess-reviewer-0003",
+          "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+          "label": "",
+          "linkedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 125,
+      "boardID": "fixture-long",
+      "columnID": "todo",
+      "title": "iPad の殻を切る",
+      "note": "",
+      "due": "2026-10-10",
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 120,
+      "boardID": "fixture-long",
+      "columnID": "planning",
+      "title": "kairan の置き換え方針",
+      "note": "受信箱と文書の統合",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-09-25T12:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 118,
+      "boardID": "fixture-board",
+      "columnID": "deploying",
+      "title": "wiki の検索 index を再構築",
+      "note": "",
+      "due": "2026-10-04",
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/scpwiki/search/pull/9",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 110,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 1: daemon と一覧",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/1",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 109,
+      "boardID": "fixture-board",
+      "columnID": "done",
+      "title": "taskboard フェーズ 2: 端末中継",
+      "note": "",
+      "due": null,
+      "links": [
+        {
+          "id": 1,
+          "url": "https://github.com/ukwhatn/taskboard/pull/2",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-20T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 90,
+      "boardID": "fixture-archived",
+      "columnID": "wontfix",
+      "title": "taskherd を Web 化する",
+      "note": "ネイティブに寄せたので見送り",
+      "due": null,
+      "links": [],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "number": 141,
+      "boardID": "fixture-board",
+      "columnID": "review_req",
+      "title": "wiki の検索画面をレビューする",
+      "note": "",
+      "due": "2026-10-03",
+      "links": [
+        {
+          "id": 9,
+          "url": "https://github.com/scpwiki/wiki/pull/12",
+          "kind": "github_pr",
+          "note": "",
+          "addedAt": "2026-09-30T10:00:00+09:00"
+        }
+      ],
+      "sessions": [],
+      "importedID": null,
+      "createdAt": "2026-09-20T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "workItems": [
+    {
+      "machine": "fixture-studio",
+      "itemID": 1,
+      "taskNumber": 137,
+      "title": "Store の v2 migration と作業項目の CRUD",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "a1b2c3d4e5f6",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 2,
+      "taskNumber": 137,
+      "title": "API と DaemonEvent（work.updated / work.removed）",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "commit",
+      "deliverableRef": "0f9e8d7c6b5a",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 3,
+      "taskNumber": 137,
+      "title": "MCP server（taskboard mcp）",
+      "state": "doing",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 2,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 4,
+      "taskNumber": 137,
+      "title": "CI の通過（macOS / iOS）",
+      "state": "wait",
+      "blockerKind": "ci",
+      "blockerText": "CI 待ち（約 6 分）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 3,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 5,
+      "taskNumber": 137,
+      "title": "ボードのカード 2 行目と進捗",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        3
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 4,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 6,
+      "taskNumber": 137,
+      "title": "README と CLAUDE.md の追記",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "doorman",
+      "position": 5,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 7,
+      "taskNumber": 137,
+      "title": "PostToolUse hook での鏡写し",
+      "state": "drop",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 6,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 8,
+      "taskNumber": 131,
+      "title": "実装と単体テスト",
+      "state": "done",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": "pr",
+      "deliverableRef": "https://github.com/ukwhatn/taskboard/pull/2",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 9,
+      "taskNumber": 131,
+      "title": "レビューの指摘対応",
+      "state": "wait",
+      "blockerKind": "review",
+      "blockerText": "レビューを待っている（PR #2）",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 10,
+      "taskNumber": 128,
+      "title": "計画の承認",
+      "state": "wait",
+      "blockerKind": "approval",
+      "blockerText": "計画 30_plan の承認を待っている",
+      "blockerTone": null,
+      "dependsOn": [],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 0,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "itemID": 11,
+      "taskNumber": 128,
+      "title": "実装",
+      "state": "todo",
+      "blockerKind": null,
+      "blockerText": "",
+      "blockerTone": null,
+      "dependsOn": [
+        10
+      ],
+      "deliverableKind": null,
+      "deliverableRef": "",
+      "owner": "",
+      "position": 1,
+      "source": "session",
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-01T10:00:00+09:00"
+    }
+  ],
+  "documents": [
+    {
+      "machine": "fixture-studio",
+      "docID": 1,
+      "taskNumber": 120,
+      "name": "kairan-replacement.md",
+      "format": "markdown",
+      "title": "kairan の置き換え方針",
+      "latestRev": 2,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T10:00:00+09:00",
+      "updatedAt": "2026-10-03T11:30:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 2,
+      "taskNumber": 120,
+      "name": "inbox-mock.html",
+      "format": "html",
+      "title": null,
+      "latestRev": 1,
+      "hasSourceFile": false,
+      "openComments": 1,
+      "draftComments": 0,
+      "createdAt": "2026-10-03T09:00:00+09:00",
+      "updatedAt": "2026-10-03T09:00:00+09:00"
+    },
+    {
+      "machine": "fixture-studio",
+      "docID": 3,
+      "taskNumber": 137,
+      "name": "phase3-plan.md",
+      "format": "markdown",
+      "title": "フェーズ 3 計画",
+      "latestRev": 3,
+      "hasSourceFile": true,
+      "openComments": 0,
+      "draftComments": 1,
+      "createdAt": "2026-10-01T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:00:00+09:00"
+    }
+  ],
+  "asks": [
+    {
+      "machine": "fixture-studio",
+      "askID": 1,
+      "taskNumber": 120,
+      "docID": 1,
+      "status": "open",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "文書をタスクに属させる案でよいか",
+          "header": "所属",
+          "options": [
+            {
+              "label": "タスクに属させる",
+              "description": "受信箱・カードから辿れる"
+            },
+            {
+              "label": "セッションに属させる",
+              "description": "kairan と同じ"
+            }
+          ],
+          "multiSelect": false
+        },
+        {
+          "id": "q2",
+          "question": "HTML 文書で許す機能",
+          "header": "HTML",
+          "options": [
+            {
+              "label": "script"
+            },
+            {
+              "label": "外部画像"
+            },
+            {
+              "label": "外部 CSS"
+            }
+          ],
+          "multiSelect": true
+        }
+      ],
+      "answers": null,
+      "createdAt": "2026-10-03T11:30:00+09:00",
+      "answeredAt": null,
+      "deliveredAt": null
+    }
+  ],
+  "reviewRequests": [
+    {
+      "machine": "fixture-studio",
+      "taskNumber": 128,
+      "note": "移行スクリプトの 2 章を見てほしい",
+      "requestedAt": "2026-10-03T11:00:00+09:00"
+    }
+  ],
+  "prs": {
+    "accounts": [
+      {
+        "host": "github.com",
+        "account": "ukwhatn",
+        "fetchedAt": "2026-10-03T11:58:00+09:00",
+        "error": null,
+        "rateLimited": false,
+        "nextFetchAt": "2026-10-03T12:03:00+09:00"
+      }
+    ],
+    "pullRequests": [
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/console/pull/41",
+        "repository": "scpwiki/console",
+        "number": 41,
+        "title": "console の権限設計",
+        "author": "alice",
+        "isDraft": false,
+        "headRef": "feature/41",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:40:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewRequested",
+        "url": "https://github.com/scpwiki/search/pull/9",
+        "repository": "scpwiki/search",
+        "number": 9,
+        "title": "検索 index の再構築",
+        "author": "bob",
+        "isDraft": false,
+        "headRef": "feature/9",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T09:00:00+09:00",
+        "reviewDecision": null,
+        "checks": "FAILURE",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": [
+          "ukwhatn"
+        ]
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "reviewed",
+        "url": "https://github.com/scpwiki/wiki/pull/12",
+        "repository": "scpwiki/wiki",
+        "number": 12,
+        "title": "wiki の差分表示",
+        "author": "carol",
+        "isDraft": false,
+        "headRef": "feature/12",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-02T18:00:00+09:00",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "checks": "SUCCESS",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [
+          {
+            "login": "ukwhatn",
+            "state": "COMMENTED"
+          }
+        ],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myDraft",
+        "url": "https://github.com/ukwhatn/taskboard/pull/57",
+        "repository": "ukwhatn/taskboard",
+        "number": 57,
+        "title": "フェーズ 7: PR 一覧",
+        "author": "ukwhatn",
+        "isDraft": true,
+        "headRef": "feature/57",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T11:50:00+09:00",
+        "reviewDecision": null,
+        "checks": "PENDING",
+        "additions": 40,
+        "deletions": 8,
+        "changedFiles": 3,
+        "latestReviews": [],
+        "requestedReviewers": []
+      },
+      {
+        "machine": "fixture-studio",
+        "host": "github.com",
+        "account": "ukwhatn",
+        "category": "myReady",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "repository": "ukwhatn/taskboard",
+        "number": 55,
+        "title": "フェーズ 6: 受信箱と文書",
+        "author": "ukwhatn",
+        "isDraft": false,
+        "headRef": "feature/55",
+        "createdAt": "2026-10-01T10:00:00+09:00",
+        "updatedAt": "2026-10-03T08:00:00+09:00",
+        "reviewDecision": "APPROVED",
+        "checks": "SUCCESS",
+        "additions": 2400,
+        "deletions": 120,
+        "changedFiles": 31,
+        "latestReviews": [
+          {
+            "login": "dave",
+            "state": "APPROVED"
+          }
+        ],
+        "requestedReviewers": []
+      }
+    ],
+    "notices": [
+      {
+        "id": "https://github.com/ukwhatn/taskboard/pull/55#approved#1791000000",
+        "machine": "fixture-studio",
+        "url": "https://github.com/ukwhatn/taskboard/pull/55",
+        "label": "ukwhatn/taskboard#55",
+        "title": "フェーズ 6: 受信箱と文書",
+        "kind": "approved",
+        "detail": "dave",
+        "at": "2026-10-03T11:00:00+09:00"
+      }
+    ]
+  },
+  "usage": {
+    "claude": {
+      "fiveHour": {
+        "usedPercent": 42,
+        "resetsAt": "2026-10-03T05:13:00Z",
+        "windowSeconds": 18000
+      },
+      "sevenDay": {
+        "usedPercent": 57,
+        "resetsAt": "2026-10-06T00:00:00Z",
+        "windowSeconds": 604800
+      },
+      "at": "2026-10-03T02:59:00Z"
+    },
+    "codex": {
+      "primary": {
+        "usedPercent": 13,
+        "resetsAt": "2026-10-03T07:12:00Z",
+        "windowSeconds": 18000
+      },
+      "secondary": {
+        "usedPercent": 31,
+        "resetsAt": "2026-10-05T09:00:00Z",
+        "windowSeconds": 604800
+      },
+      "fetchedAt": "2026-10-03T02:55:00Z"
+    },
+    "contexts": [
+      {
+        "agentSessionID": "sess-lead-0001",
+        "model": "Fable 5.1",
+        "effort": "high",
+        "usedPercent": 31,
+        "inputTokens": 155000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-doorman-0001",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 22,
+        "inputTokens": 110000,
+        "windowSize": 500000,
+        "at": "2026-10-03T02:59:00Z"
+      },
+      {
+        "agentSessionID": "sess-t131-0002",
+        "model": "Opus 5.5",
+        "effort": "medium",
+        "usedPercent": 64,
+        "inputTokens": 640000,
+        "windowSize": 1000000,
+        "at": "2026-10-03T02:59:00Z"
+      }
+    ]
+  },
+  "schedules": [
+    {
+      "scheduleID": 1,
+      "machine": "fixture-studio",
+      "name": "朝の PR 棚卸し",
+      "enabled": true,
+      "rule": {
+        "cron": "0 9 * * 1-5"
+      },
+      "cwd": "/Users/ukwhatn/dev/8_tools/taskboard",
+      "kind": "claude",
+      "agentArgs": [
+        "--model",
+        "sonnet"
+      ],
+      "prompt": "自分宛てのレビュー依頼と、自分の PR の CI を見て、今日やることを 3 行で残して",
+      "taskNumber": 118,
+      "overlap": "skip",
+      "nextAt": "2026-10-04T09:00:00+09:00",
+      "lastRun": {
+        "id": 12,
+        "scheduleID": 1,
+        "scheduledAt": "2026-10-03T09:00:00+09:00",
+        "trigger": "schedule",
+        "requestID": "sched-1-12",
+        "stage": "done",
+        "pane": "w1:p9",
+        "createdAt": "2026-10-03T09:00:02+09:00"
+      },
+      "createdAt": "2026-09-28T10:00:00+09:00",
+      "updatedAt": "2026-09-28T10:00:00+09:00"
+    },
+    {
+      "scheduleID": 2,
+      "machine": "fixture-studio",
+      "name": "wiki の index を作り直す",
+      "enabled": false,
+      "rule": {
+        "intervalMinutes": 360
+      },
+      "cwd": "/Users/ukwhatn/dev/wiki",
+      "kind": "codex",
+      "agentArgs": [],
+      "prompt": "検索 index を作り直して、失敗したページを一覧にして",
+      "overlap": "parallel",
+      "lastRun": {
+        "id": 5,
+        "scheduleID": 2,
+        "scheduledAt": "2026-10-02T18:00:00+09:00",
+        "trigger": "manual",
+        "requestID": "sched-2-5",
+        "stage": "failed",
+        "error": "cwd が無い",
+        "createdAt": "2026-10-02T18:00:01+09:00"
+      },
+      "createdAt": "2026-09-30T10:00:00+09:00",
+      "updatedAt": "2026-10-02T18:10:00+09:00"
+    }
+  ],
+  "settings": {
+    "orchestrator": {
+      "enabled": true,
+      "agentArgs": [
+        "--dangerously-skip-permissions",
+        "--model",
+        "claude-opus-5-5[1m]",
+        "--effort",
+        "medium"
+      ]
+    },
+    "idleStopMinutes": 120
+  }
+}

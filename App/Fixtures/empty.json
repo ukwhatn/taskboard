@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-10-03T05:00:00Z",
+  "links": [],
+  "machine": {
+    "id": "fixture-empty",
+    "name": "空のMac",
+    "daemonVersion": "0.1.0"
+  },
+  "boards": [],
+  "tasks": [],
+  "workItems": [],
+  "documents": [],
+  "asks": [],
+  "reviewRequests": [],
+  "prs": null,
+  "usage": null,
+  "schedules": []
+}
