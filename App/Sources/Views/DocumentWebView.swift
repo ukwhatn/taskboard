@@ -34,6 +34,8 @@ final class DocumentWebController: NSObject {
 
     /// 本文の中の質問と送る文面の欄の中身（`DocumentForms.Payload` の JSON）。読み込み直したら入れ直す
     private var formsJSON: String?
+    /// 送る先の欄。頁と欄を描き終える前に頼まれたら、欄を入れた後に送る
+    private var pendingFormScroll: String?
     /// 欄に選んだ選択肢か書いた文がある（Esc で文書を閉じて消さない）
     private(set) var formsPendingInput = false
     /// 欄で答えた・承認した・閉じた（`DocumentScreen` が daemon に送る）
@@ -136,13 +138,26 @@ final class DocumentWebController: NSObject {
 
     private func applyForms() {
         guard let formsJSON else { return }
-        webView.evaluateJavaScript("window.__tbForms && __tbForms.set(\(formsJSON))") { _, _ in }
+        webView.evaluateJavaScript("window.__tbForms && __tbForms.set(\(formsJSON))") { [weak self] _, _ in
+            MainActor.assumeIsolated { self?.flushFormScroll() }
+        }
+    }
+
+    private func flushFormScroll() {
+        guard let slot = pendingFormScroll, formsJSON != nil,
+            let data = try? JSONSerialization.data(withJSONObject: [slot]), let json = String(data: data, encoding: .utf8)
+        else { return }
+        webView.evaluateJavaScript("window.__tbForms ? __tbForms.scrollTo(\(json)[0]) : false") { [weak self] result, _ in
+            MainActor.assumeIsolated {
+                if result as? Bool == true, self?.pendingFormScroll == slot { self?.pendingFormScroll = nil }
+            }
+        }
     }
 
     /// 欄（`ask:q1`・`draft:id`）の位置まで送る。まだ描いていなければ描いた後に送る
     func scroll(toForm slot: String) {
-        guard let data = try? JSONSerialization.data(withJSONObject: [slot]), let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("window.__tbForms && __tbForms.scrollTo(\(json)[0])") { _, _ in }
+        pendingFormScroll = slot
+        flushFormScroll()
     }
 
     /// 答えた結果を欄に返す（失敗なら欄に文を出し、ボタンを戻す）

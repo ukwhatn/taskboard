@@ -315,7 +315,9 @@ extension DebugServer {
     /// 画面の点（左下が原点）にある一番手前の窓。シートと popover も入れる（どちらも主の窓になれない。popover は panel なので orderedWindows に無い）
     static func window(at point: NSPoint) -> NSWindow? {
         NSApp.windows.first { $0.isVisible && $0.frame.contains(point) && $0.className.contains("Popover") }
-            ?? NSApp.orderedWindows.first { $0.isVisible && $0.frame.contains(point) && ($0.canBecomeMain || $0.isSheet) }
+            // 確認のダイアログ（シートか NSPanel）は親の窓より前にある。orderedWindows はシートを含まない
+            ?? NSApp.windows.first { $0.isVisible && $0.frame.contains(point) && ($0.isSheet || $0 is NSPanel) }
+            ?? NSApp.orderedWindows.first { $0.isVisible && $0.frame.contains(point) && $0.canBecomeMain }
     }
 }
 #endif

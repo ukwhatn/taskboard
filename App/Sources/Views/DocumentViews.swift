@@ -99,7 +99,7 @@ struct DocumentRow: View {
 /// 本文とコメントの欄が並んで入らない幅では、コメントの欄を本文と切り替えて出す。
 /// パネル（会話の右の欄か、帯の下の全体）・別ウィンドウ・iPhone のシートで使う
 struct DocumentScreen: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AppModel.self) var model
     @Environment(\.window) private var window
     @Environment(\.openWindow) private var openWindow
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
@@ -122,7 +122,7 @@ struct DocumentScreen: View {
     /// 本文の文字の大きさ。アプリの設定（範囲内に収める）に OS の倍率を掛ける
     private var bodyTextSize: Double { (SessionTextSize.clamp(textSize) * dynamicScale / 100).rounded() }
 
-    @State private var web: DocumentWebController?
+    @State var web: DocumentWebController?
     @State private var content: DocContent?
     @State private var contentFailure: UserFacingError?
     @State private var revisions: [DocRevision] = []
@@ -144,7 +144,7 @@ struct DocumentScreen: View {
     /// 返信・質問の回答の書きかけがあるか（中の部品が `DocumentPendingInputKey` で知らせる）
     @State private var pendingInput = false
     /// 本文の欄で［承認］を押した送る文面（確認のダイアログを出す）
-    @State private var approving: Approving?
+    @State var approving: Approving?
 
     struct Approving: Identifiable {
         var draft: DocDraft
@@ -259,22 +259,7 @@ struct DocumentScreen: View {
             controller.onFormAction = { action in handleForm(action, doc: doc) }
             web = controller
         }
-        .onChange(of: formsInput(doc), initial: true) { pushForms(doc) }
-        .onChange(of: web != nil) { pushForms(doc) }
-        .onChange(of: model.docFormFocus, initial: true) { _, focus in
-            guard let focus, focus.doc == key, web != nil else { return }
-            focusForm(focus.slot)
-            model.docFormFocus = nil
-        }
-        .confirmationDialog(
-            "送る文面の承認", isPresented: Binding(get: { approving != nil }, set: { if !$0 { approving = nil } }), titleVisibility: .visible,
-            presenting: approving
-        ) { item in
-            Button("承認") { approve(item) }
-            Button("キャンセル", role: .cancel) {}
-        } message: { item in
-            Text("「\(item.draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
-        }
+        .modifier(FormsHandling(screen: self, doc: doc))
         .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)") { await loadContent() }
         .task(id: "\(key)/\(doc.openComments)/\(doc.draftComments)/\(askSignature)") { await loadSide(task: task) }
         .onChange(of: comments) { _, _ in pushHighlights() }
@@ -381,7 +366,7 @@ struct DocumentScreen: View {
     // MARK: 本文の欄
 
     /// 欄の中身を決める値（変わったら描き直す）
-    private func formsInput(_ doc: Document) -> String {
+    func formsInput(_ doc: Document) -> String {
         let askPart = formAsks.map { "\($0.askID):\($0.status.rawValue):\($0.deliveredAt != nil)" }.joined(separator: ",")
         let draftPart = doc.drafts.map { "\($0.id):\($0.draft.body.hashValue):\($0.answer?.answerID ?? 0)" }.joined(separator: ",")
         return "\(askPart)|\(draftPart)|\(model.canWrite(key.machine))|\(bodyTextSize)"
@@ -394,9 +379,16 @@ struct DocumentScreen: View {
         return all
     }
 
-    private func pushForms(_ doc: Document) {
+    func pushForms(_ doc: Document) {
         let blocked = model.writeBlock(key.machine, "送信できません")?.text
         web?.setForms(DocumentForms.payload(asks: formAsks, drafts: doc.drafts, canWrite: model.canWrite(key.machine), blocked: blocked, textSize: bodyTextSize))
+    }
+
+    /// 受信箱・判断待ちから頼まれた欄へ送る。web view を作る前に届いたら、作った後に送る
+    func takeFormFocus() {
+        guard let focus = model.docFormFocus, focus.doc == key, web != nil else { return }
+        focusForm(focus.slot)
+        model.docFormFocus = nil
     }
 
     /// 欄の位置まで送る（狭い幅でコメントを出していれば本文に切り替える）
@@ -436,7 +428,7 @@ struct DocumentScreen: View {
         }
     }
 
-    private func approve(_ item: Approving) {
+    func approve(_ item: Approving) {
         Task {
             do {
                 try await model.approveDocDraft(key, draft: item.draft.id, body: item.body)
@@ -694,6 +686,31 @@ struct DocumentScreen: View {
                 model.fail("文書を削除できませんでした", error, in: window)
             }
         }
+    }
+}
+
+/// 本文の欄の受け渡し（中身の描き直し・送る先・送る文面の承認の確認）。`DocumentScreen.screen` の modifier の連なりを短くする（長いと型検査が時間切れになる）
+private struct FormsHandling: ViewModifier {
+    let screen: DocumentScreen
+    let doc: Document
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: screen.formsInput(doc), initial: true) { screen.pushForms(doc) }
+            .onChange(of: screen.web != nil) {
+                screen.pushForms(doc)
+                screen.takeFormFocus()
+            }
+            .onChange(of: screen.model.docFormFocus, initial: true) { screen.takeFormFocus() }
+            .confirmationDialog(
+                "送る文面の承認", isPresented: Binding(get: { screen.approving != nil }, set: { if !$0 { screen.approving = nil } }), titleVisibility: .visible,
+                presenting: screen.approving
+            ) { item in
+                Button("承認") { screen.approve(item) }
+                Button("キャンセル", role: .cancel) {}
+            } message: { item in
+                Text("「\(item.draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
+            }
     }
 }
 
