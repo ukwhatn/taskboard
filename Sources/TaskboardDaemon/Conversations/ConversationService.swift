@@ -36,6 +36,8 @@ public actor ConversationService {
         var networkOnline: @Sendable () -> Bool = { NetworkPath.isSatisfied() && SystemPower.isFullWake() }
         /// 経路が切れてから戻った回数（`NetworkPath.returns`）
         var networkReturns: @Sendable () -> Int = { NetworkPath.returns() }
+        /// 音声入力の校正を回す口（確かめた版の Claude Code の起こし方を受ける）。nil なら校正しない
+        var polishDictation: (@Sendable (_ launch: EngineLaunch, _ request: DictationPolishRequest) async throws -> String)?
     }
 
     /// `DaemonState` に載せる会話の様子の変化。会話の actor から順に積み、1 つの Task が順に載せる
@@ -70,6 +72,8 @@ public actor ConversationService {
     /// 作っている途中のシェル（同じ時の 2 回目は同じ pane を待つ）
     private var shellsInFlight: [String: Task<PaneID, Error>] = [:]
     private let runs: ConversationRuns
+    /// 音声入力の校正（`Environment.polishDictation` があるときだけ）
+    private let dictationPolisher: DictationPolisher?
     /// `@` の候補に引く作業ディレクトリのファイルの一覧（`workFiles`）
     private let workFileIndex = WorkFileIndex()
     /// 事前起動（1 本だけ）
@@ -100,6 +104,15 @@ public actor ConversationService {
             shells: shells, directory: environment.supportDirectory.appending(path: "runs"), loginShell: environment.shell, limits: environment.runLimits,
             logger: environment.logger)
         self.runs = runs
+        // 校正は会話と同じ起こし方（`launch`）で Claude Code を起こすので、作り終えた self を後から渡す
+        let owner = WeakReference<ConversationService>()
+        dictationPolisher = environment.polishDictation.map { polish in
+            DictationPolisher { request in
+                guard let service = owner.value else { throw DictationPolishError.busy }
+                return try await polish(try await service.launch(), request)
+            }
+        }
+        owner.value = self
         let state = environment.state
         Task {
             for await change in stream {
@@ -1264,6 +1277,21 @@ public actor ConversationService {
         if closingAfterTurn.contains(id) { _ = await closeIfResting(id) }
     }
 
+    /// `POST /v1/dictation/polish`。校正できなければ 409（確かめた版が無い）・503（校正の口が無い・混んでいる）・502（校正が失敗した）
+    func polishDictation(_ request: DictationPolishRequest) async throws -> DictationPolishResponse {
+        guard let dictationPolisher else { throw ConversationError(status: 503, code: .unavailable, description: "音声入力の校正が無い") }
+        do {
+            return DictationPolishResponse(text: try await dictationPolisher.polish(request))
+        } catch let error as ConversationError {
+            throw error
+        } catch DictationPolishError.busy {
+            throw ConversationError(status: 503, code: .unavailable, description: "音声入力の校正が混んでいる")
+        } catch {
+            environment.logger.warning("dictation polish failed", metadata: ["error": "\(error)"])
+            throw ConversationError(status: 502, code: .unavailable, description: "音声入力の校正に失敗した")
+        }
+    }
+
     /// 確かめた版の CLI とログインシェルの環境。確かめた版が無ければ起こさない
     func launch() async throws -> EngineLaunch {
         guard let entry = VerifiedCLI.load(.claude, supportDirectory: environment.supportDirectory)?.newest(requiring: ClaudeConversation.requiredCapabilities)
@@ -1413,5 +1441,16 @@ enum Deadline {
             continuation?.resume(with: result)
             tasks.forEach { $0.cancel() }
         }
+    }
+}
+
+/// 作り終える前に渡す口から、作り終えた actor を弱く引く
+final class WeakReference<Value: AnyObject & Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private weak var stored: Value?
+
+    var value: Value? {
+        get { lock.withLock { stored } }
+        set { lock.withLock { stored = newValue } }
     }
 }

@@ -256,6 +256,7 @@ struct ChatSettingsForm: View {
     @AppStorage(AppPreferences.chatFontSizeKey) private var fontSize = SessionTextSize.chatDefault
     @AppStorage(AppPreferences.collapseToolsKey) private var collapseTools = true
     @AppStorage(AppPreferences.voiceInputKey) private var voiceInput = true
+    @AppStorage(AppPreferences.preferBuiltInMicrophoneKey) private var preferBuiltInMicrophone = true
 
     var body: some View {
         Form {
@@ -264,6 +265,8 @@ struct ChatSettingsForm: View {
             }
             Toggle("ツールの実行を初めから折りたたむ", isOn: $collapseTools)
             Toggle("音声入力のボタンを表示する", isOn: $voiceInput)
+            Toggle("内蔵のマイクを優先する", isOn: $preferBuiltInMicrophone)
+                .disabled(!voiceInput)
         }
         .formStyle(.grouped)
         .settingsContentWidth()

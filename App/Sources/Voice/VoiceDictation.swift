@@ -1,13 +1,12 @@
 import AVFoundation
 import Foundation
 import OSLog
-import Speech
 import TaskboardKit
 
-/// 押している間だけ聞く音声入力。端末の中の `DictationTranscriber`（語彙を渡せる）で日本語を文字に起こし、聞いている間は確定した文と途中の文を
-/// `update` に、離して確定した文を `finish` に渡す（送信はしない）。日本語のモデルが入っていなければ、押したときに取得を始める。
-/// マイクを初めて押したときは許可を求めるだけで聞き始めない（許可のダイアログが出ている間に指が離れ、離した知らせが届かないため）。
-/// モデルを取得し終えたときに押したままなら、そのまま聞き始める
+/// 会話の入力欄の音声入力。1 回押すと聞き始め、もう一度押すか、話し終えて無音が `silence` 秒続いたら終える（ハンズフリー）。
+/// 押し続けてから離したら、離したときに終える。終えたら端末の中の Whisper で文字にして `Handlers.transcribed` に渡し（送信はしない）、
+/// 続けて会話の文脈を付けて校正し、校正できたら `Handlers.polished` に渡す。校正に失敗したら何も渡さない（校正の前の文が残る）。
+/// マイクを初めて押したときは許可を求めるだけで聞き始めない（許可のダイアログが出ている間に指が離れ、離した知らせが届かないため）
 @MainActor
 @Observable
 final class VoiceDictation {
@@ -15,84 +14,242 @@ final class VoiceDictation {
         case idle
         /// 権限とモデルを確かめ、マイクを開いている
         case preparing
-        /// 日本語のモデルを取得している。割合が分からなければ nil
+        /// 音声認識のモデルを取得している。割合が分からなければ nil
         case downloading(Double?)
+        /// 音声認識のモデルを読み込んでいる
+        case loading
         case listening
-        /// 離した後、残りの音を文字に起こしている
-        case finishing
+        /// 聞き終えた音を文字にしている
+        case transcribing
+    }
+
+    struct Handlers {
+        /// 校正の前の文
+        var transcribed: (String) -> Void
+        /// 校正の前の文と、校正した文
+        var polished: (_ original: String, _ polished: String) -> Void
+        var failed: (UserFacingError) -> Void
+        /// 校正を頼む口。nil なら校正しない（fixtures など）
+        var polish: (@Sendable (String) async throws -> String)?
+    }
+
+    /// 1 回の音声入力にかかった時間（離してから、校正の前の文と校正した文が入るまで）
+    struct Timing: Equatable {
+        var transcribed: Double
+        var polished: Double?
     }
 
     private(set) var phase: Phase = .idle
+    /// 校正を待っている（入力欄には校正の前の文が入っている）
+    private(set) var polishing = false
+    private(set) var lastTiming: Timing?
     /// マイクへのアクセスを断られた（入力欄の上に理由と設定を開く操作を出す。閉じるか、次に許可されていれば消す）
     var microphoneDenied = false
 
-    private var held = false
-    private var run: DictationRun?
+    /// これより長く押してから離したら、離したときに終える
+    static let holdThreshold: Duration = .milliseconds(350)
+    /// ハンズフリーで、話し終えた後にこの秒数の無音が続いたら終える
+    static let silence = 2.0
+    /// ハンズフリーで、話さないままこの秒数が過ぎたら終える
+    static let silentStartLimit = 10.0
 
-    static let locale = Locale(identifier: "ja-JP")
+    private let recognizer: WhisperRecognizer
+    private let makeMicrophone: @MainActor () -> any VoiceMicrophone
+    private let clock = ContinuousClock()
+    private var held = false
+    private var listeningSince: ContinuousClock.Instant?
+    /// ハンズフリーで聞いている途中に押した（その押しで終えたので、続く離しは何もしない）
+    private var ignoreRelease = false
+    private var capture: VoiceCapture?
+    private var endpoint = DictationEndpoint(silence: VoiceDictation.silence)
+    private var heard: [Float] = []
+    private var watcher: Task<Void, Never>?
+    private var vocabulary: [String] = []
+    private var handlers: Handlers?
+
     private static let logger = Logger(subsystem: "uk.whatn.taskboard", category: "dictation")
 
-    /// 押した。聞いている途中か準備の途中なら何もしない
-    func press(vocabulary: [String], update: @escaping (String) -> Void, finish: @escaping (String) -> Void, failed: @escaping (UserFacingError) -> Void) {
-        guard phase == .idle else { return }
-        held = true
-        phase = .preparing
-        Task { await begin(vocabulary: vocabulary, update: update, finish: finish, failed: failed) }
+    init(recognizer: WhisperRecognizer = .shared, makeMicrophone: @escaping @MainActor () -> any VoiceMicrophone = { EngineMicrophone() }) {
+        self.recognizer = recognizer
+        self.makeMicrophone = makeMicrophone
     }
 
-    /// 離した。聞いていれば残りを確定して `finish` を呼ぶ。準備の途中なら、準備が済んでも聞き始めない
-    func release() {
-        held = false
-        guard phase == .listening, let run else { return }
-        phase = .finishing
-        Task {
-            await run.finish()
-            self.run = nil
-            phase = .idle
+    /// 押した。止まっていれば聞き始め、ハンズフリーで聞いていれば終える
+    func press(vocabulary: [String], handlers: Handlers) {
+        switch phase {
+        case .idle:
+            held = true
+            ignoreRelease = false
+            self.vocabulary = vocabulary
+            self.handlers = handlers
+            phase = .preparing
+            Task { await begin() }
+        case .listening:
+            ignoreRelease = true
+            finish()
+        default:
+            break
         }
     }
 
-    /// 画面を離れた。聞いていた分は確定せずに捨てる（入力欄には途中までの文が残る）
-    func cancel() {
+    /// 離した。聞き始めてから `holdThreshold` より長く押していれば終える。短ければハンズフリーで聞き続ける
+    func release() {
         held = false
-        run?.cancel()
-        run = nil
-        if phase == .listening || phase == .finishing { phase = .idle }
+        if ignoreRelease {
+            ignoreRelease = false
+            return
+        }
+        guard phase == .listening, let listeningSince, clock.now - listeningSince >= Self.holdThreshold else { return }
+        finish()
     }
 
-    private func begin(vocabulary: [String], update: @escaping (String) -> Void, finish: @escaping (String) -> Void, failed: @escaping (UserFacingError) -> Void) async {
+    /// 画面を離れた。準備の途中なら聞き始めず、聞いていた分は文字にせずに捨てる。校正を待っている文は、届いても入れない（モデルの取得は続ける）
+    func cancel() {
+        held = false
+        watcher?.cancel()
+        watcher = nil
+        _ = capture?.stop()
+        capture = nil
+        handlers = nil
+        polishing = false
+        phase = .idle
+    }
+
+    /// モデルを取得し終えていれば、読み込んでおく（初めて押したときに待たせない）
+    func prewarm() {
+        Task { [recognizer] in
+            guard await recognizer.isDownloaded else { return }
+            try? await recognizer.prepare { _ in }
+        }
+    }
+
+    /// 音声ファイルを、マイクの代わりに同じ手順（文字にして校正）に通す（debug の口）
+    func transcribeFile(_ url: URL, vocabulary: [String], handlers: Handlers) {
+        guard phase == .idle else { return }
+        self.vocabulary = vocabulary
+        self.handlers = handlers
+        phase = .preparing
+        Task {
+            do {
+                try await prepareModel()
+                let samples = try VoiceAudioConverter.read(url)
+                await transcribe(samples)
+            } catch {
+                Self.logger.error("音声ファイルを文字にできなかった: \(String(describing: error), privacy: .public)")
+                phase = .idle
+                handlers.failed(.dictationFailed)
+            }
+        }
+    }
+
+    private func begin() async {
         guard await microphoneAllowed() else {
             phase = .idle
             return
         }
         do {
-            guard let locale = await DictationTranscriber.supportedLocale(equivalentTo: Self.locale) else {
-                phase = .idle
-                failed(.dictationUnsupported)
-                return
-            }
-            let transcriber = DictationTranscriber(locale: locale, preset: .progressiveLongDictation)
-            guard try await installModel(for: transcriber, locale: locale) else {
-                phase = .idle
-                failed(.dictationModelFailed)
-                return
-            }
-            // モデルの取得を待っている間に離していれば聞き始めない（押し直す）
-            guard held else {
-                phase = .idle
-                return
-            }
-            let run = try await DictationRun.start(transcriber: transcriber, vocabulary: vocabulary, update: update, finish: finish)
-            self.run = run
-            phase = .listening
-            if !held { release() }
+            try await prepareModel()
         } catch {
-            Self.logger.error("音声入力を始められなかった: \(String(describing: error), privacy: .public)")
+            Self.logger.error("音声認識のモデルを用意できなかった: \(String(describing: error), privacy: .public)")
             phase = .idle
-            switch error as? DictationRunError {
-            case .noFormat: failed(.dictationUnsupported)
-            case .noMicrophone: failed(.dictationNoMicrophone)
-            case nil: failed(.dictationFailed)
+            handlers?.failed(.dictationModelFailed)
+            return
+        }
+        guard phase != .idle else { return }
+        let capture = VoiceCapture(
+            microphone: makeMicrophone(), preferBuiltIn: AppDefaults.store.object(forKey: AppPreferences.preferBuiltInMicrophoneKey) as? Bool ?? true)
+        do {
+            try capture.start()
+        } catch {
+            Self.logger.error("マイクを開けなかった: \(String(describing: error), privacy: .public)")
+            phase = .idle
+            handlers?.failed(.dictationNoMicrophone)
+            return
+        }
+        self.capture = capture
+        endpoint = DictationEndpoint(silence: Self.silence)
+        heard = []
+        phase = .listening
+        listeningSince = clock.now
+        // 準備の間に長く押して離していても、聞き始めた後は 1 回押したのと同じに扱う（ハンズフリー）
+        watcher = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+                guard let self, !Task.isCancelled else { return }
+                self.watch()
+            }
+        }
+    }
+
+    /// 聞いている間、届いた音を貯めて、ハンズフリーなら話し終えたかを見る
+    private func watch() {
+        guard phase == .listening, let capture else { return }
+        let samples = capture.drain()
+        heard += samples
+        endpoint.feed(samples)
+        guard !held else { return }
+        let elapsed = Double(heard.count) / Double(DictationSignal.sampleRate)
+        if endpoint.ended || (!endpoint.heardSpeech && elapsed >= Self.silentStartLimit) { finish() }
+    }
+
+    private func finish() {
+        guard phase == .listening, let capture else { return }
+        watcher?.cancel()
+        watcher = nil
+        let rest = capture.stop()
+        self.capture = nil
+        heard += rest
+        endpoint.feed(rest)
+        let samples = heard
+        heard = []
+        guard endpoint.heardSpeech else {
+            phase = .idle
+            return
+        }
+        Task { await transcribe(samples) }
+    }
+
+    private func transcribe(_ samples: [Float]) async {
+        phase = .transcribing
+        let started = clock.now
+        let text: String
+        do {
+            text = try await recognizer.transcribe(DictationSignal.normalized(samples), vocabulary: vocabulary)
+        } catch {
+            Self.logger.error("音声を文字にできなかった: \(String(describing: error), privacy: .public)")
+            phase = .idle
+            handlers?.failed(.dictationFailed)
+            return
+        }
+        phase = .idle
+        guard let handlers, !text.isEmpty else { return }
+        let transcribed = Self.seconds(clock.now - started)
+        handlers.transcribed(text)
+        lastTiming = Timing(transcribed: transcribed, polished: nil)
+        Self.logger.notice("音声を文字にした: \(transcribed, format: .fixed(precision: 2), privacy: .public) 秒")
+        guard let polish = handlers.polish else { return }
+        polishing = true
+        defer { polishing = false }
+        do {
+            let polished = try await polish(text)
+            guard self.handlers != nil else { return }
+            let seconds = Self.seconds(clock.now - started)
+            lastTiming = Timing(transcribed: transcribed, polished: seconds)
+            Self.logger.notice("文を校正した: \(seconds, format: .fixed(precision: 2), privacy: .public) 秒")
+            if polished != text { handlers.polished(text, polished) }
+        } catch {
+            Self.logger.notice("文を校正できなかった。校正の前の文を残す: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    private func prepareModel() async throws {
+        try await recognizer.prepare { stage in
+            Task { @MainActor [weak self] in
+                guard let self, self.phase != .idle, self.phase != .listening, self.phase != .transcribing else { return }
+                switch stage {
+                case .downloading(let fraction): self.phase = .downloading(fraction)
+                case .loading: self.phase = .loading
+                }
             }
         }
     }
@@ -112,164 +269,13 @@ final class VoiceDictation {
         }
     }
 
-    /// 日本語のモデルを使える状態にする。取得しても入らなかったら false
-    private func installModel(for transcriber: DictationTranscriber, locale: Locale) async throws -> Bool {
-        try await AssetInventory.reserve(locale: locale)
-        guard let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) else { return true }
-        Self.logger.notice("日本語のモデルを取得する")
-        phase = .downloading(nil)
-        let progress = Task { [request] in
-            while !Task.isCancelled {
-                let fraction = request.progress.fractionCompleted
-                if case .downloading = phase { phase = .downloading(fraction > 0 ? fraction : nil) }
-                try await Task.sleep(for: .milliseconds(500))
-            }
-        }
-        defer { progress.cancel() }
-        do {
-            try await request.downloadAndInstall()
-        } catch {
-            Self.logger.error("日本語のモデルを取得できなかった: \(String(describing: error), privacy: .public)")
-            return false
-        }
-        let status = await AssetInventory.status(forModules: [transcriber])
-        Self.logger.notice("日本語のモデルの取得の後: \(String(describing: status), privacy: .public)")
-        return status == .installed
+    private static func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
     }
-}
-
-/// 1 回の聞き取り。マイクの音を変換して `SpeechAnalyzer` に流し、結果を確定した文と途中の文に分けて控える
-@MainActor
-private final class DictationRun {
-    private let analyzer: SpeechAnalyzer
-    private let engine: AVAudioEngine
-    private let input: AsyncStream<AnalyzerInput>.Continuation
-    private var results: Task<Void, any Error>?
-    private var finalized = ""
-    private var volatile = ""
-    private let finishText: (String) -> Void
-
-    private init(analyzer: SpeechAnalyzer, engine: AVAudioEngine, input: AsyncStream<AnalyzerInput>.Continuation, finish: @escaping (String) -> Void) {
-        self.analyzer = analyzer
-        self.engine = engine
-        self.input = input
-        self.finishText = finish
-    }
-
-    static func start(
-        transcriber: DictationTranscriber, vocabulary: [String], update: @escaping (String) -> Void, finish: @escaping (String) -> Void
-    ) async throws -> DictationRun {
-        let analyzer = SpeechAnalyzer(modules: [transcriber], options: .init(priority: .userInitiated, modelRetention: .lingering))
-        if !vocabulary.isEmpty {
-            let context = AnalysisContext()
-            context.contextualStrings[.general] = vocabulary
-            try await analyzer.setContext(context)
-        }
-        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else { throw DictationRunError.noFormat }
-        try await analyzer.prepareToAnalyze(in: format)
-
-        #if os(iOS)
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
-        #endif
-        let engine = AVAudioEngine()
-        let micFormat = engine.inputNode.outputFormat(forBus: 0)
-        guard micFormat.sampleRate > 0, micFormat.channelCount > 0 else { throw DictationRunError.noMicrophone }
-        let (stream, continuation) = AsyncStream.makeStream(of: AnalyzerInput.self)
-        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: micFormat, block: Self.tap(from: micFormat, to: format, into: continuation))
-        let run = DictationRun(analyzer: analyzer, engine: engine, input: continuation, finish: finish)
-        run.results = Task { [weak run] in
-            for try await result in transcriber.results {
-                guard let run else { return }
-                run.take(result, update: update)
-            }
-        }
-        do {
-            engine.prepare()
-            try engine.start()
-            try await analyzer.start(inputSequence: stream)
-        } catch {
-            run.cancel()
-            throw error
-        }
-        return run
-    }
-
-    private func take(_ result: DictationTranscriber.Result, update: (String) -> Void) {
-        let text = String(result.text.characters)
-        if result.isFinal {
-            finalized += text
-            volatile = ""
-        } else {
-            volatile = text
-        }
-        update(finalized + volatile)
-    }
-
-    /// マイクを止め、届いた音を全部確定してから、確定した文（確定しきれなかった途中の文も）を渡す
-    func finish() async {
-        stopMicrophone()
-        do {
-            try await analyzer.finalizeAndFinishThroughEndOfInput()
-            try await results?.value
-        } catch {
-            await analyzer.cancelAndFinishNow()
-        }
-        finishText(finalized + volatile)
-    }
-
-    func cancel() {
-        stopMicrophone()
-        results?.cancel()
-        Task { [analyzer] in await analyzer.cancelAndFinishNow() }
-    }
-
-    private func stopMicrophone() {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-        input.finish()
-        #if os(iOS)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        #endif
-    }
-
-    /// マイクの音を解析の形式に変えて流す。音の thread で呼ばれるので主 actor の外で作る
-    private nonisolated static func tap(
-        from source: AVAudioFormat, to target: AVAudioFormat, into input: AsyncStream<AnalyzerInput>.Continuation
-    ) -> AVAudioNodeTapBlock {
-        guard source != target, let converter = AVAudioConverter(from: source, to: target) else {
-            return { buffer, _ in input.yield(AnalyzerInput(buffer: buffer)) }
-        }
-        let ratio = target.sampleRate / source.sampleRate
-        return { buffer, _ in
-            let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up)) + 1
-            guard let converted = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: capacity) else { return }
-            var supplied = false
-            var error: NSError?
-            let status = converter.convert(to: converted, error: &error) { _, state in
-                if supplied {
-                    state.pointee = .noDataNow
-                    return nil
-                }
-                supplied = true
-                state.pointee = .haveData
-                return buffer
-            }
-            guard status != .error, converted.frameLength > 0 else { return }
-            input.yield(AnalyzerInput(buffer: converted))
-        }
-    }
-}
-
-private enum DictationRunError: Error {
-    case noFormat, noMicrophone
 }
 
 extension UserFacingError {
     static let dictationFailed = UserFacingError("音声入力できませんでした", remedy: String(localized: "時間をおいて、やり直してください"))
-    static let dictationUnsupported = UserFacingError(
-        "音声入力できませんでした", cause: String(localized: "このデバイスは日本語の音声認識に対応していません"))
     static let dictationNoMicrophone = UserFacingError(
         "音声入力できませんでした", cause: String(localized: "マイクが見つかりません"), remedy: String(localized: "マイクを接続して、やり直してください"))
     static let dictationModelFailed = UserFacingError(

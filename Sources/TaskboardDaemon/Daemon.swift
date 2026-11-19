@@ -67,7 +67,8 @@ public enum Daemon {
         let conversations = ConversationService(
             .init(
                 machine: machineID, store: store, state: state, supportDirectory: paths.directory, reservations: reservations, hooks: dependencies.hooks,
-                attachments: attachments, accounts: accounts, daemon: DaemonLocation(port: config.port, supportDirectory: paths.directory.path)))
+                attachments: attachments, accounts: accounts, daemon: DaemonLocation(port: config.port, supportDirectory: paths.directory.path),
+                polishDictation: { launch, request in try await ClaudeDictationPolish.run(launch, request, timeout: .seconds(20)) }))
         dependencies.conversations = conversations
         dependencies.worktrees = .live(store: store, conversations: conversations)
         // transcript は、会話と同じくログインシェルの環境の CLAUDE_CONFIG_DIR で引く

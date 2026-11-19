@@ -42,8 +42,6 @@
 	<string>接続先のQRコードを読み取るために使います。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>会話の入力欄の音声入力で、話した内容を文字にするために使います。</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>会話の入力欄の音声入力で、話した内容をこのデバイスの中で文字にするために使います。</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

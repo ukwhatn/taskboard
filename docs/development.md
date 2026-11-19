@@ -202,3 +202,4 @@ iPhone・iPad の APNs（アプリを閉じているときの通知）は、シ�
 | swift-snapshot-testing（テストのみ、`App/project.yml`） | 1.19.6 |
 | swift-markdown（アプリのみ、`App/project.yml`） | 0.9.0 |
 | swift-cmark（swift-markdown の依存） | 0.9.0 |
+| argmax-oss-swift（WhisperKit。アプリのみ、`App/project.yml`） | 1.1.1 |

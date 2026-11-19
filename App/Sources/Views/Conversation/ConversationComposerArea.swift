@@ -32,7 +32,7 @@ struct ConversationComposerArea: View {
     @State private var history = ComposerHistory()
     /// 候補を入力欄に入れた依頼と入れた文。送った文に文が残っていれば、送った後にその依頼を閉じる
 
-    /// 押している間だけ聞く音声入力
+    /// 音声入力（1 回押すとハンズフリー、押し続けると離すまで聞く）
     @State private var dictation = VoiceDictation()
     @AppStorage(AppPreferences.voiceInputKey) private var voiceInput = true
     #if os(macOS)
@@ -91,7 +91,10 @@ struct ConversationComposerArea: View {
             .composerDraftSync($input, to: key, in: drafts) { history.edited(to: $0) }
             #if DEBUG
             .modifier(DebugComposerFeed(draft: $input.draft, selection: $input.selection))
-            .modifier(DebugDictationFeed(phase: dictation.phase, press: { startDictation() }, release: { dictation.release() }))
+            .modifier(
+                DebugDictationFeed(
+                    dictation: dictation, press: { startDictation() }, release: { dictation.release() },
+                    file: { url in dictation.transcribeFile(url, vocabulary: dictationVocabulary, handlers: dictationHandlers()) }))
             #endif
             #if os(macOS)
             .onAppear {
@@ -103,6 +106,7 @@ struct ConversationComposerArea: View {
             .onChange(of: focused.wrappedValue) { _, now in voiceKeys.isActive = voiceInput && now }
             .onChange(of: voiceInput) { _, now in voiceKeys.isActive = now && focused.wrappedValue }
             #endif
+            .onAppear { if voiceInput { dictation.prewarm() } }
             .onDisappear {
                 #if os(macOS)
                 voiceKeys.stop()
@@ -136,7 +140,7 @@ struct ConversationComposerArea: View {
             #endif
         } accessory: {
             if voiceInput {
-                ComposerVoiceButton(phase: dictation.phase, press: { startDictation() }, release: { dictation.release() })
+                ComposerVoiceButton(phase: dictation.phase, polishing: dictation.polishing, press: { startDictation() }, release: { dictation.release() })
             }
             if generating, !phone {
                 Button {
@@ -172,20 +176,40 @@ struct ConversationComposerArea: View {
                 kind: .pending, message: String(localized: "音声認識のモデルを取得しています…"),
                 detail: fraction.map { String(localized: "\(Int(($0 * 100).rounded()))%") })
         }
+        if dictation.phase == .loading {
+            Banner(kind: .pending, message: String(localized: "音声認識のモデルを準備しています…"))
+        }
     }
 
-    /// 聞き始める。今のカーソル（選んでいればその範囲）に聞き取った文を入れていき、離したら確定した文で置き換える
+    /// 押した。止まっていれば、今のカーソル（選んでいればその範囲）に聞き取った文を入れる準備をして聞き始める（ハンズフリーで聞いていれば終える）
     private func startDictation() {
-        guard dictation.phase == .idle else { return }
+        dictation.press(vocabulary: dictationVocabulary, handlers: dictationHandlers())
+    }
+
+    /// 聞き取った文を、聞き始めたときのカーソルに入れる。校正した文は、入力欄が校正の前の文を入れたときのままなら置き換える（打ち直していれば捨てる）
+    private func dictationHandlers() -> VoiceDictation.Handlers {
         let insertion = DictationDraft(draft: input.draft, selection: selectedRange)
-        dictation.press(
-            vocabulary: dictationVocabulary,
-            update: { spoken in input.replace(insertion.inserting(spoken)) },
-            finish: { spoken in
-                input.replace(insertion.inserting(spoken.trimmingCharacters(in: .whitespacesAndNewlines)))
+        var task: BoardTask?
+        if case .task(let taskKey) = model.conversationScope(for: key) { task = model.fleet.task(for: taskKey) }
+        let title = task?.title
+        let number = task?.number
+        let messages = Array(feed.messages.suffix(80))
+        var polish: (@Sendable (String) async throws -> String)?
+        if let source = feed.source as? any DictationSource {
+            polish = { text in
+                try await source.polishDictation(DictationPolishRequest(text: text, taskTitle: title, taskNumber: number, messages: messages)).text
+            }
+        }
+        return VoiceDictation.Handlers(
+            transcribed: { spoken in
+                input.replace(insertion.inserting(spoken))
                 focused.wrappedValue = true
             },
-            failed: { failed($0) })
+            polished: { original, polished in
+                guard input.draft == insertion.inserting(original).text else { return }
+                input.replace(insertion.inserting(polished))
+            },
+            failed: { failed($0) }, polish: polish)
     }
 
     /// 欄で選んでいる範囲（カーソルだけなら空の範囲）。分からなければ nil（末尾に足す）

@@ -13,6 +13,8 @@ enum AppPreferences {
     static let chatFontSizeKey = "chat.fontSize"
     /// 入力欄の［音声入力］のボタン（Mac は ⌥Space も）
     static let voiceInputKey = "chat.voiceInput"
+    /// 音声入力で、AirPods などをつないでいても内蔵のマイクで聞く（既定はオン）
+    static let preferBuiltInMicrophoneKey = "chat.preferBuiltInMicrophone"
     /// 巻き戻した会話の［元に戻す］のバーを消した・送った印（`RewindNoticeDismissals`）
     static let rewindNoticeDismissalsKey = "chat.rewindNoticeDismissals"
     static let terminalFontSizeKey = "terminal.fontSize"

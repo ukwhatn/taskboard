@@ -58,6 +58,8 @@ final class AppModel {
     /// 確認用: 会話の入力欄の［音声入力］の押し下げと離し（DebugServer の /conversation/dictation）と、入力欄が書き戻す今の段階
     var debugDictationPress: DebugDictationPress?
     var debugDictationPhase = "idle"
+    var debugDictationPolishing = false
+    var debugDictationTiming: VoiceDictation.Timing?
     #endif
     private let prefs = DevicePrefs()
     /// タスクの開き方。開いた後に切り替えると、次からもその開き方になる

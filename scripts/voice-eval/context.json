@@ -1,0 +1,12 @@
+{
+  "taskTitle": "taskboard改修",
+  "taskNumber": 172,
+  "messages": [
+    "Stop hook の exit 2 の扱いを直しました。3 台に入れるのはまだです",
+    "ConversationService のテストが 1 件落ちています（ConversationRuns の既知の揺れ）",
+    "Mac の snapshot test は 609 件通りました。iPhone は未実施です",
+    "AppDefaults.store を分けたので、確かめるたびに設定が書き換わることはなくなりました",
+    "WebSocket の maxFrameSize を 1MB にしました",
+    "README.md と README.ja.md の差分を確認してください"
+  ]
+}

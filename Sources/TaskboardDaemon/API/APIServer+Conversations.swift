@@ -27,6 +27,12 @@ extension APIServer {
         v1.get("conversations") { _, _ in
             try json(await service().list(), encoder)
         }
+        // 音声入力で文字にした文の校正（このマシンの Claude Code で回す。会話には送らない）
+        v1.post("dictation/polish") { request, context in
+            let body = try await request.decode(as: DictationPolishRequest.self, context: context)
+            if let violation = body.violation { throw APIError.invalid(violation) }
+            return try await mapConversationError { try json(try await service().polishDictation(body), encoder) }
+        }
         // Claude Code のモデルの一覧（会話と `conversation check` の initialize の答えから。まだ受けていなければ models が無い）
         v1.get("claude") { _, _ in
             try json(await service().claudeMachine(), encoder)

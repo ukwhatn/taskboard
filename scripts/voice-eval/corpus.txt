@@ -1,0 +1,12 @@
+段階 B の PR をマージして、Stop hook の修正を 3 台に入れて
+タスク 172 の作業項目を作業中にして、終わったら報告して
+swift test が落ちたので、ConversationService のログを見てください
+iPhone 17e のシミュレータで snapshot test を回し直して
+daemon を再起動したら、launchd の設定が古いままだった
+この PR はレビュー待ちにして、CI が通ったら教えて
+AppDefaults の保存先を分けないと、設定が上書きされます
+worktree を切ってから feature ブランチで作業して
+WebSocket の接続が 16KB で切れる件は直りましたか
+Mac Studio の agent host を入れ替えて、ログを確認して
+README の英語版と日本語版を同じ中身にしてください
+入力欄の上にモデルの取得中の帯を出して、進み具合を表示して

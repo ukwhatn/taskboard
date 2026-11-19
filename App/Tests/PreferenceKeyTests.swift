@@ -14,6 +14,7 @@ import Testing
             (AppPreferences.collapseToolsKey, "chat.collapseTools"),
             (AppPreferences.chatFontSizeKey, "chat.fontSize"),
             (AppPreferences.voiceInputKey, "chat.voiceInput"),
+            (AppPreferences.preferBuiltInMicrophoneKey, "chat.preferBuiltInMicrophone"),
             (AppPreferences.rewindNoticeDismissalsKey, "chat.rewindNoticeDismissals"),
             (AppPreferences.unreadConversationsKey, "sidebar.unreadConversations"),
             (AppPreferences.sidebarGroupingKey, "sidebar.grouping"),
