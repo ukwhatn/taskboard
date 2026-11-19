@@ -57,6 +57,7 @@ curl -X POST -d '{"action":"allow","userInfo":{"connection":"conn:<uuid>","conve
 curl :5790/prs; curl -X POST -d '{"url":"https://github.com/o/r/pull/1"}' :5790/prs/open   # PR（取った PR の一覧）と、通知の PR を押すのと同じ遷移（結んだタスクのサイドパネルの PR か、タスクなしの画面）
 curl ':5790/prs/detail?url=https://github.com/o/r/pull/1'; curl -X POST :5790/prs/refresh    # 中身の要約と「更新」
 curl :5790/doc/text; curl -X POST :5790/doc/screenshot -o doc.png    # 開いている文書の本文・画像の読み込み有無と、WKWebView の描画（/screenshot には写らない）
+curl -X POST -d '{"script":"document.querySelector(\"#tb-forms-bar .tb-primary\").click()"}' :5790/doc/js   # 開いている文書の WKWebView で JS を回して結果を文字で返す（本文の質問と送る文面の欄の押す操作は MessageProxy を通る本物の経路。欄は `[data-tb-card="ask:q1"]`・`[data-tb-card="draft:id"]`、送信の帯は `#tb-forms-bar`）。`pendingInput` は欄の書きかけの有無。送る文面の［承認］の確認のダイアログは /click でも /key でも押せなかった
 curl -X POST -d '{"askID":1,"answers":[{"questionID":"q1","selected":["A"]}]}' :5790/ask/answer
 curl -X POST -d '{"docID":1,"body":"ここ","quote":"一行目"}' :5790/comment; curl -X POST -d '{"number":145,"summary":"よい"}' :5790/review/submit
 curl -X POST -d '{"mode":"chat"}' :5790/session/mode     # セッションの表示（chat / terminal）。UserDefaults に残る

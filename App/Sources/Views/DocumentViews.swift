@@ -575,7 +575,8 @@ struct DocumentScreen: View {
     /// Esc。パネルでは文書だけを閉じてタスクの中身に戻り（パネルは開いたまま）、iPhone のシートはシートを閉じる。
     /// 切り替えで移ってきても、前の文書には戻らない
     private func escape() {
-        switch DocumentEscape.action(composerText: composer?.text, pendingInput: pendingInput) {
+        // 本文の欄の書きかけは、この画面の onPreferenceChange より外で足すので、ここで直接見る
+        switch DocumentEscape.action(composerText: composer?.text, pendingInput: pendingInput || web?.formsPendingInput == true) {
         case .closeComposer:
             composer = nil
             web?.clearSelection()

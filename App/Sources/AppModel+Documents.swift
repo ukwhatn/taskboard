@@ -84,7 +84,13 @@ extension AppModel {
 
     /// 開いている質問の束の、最初の質問の欄（受信箱と「判断待ち」から開く先）
     static func formSlot(for ask: Ask) -> String? {
-        ask.questions.first.map { DocMarker(kind: .ask, id: $0.id).slot }
+        ask.questions.first.map { formSlot(for: ask, question: $0.id) }
+    }
+
+    /// 質問の欄の名前。本文の印に入る束は印と同じ `ask:q1`、`ask_user` で後から付けた束は束の id を添える
+    /// （束ごとに q1 から振るので、添えないと本文の回答済みの欄と末尾の未回答の欄が同じ名前になる）。`DocumentForms.script` の `cardName` と同じ規則
+    static func formSlot(for ask: Ask, question id: String) -> String {
+        DocMarker(kind: .ask, id: ask.inBody ? id : "\(ask.askID).\(id)").slot
     }
 
     func deleteDocument(_ key: DocKey) async throws {

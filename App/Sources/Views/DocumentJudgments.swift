@@ -23,7 +23,7 @@ struct DocumentJudgments: View {
                 ask.questions.map { q in
                     let recommended = q.options.first(where: \.isRecommended).map { String(localized: "推奨：\($0.displayLabel)") }
                     return Item(
-                        id: "ask/\(ask.askID)/\(q.id)", doc: doc, slot: DocMarker(kind: .ask, id: q.id).slot, symbol: "questionmark.bubble",
+                        id: "ask/\(ask.askID)/\(q.id)", doc: doc, slot: AppModel.formSlot(for: ask, question: q.id), symbol: "questionmark.bubble",
                         title: q.question, detail: [doc.displayTitle, recommended].compactMap { $0 }.joined(separator: "・"))
                 }
             }
@@ -38,8 +38,10 @@ struct DocumentJudgments: View {
     }
 
     var body: some View {
-        let asks = model.fleet.machineState(for: task.machine).map { Array($0.asks.values) } ?? []
-        let items = Self.items(documents: documents, asks: asks)
+        let state = model.fleet.machineState(for: task.machine)
+        // 終わったタスクの待ちは古い記録なので出さない（受信箱と同じ）
+        let terminal = state?.isTerminal(task) ?? false
+        let items = terminal ? [] : Self.items(documents: documents, asks: state.map { Array($0.asks.values) } ?? [])
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: Space.inline) {
                 Text("判断待ち").textRole(.sectionTitle)

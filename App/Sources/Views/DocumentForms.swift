@@ -199,6 +199,7 @@ enum DocumentForms {
         function L(k){ return (F.data && F.data.labels[k]) || k; }
         function slot(name){ return document.querySelector('[data-tb-slot="' + CSS.escape(name) + '"]'); }
         function key(askID, q){ return askID + '/' + q; }
+        function cardName(ask, q){ return 'ask:' + (ask.inBody ? q.id : ask.askID + '.' + q.id); }
         function picks(askID, q){ const k = key(askID, q); return F.picks[k] || (F.picks[k] = []); }
         function openAsk(){ return F.data && F.data.asks.find(a => a.status === 'open'); }
         function writable(){ return F.data && F.data.canWrite && !F.data.blocked; }
@@ -224,7 +225,7 @@ enum DocumentForms {
         function questionCard(ask, q){
           const open = ask.status === 'open', live = open && writable();
           const card = el('section', 'tb-form' + (open ? ' tb-open' : ''));
-          card.dataset.tbCard = 'ask:' + q.id;
+          card.dataset.tbCard = cardName(ask, q);
           const head = el('div', 'tb-form-head');
           head.append(el('span', 'tb-form-kind', L('questions')));
           if (q.header) head.append(el('span', 'tb-chip', q.header));
@@ -249,7 +250,7 @@ enum DocumentForms {
               b.addEventListener('click', () => {
                 const k = key(ask.askID, q.id); let s = picks(ask.askID, q.id);
                 if (q.multiSelect) { s = s.includes(o.label) ? s.filter(x => x !== o.label) : s.concat([o.label]); } else { s = s.includes(o.label) ? [] : [o.label]; }
-                F.picks[k] = s; F.focus[k] = o.label; render(); const again = document.querySelector('[data-tb-card="ask:' + CSS.escape(q.id) + '"] .tb-option:nth-child(' + (q.options.indexOf(o) + 1) + ')'); if (again) again.focus();
+                F.picks[k] = s; F.focus[k] = o.label; render(); pending(); const again = document.querySelector('[data-tb-card="' + CSS.escape(cardName(ask, q)) + '"] .tb-option:nth-child(' + (q.options.indexOf(o) + 1) + ')'); if (again) again.focus();
               });
             }
             if (o.preview) b.addEventListener('mouseenter', () => { const k = key(ask.askID, q.id); if (F.focus[k] !== o.label) { F.focus[k] = o.label; updatePreview(card, ask, q); } });
@@ -333,7 +334,7 @@ enum DocumentForms {
         }
         function next(){
           const ask = openAsk(); if (!ask) return;
-          const rest = unanswered(ask); if (rest.length) F.scrollTo('ask:' + rest[0].id);
+          const rest = unanswered(ask); if (rest.length) F.scrollTo(cardName(ask, rest[0]));
         }
         function updateBar(){
           const bar = document.getElementById('tb-forms-bar'); if (!bar) return;
@@ -379,7 +380,7 @@ enum DocumentForms {
           card.classList.add('tb-flash'); setTimeout(() => card.classList.remove('tb-flash'), 1200);
           return true;
         };
-        F.firstOpen = function(){ const ask = openAsk(); if (ask && ask.questions.length) return 'ask:' + ask.questions[0].id; const d = F.data && F.data.drafts.find(x => !x.approved); return d ? 'draft:' + d.id : null; };
+        F.firstOpen = function(){ const ask = openAsk(); if (ask && ask.questions.length) return cardName(ask, ask.questions[0]); const d = F.data && F.data.drafts.find(x => !x.approved); return d ? 'draft:' + d.id : null; };
         document.addEventListener('keydown', e => {
           if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
           const card = document.activeElement && document.activeElement.closest('[data-tb-card^="draft:"]');

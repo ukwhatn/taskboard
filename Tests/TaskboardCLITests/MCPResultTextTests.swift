@@ -73,13 +73,16 @@ struct MCPResultTextTests {
         world.routes["POST /v1/docs/5/asks"] = ok(DocPublishResponse(document: doc, revision: 2, isNew: false, askID: 8, pendingFeedback: 2))
         let (tools, _) = RecordingDaemon.tools(world)
         #expect(
-            try await tools.call("ask_user", ["task_id": .int(1), "questions": questions])
+            try await tools.call("ask_user", ["task_id": .int(1), "questions": questions, "context": .string("背景")])
                 == "質問を作成した\n- ask_id: 7\n- 質問: 1 問\n- 文書: [5] plan.md ・ rev 1\n- タスク: #1\n- アプリ: taskboard://task/\(machine.rawValue)/1/doc/5\n- 回答: ブロックしない。taskboard がこのセッションに届ける。届かなければ feedback_list で取る")
         let attached = try await tools.call("ask_user", ["task_id": .int(1), "questions": questions, "name": .string("plan.md")])
         #expect(attached.contains("- 文書: [5] plan.md ・ rev 2（既存の文書に質問だけ付けた。本文は変えていない）"))
         #expect(attached.hasSuffix("- 次の操作: 先に未受領のフィードバック 2 件を feedback_list で読む"))
         await #expect(throws: TaskboardTools.ToolError.self) {
             try await tools.call("ask_user", ["task_id": .int(1), "questions": questions, "name": .string("plan.md"), "context": .string("背景")])
+        }
+        await #expect(throws: TaskboardTools.ToolError.self) {
+            try await tools.call("ask_user", ["task_id": .int(1), "questions": questions])
         }
     }
 
