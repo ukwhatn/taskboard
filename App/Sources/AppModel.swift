@@ -81,7 +81,7 @@ final class AppModel {
         didSet { prefs.sidebarArrangement = sidebarArrangement }
     }
     /// ピン留めしたタスク（この端末だけ）。サイドバーの先頭の「ピン留め」の組に、全部のマシンのものをまとめて、動いていなくても出す
-    var pinnedTasks: Set<TaskKey> = DevicePrefs().pinnedTasks {
+    var pinnedTasks: [TaskKey] = DevicePrefs().pinnedTasks {
         didSet { prefs.pinnedTasks = pinnedTasks }
     }
     /// ［次の入力待ちへ移動］で最後に開いた受信箱の項目（`AppModel.openNextAttention`）

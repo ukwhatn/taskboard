@@ -139,14 +139,30 @@ extension AppModel {
             lastActivity: { self.lastActivity(of: $0, in: state) })
     }
 
-    /// サイドバーの先頭の「ピン留め」の組（並べ方の並び順）。全部のマシンのものを 1 つにまとめ、動いていなくても、どの案件のものでも出す。元の組にも出す
+    /// サイドバーの先頭の「ピン留め」の組（ピン留めした順か、並べ替えた順）。全部のマシンのものを 1 つにまとめ、動いていなくても、どの案件のものでも出す。元の組にも出す
     func pinnedSidebarTasks() -> [BoardTask] {
-        let tasks = orderedMachines.flatMap { $0.state.tasks.values.filter { pinnedTasks.contains($0.id) } }
-        return sidebarArrangement.sorted(tasks, lastActivity: { task in fleet.machineState(for: task.machine).map { self.lastActivity(of: task, in: $0) } ?? task.updatedAt })
+        let shown = Set(orderedMachines.compactMap { $0.state.machine?.id })
+        return pinnedTasks.filter { shown.contains($0.machine) }.compactMap { fleet.task(for: $0) }
     }
 
     func setPinned(_ task: BoardTask, _ pinned: Bool) {
-        if pinned { pinnedTasks.insert(task.id) } else { pinnedTasks.remove(task.id) }
+        pinnedTasks.removeAll { $0 == task.id }
+        if pinned { pinnedTasks.append(task.id) }
+    }
+
+    /// ピン留めの組の List の `onMove`。組に出ていないもの（接続していないマシンなど）は後ろに残す
+    func movePinned(from source: IndexSet, to destination: Int) {
+        var shown = pinnedSidebarTasks().map(\.id)
+        shown.move(fromOffsets: source, toOffset: destination)
+        let hidden = pinnedTasks.filter { !shown.contains($0) }
+        pinnedTasks = shown + hidden
+    }
+
+    /// 行のメニューの［上へ移動］［下へ移動］
+    func movePinned(_ task: BoardTask, by offset: Int) {
+        let shown = pinnedSidebarTasks().map(\.id)
+        guard let index = shown.firstIndex(of: task.id), shown.indices.contains(index + offset) else { return }
+        movePinned(from: [index], to: offset > 0 ? index + offset + 1 : index + offset)
     }
 
     /// 状態で分けたときの組（中身のある組だけ、`SidebarStateGroup` の順）。行の札も一緒に返す（行で引き直さない）

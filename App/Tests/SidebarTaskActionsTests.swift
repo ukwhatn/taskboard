@@ -24,19 +24,21 @@ import Testing
         return model
     }
 
-    @Test("ピン留めはこの端末に保存して読み戻せる。読めない値は捨てる")
+    @Test("ピン留めは並べた順のままこの端末に保存して読み戻せる。読めない値と重なりは捨てる")
     func pinPersistence() {
         let defaults = store()
         let prefs = DevicePrefs(defaults: defaults)
         #expect(prefs.pinnedTasks.isEmpty)
-        let pinned: Set<TaskKey> = [TaskKey(machine: MachineID(rawValue: "studio"), number: 12), TaskKey(machine: MachineID(rawValue: "laptop"), number: 3)]
+        let pinned = [TaskKey(machine: MachineID(rawValue: "studio"), number: 12), TaskKey(machine: MachineID(rawValue: "laptop"), number: 3)]
         prefs.pinnedTasks = pinned
         #expect(DevicePrefs(defaults: defaults).pinnedTasks == pinned)
-        defaults.set(["studio\n12", "壊れた値", "laptop\nx"], forKey: AppPreferences.pinnedTasksKey)
+        prefs.pinnedTasks = pinned.reversed()
+        #expect(DevicePrefs(defaults: defaults).pinnedTasks == pinned.reversed(), "名前の順に並べ直さない")
+        defaults.set(["studio\n12", "壊れた値", "laptop\nx", "studio\n12"], forKey: AppPreferences.pinnedTasksKey)
         #expect(prefs.pinnedTasks == [TaskKey(machine: MachineID(rawValue: "studio"), number: 12)])
     }
 
-    @Test("ピン留めしたタスクは、全部のマシンのものをサイドバーの先頭の組にまとめて動いていなくても出し、元の組にも残す。外すと先頭の組から消える")
+    @Test("ピン留めしたタスクは、全部のマシンのものをサイドバーの先頭の組にまとめて動いていなくても出し、元の組にも残す。並べ替えられ、外すと先頭の組から消える")
     func pinnedGroup() async throws {
         let model = try await loaded("test-sidebar-pin")
         let machine = try #require(model.orderedMachines.first)
@@ -47,7 +49,13 @@ import Testing
         let busy = try #require(model.sidebarTasks(on: machine.state, fleetID: machine.id, waiting: waiting, active: active).first)
         model.setPinned(quiet, true)
         model.setPinned(busy, true)
-        #expect(model.pinnedSidebarTasks().map(\.number) == [quiet.number, busy.number].sorted())
+        #expect(model.pinnedSidebarTasks().map(\.number) == [quiet.number, busy.number], "ピン留めした順")
+        model.movePinned(from: [1], to: 0)
+        #expect(model.pinnedSidebarTasks().map(\.number) == [busy.number, quiet.number], "ドラッグで並べ替える")
+        model.movePinned(busy, by: 1)
+        #expect(model.pinnedSidebarTasks().map(\.number) == [quiet.number, busy.number], "メニューの［下へ移動］")
+        model.movePinned(busy, by: 1)
+        #expect(model.pinnedSidebarTasks().map(\.number) == [quiet.number, busy.number], "末尾から下へは動かない")
         let rest = model.sidebarTasks(on: machine.state, fleetID: machine.id, waiting: waiting, active: active).map(\.number)
         #expect(rest.contains(busy.number), "動いているタスクは元の組にも出す")
         #expect(!rest.contains(quiet.number), "元の組に出す条件は変えない")

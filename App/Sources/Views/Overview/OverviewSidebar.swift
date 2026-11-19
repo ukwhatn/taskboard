@@ -78,7 +78,8 @@ struct SidebarTree: View {
         if !pinned.isEmpty {
             TaskGroupTreeRow(
                 id: "pinned", label: String(localized: "ピン留め"),
-                rows: pinned.map { (task: $0, status: model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) })
+                rows: pinned.map { (task: $0, status: model.rowStatus(of: $0, waiting: waiting[$0.id] ?? [])) },
+                move: { model.movePinned(from: $0, to: $1) })
         }
         ForEach(model.orderedMachines, id: \.id) { machine in
             MachineTreeRow(fleetID: machine.id, state: machine.state, selectable: selectable, waiting: waiting)
@@ -323,6 +324,8 @@ private struct TaskGroupTreeRow: View {
     let id: String
     let label: String
     let rows: [(task: BoardTask, status: TaskRowStatus?)]
+    /// ドラッグで並べ替える組（ピン留め）だけ渡す
+    var move: ((IndexSet, Int) -> Void)?
 
     var body: some View {
         let isExpanded = model.isSidebarNodeExpanded(id)
@@ -331,6 +334,7 @@ private struct TaskGroupTreeRow: View {
             ForEach(rows, id: \.task.id) { row in
                 TaskTreeRow(task: row.task, status: row.status)
             }
+            .onMove(perform: move)
         } label: {
             Text(label)
                 .foregroundStyle(.secondary)
@@ -493,6 +497,11 @@ struct TaskRowMenuItems: View {
         }
         if model.pinnedTasks.contains(task.id) {
             Button("ピン留めを外す") { model.setPinned(task, false) }
+            let pinned = model.pinnedSidebarTasks().map(\.id)
+            if pinned.count > 1, let index = pinned.firstIndex(of: task.id) {
+                Button("上へ移動", systemImage: "arrow.up") { model.movePinned(task, by: -1) }.disabled(index == 0)
+                Button("下へ移動", systemImage: "arrow.down") { model.movePinned(task, by: 1) }.disabled(index == pinned.count - 1)
+            }
         } else {
             Button("ピン留め") { model.setPinned(task, true) }
         }

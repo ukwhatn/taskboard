@@ -68,17 +68,18 @@ struct DevicePrefs {
         }
     }
 
-    /// 読めない値は捨てる
-    var pinnedTasks: Set<TaskKey> {
+    /// 並べた順。読めない値と重なりは捨てる
+    var pinnedTasks: [TaskKey] {
         get {
-            Set(
-                (defaults.stringArray(forKey: AppPreferences.pinnedTasksKey) ?? []).compactMap { stored in
-                    let parts = stored.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
-                    guard parts.count == 2, let number = Int(parts[1]) else { return nil }
-                    return TaskKey(machine: MachineID(rawValue: String(parts[0])), number: number)
-                })
+            var seen = Set<TaskKey>()
+            return (defaults.stringArray(forKey: AppPreferences.pinnedTasksKey) ?? []).compactMap { stored in
+                let parts = stored.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
+                guard parts.count == 2, let number = Int(parts[1]) else { return nil }
+                let key = TaskKey(machine: MachineID(rawValue: String(parts[0])), number: number)
+                return seen.insert(key).inserted ? key : nil
+            }
         }
-        nonmutating set { defaults.set(newValue.map { "\($0.machine.rawValue)\n\($0.number)" }.sorted(), forKey: AppPreferences.pinnedTasksKey) }
+        nonmutating set { defaults.set(newValue.map { "\($0.machine.rawValue)\n\($0.number)" }, forKey: AppPreferences.pinnedTasksKey) }
     }
 
     var hiddenMachines: Set<String> {
