@@ -36,6 +36,19 @@ public enum Daemon {
         for panel in try store.panels() { await state.upsert(panel) }
         await state.setSettings(try store.settings())
         await state.setInboxDismissals(try store.inboxDismissals())
+        do { await state.restore(links: try store.cachedLinkStatuses()) } catch {
+            logger.warning("link status cache unreadable", metadata: ["error": .string(String(describing: error))])
+        }
+        // 配った一覧を控えに残す（取得の時刻だけが変わったときは配らないので、書くのは中身が変わったときだけ）
+        let (_, linkEvents) = await state.subscribe()
+        Task {
+            for await event in linkEvents {
+                guard case .linksUpdated(let statuses) = event else { continue }
+                do { try store.saveLinkStatuses(statuses) } catch {
+                    logger.warning("link status cache not saved", metadata: ["error": .string(String(describing: error))])
+                }
+            }
+        }
         // ここから先の Store の書き込みは、この受け手が state に入れる
         _ = store.statePublisher(state: state)
         var dependencies = APIServer.Dependencies()

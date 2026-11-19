@@ -323,6 +323,14 @@ public actor DaemonState {
 
     public func linkStatuses() -> [LinkStatus] { links.values.sorted { $0.url < $1.url } }
 
+    /// 起動のときに控えを戻す。タスクに付いていない URL と、もう取り直した URL は入れない
+    public func restore(links cached: [LinkStatus]) {
+        let urls = linkedURLs()
+        var next = links
+        for status in cached where urls.contains(status.url) && next[status.url] == nil { next[status.url] = status }
+        publish(links: next)
+    }
+
     private func linkedURLs() -> Set<String> { Set(tasks.values.flatMap { $0.links.map(\.url) }) }
 
     /// タスクから外れたリンクを落とす

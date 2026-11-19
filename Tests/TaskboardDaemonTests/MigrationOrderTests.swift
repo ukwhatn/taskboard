@@ -55,6 +55,7 @@ struct MigrationOrderTests {
         "v44 work item groups and codes",
         "v45 task panels",
         "v46 briefings",
+        "v47 link status cache",
     ]
 
     @Test("登録した順は、これまでに出した DB が回ってきた順と同じ。足すのは末尾だけ")

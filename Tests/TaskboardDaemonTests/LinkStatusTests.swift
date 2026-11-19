@@ -107,6 +107,25 @@ struct LinkStatusTests {
         #expect(await state.snapshot().links.count == 2)
     }
 
+    @Test("起動のときに控えのリンクの状態を戻す。付いていない URL は捨て、取得し直した値は控えで上書きしない")
+    func restoresCachedLinks() async throws {
+        let state = DaemonState(machine: MachineInfo(id: Self.machine, name: "m", daemonVersion: "t"))
+        await state.load(boards: [], tasks: [Self.task(1, [Self.pr, Self.jira])])
+        let t0 = Date(timeIntervalSince1970: 1_791_100_000)
+        let fresh = PullRequestLinkState(state: .open, checks: .pending)
+        await state.record(links: [Self.jira: .jira(JiraLinkState(key: "ABC-1", statusName: "進行中", category: .indeterminate))], at: t0)
+        let merged = LinkStatus(url: Self.pr, fetchedAt: t0, pullRequest: PullRequestLinkState(state: .merged, checks: .success))
+        let staleJira = LinkStatus(url: Self.jira, fetchedAt: t0.addingTimeInterval(-3600), jira: JiraLinkState(key: "ABC-1", statusName: "完了", category: .done))
+        let unlinked = LinkStatus(url: "https://github.com/o/r/pull/9", fetchedAt: t0, pullRequest: fresh)
+
+        await state.restore(links: [merged, staleJira, unlinked])
+
+        let links = Dictionary(uniqueKeysWithValues: await state.snapshot().links.map { ($0.url, $0) })
+        #expect(links.keys.sorted() == [Self.pr, Self.jira].sorted())
+        #expect(links[Self.pr]?.isSettled == true, "マージ済みの控えが戻り、見出しで折りたためる")
+        #expect(links[Self.jira]?.jira?.category == .indeterminate, "起動の後に取った値を残す")
+    }
+
     @Test("タスクから外れたリンク・消えたタスクのリンクは落とす。付いていない URL の結果は入れない")
     func prune() async throws {
         let state = DaemonState(machine: MachineInfo(id: Self.machine, name: "m", daemonVersion: "t"))
