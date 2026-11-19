@@ -46,6 +46,10 @@ targets:
       - path: Resources/AppIcon.icon
         type: file
         buildPhase: resources
+      # 文書の WKWebView で動かす mermaid と highlight.js（版とライセンスは docs/development.md「依存の版」）
+      - path: Resources/DocumentScripts
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: taskboard
         product: TaskboardKit

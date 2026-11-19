@@ -204,3 +204,10 @@ iPhone・iPad の APNs（アプリを閉じているときの通知）は、シ�
 | swift-markdown（アプリのみ、`App/project.yml`） | 0.9.0 |
 | swift-cmark（swift-markdown の依存） | 0.9.0 |
 | argmax-oss-swift（WhisperKit。アプリのみ、`App/project.yml`） | 1.1.1 |
+
+文書の WKWebView で動かす JS は、npm の配布物から写して `App/Resources/DocumentScripts/` に置く（SwiftPM の依存ではない。アプリの資源として同梱し、ライセンスの文も同じ場所に置く）。上げるときは tarball を取り直し、sha256 と下の表を直す。
+
+| 配布物 | 版 | 写したファイル | tarball の sha256 | ライセンス |
+|---|---|---|---|---|
+| mermaid | 12.3.0 | `dist/mermaid.min.js`（5.5MB） | be0684e8d20bfc874df12c0f04927a5c482f57f2200eec54cca52a4583fd4040 | MIT（`mermaid-LICENSE`） |
+| @highlightjs/cdn-assets | 11.12.0 | `highlight.min.js`（129KB、共通の 36 言語）、`styles/github.min.css`・`styles/github-dark.min.css` | b8a006d30f45afe783072569f3d69c5b60c0e7b9ca28cd474e12f2584e2a3bd9 | BSD-3-Clause（`highlight.js-LICENSE`） |

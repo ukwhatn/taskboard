@@ -253,7 +253,9 @@ final class DocumentWebController: NSObject {
             let document = Markdown.Document(parsing: content.content, options: [.parseBlockDirectives, .parseSymbolLinks])
             let rendered = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
             let body = forms ? DocumentForms.placeSlots(in: rendered) : rendered
-            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(formsTail)<script>\(bridgeScript)</script></body></html>"
+            // 図と色付けは引用のハイライト（bridgeScript の後の didFinish）より先に描く
+            let scripts = DocumentScripts.injection(for: rendered)
+            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)\(scripts.style)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(scripts.script)\(formsTail)<script>\(bridgeScript)</script></body></html>"
         case .html:
             // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡し、欄の置き場だけ足す。viewport が無ければ足す（iPhone で縮んで出る）
             var html = forms ? DocumentForms.placeSlots(in: content.content) : content.content
@@ -281,7 +283,7 @@ final class DocumentWebController: NSObject {
         h1{font-size:1.5em;margin:.2em 0 .6em} h2{font-size:1.2em;margin:1.6em 0 .5em;padding-bottom:.2em;border-bottom:.5px solid rgba(127,127,127,.35)} h3{font-size:1.05em;margin:1.3em 0 .4em}
         p,ul,ol,pre,table,blockquote{margin:.5em 0} li{margin:.15em 0}
         code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:rgba(127,127,127,.15);padding:.1em .35em;border-radius:4px}
-        pre{background:rgba(127,127,127,.12);padding:10px 12px;border-radius:8px;white-space:pre-wrap} pre code{background:none;padding:0}
+        pre{background:rgba(127,127,127,.12);padding:10px 12px;border-radius:8px;white-space:pre-wrap;overflow-x:auto} pre code{background:none;padding:0}
         pre code:has(> [class^=tb-diff-]){display:block;width:max-content;min-width:100%} [class^=tb-diff-]{display:block}
         .tb-diff-added{background:rgba(52,199,89,.12)} .tb-diff-removed{background:rgba(255,59,48,.12)} .tb-diff-hunk,.tb-diff-header{color:GrayText}
         .tb-diff-added>.tb-sign{color:#28a745} .tb-diff-removed>.tb-sign{color:#d73a49}
