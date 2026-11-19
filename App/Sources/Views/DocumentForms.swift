@@ -150,6 +150,7 @@ enum DocumentForms {
     static var style: String {
         """
         .tb-slot:empty{display:none}
+        .tb-markdown .tb-forms-end{max-width:760px;margin:0 auto}
         .tb-form{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:CanvasText;margin:\(Int(Space.block))px 0;padding:\(Int(Space.card))px;border-radius:\(Int(Radius.card))px;background:rgba(127,127,127,.08);text-align:left}
         .tb-markdown .tb-form{font-size:var(--tb-size,14px)}
         .tb-form.tb-open{background:rgba(255,149,0,.07);border:1px solid rgba(255,149,0,.35)}

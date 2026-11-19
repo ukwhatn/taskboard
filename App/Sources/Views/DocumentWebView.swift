@@ -236,7 +236,7 @@ final class DocumentWebController: NSObject {
             let document = Markdown.Document(parsing: content.content, options: [.parseBlockDirectives, .parseSymbolLinks])
             let rendered = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
             let body = forms ? DocumentForms.placeSlots(in: rendered) : rendered
-            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)</style></head><body class=\"tb-markdown\"><main>\(body)\(formsTail)</main><script>\(bridgeScript)</script></body></html>"
+            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(formsTail)<script>\(bridgeScript)</script></body></html>"
         case .html:
             // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡し、欄の置き場だけ足す。viewport が無ければ足す（iPhone で縮んで出る）
             var html = forms ? DocumentForms.placeSlots(in: content.content) : content.content

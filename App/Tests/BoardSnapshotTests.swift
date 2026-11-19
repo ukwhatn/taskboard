@@ -271,14 +271,14 @@ struct BoardSnapshotTests {
         let model = Self.model()
         try await waitUntil(model) { !model.fleet.allBoards.isEmpty && !(model.fleet.machineState(for: model.fleet.allBoards[0].machine)?.documents.isEmpty ?? true) }
         let machine = model.fleet.allBoards[0].machine
-        // #120: 質問付きの markdown と、未解決コメントのある html
+        // #120: 質問付きの markdown と、未解決コメントのある html。上に判断待ち（質問 2 件）が並ぶ
         let key = TaskKey(machine: machine, number: 120)
         let task = try #require(model.fleet.task(for: key), "fixtures のタスク番号が変わった")
         let documents = model.fleet.documents(for: key)
         try #require(documents.count == 2, "fixtures の文書が変わった")
         let view = DocumentList(task: task, documents: documents).environment(model)
         assertImageSnapshot(
-            of: Self.host(view, size: CGSize(width: 340, height: 200), variant: variant),
+            of: Self.host(view, size: CGSize(width: 340, height: 340), variant: variant),
             named: variant.name)
     }
 

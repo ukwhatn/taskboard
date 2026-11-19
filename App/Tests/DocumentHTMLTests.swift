@@ -26,6 +26,12 @@ import Testing
         #expect(body("[文](https://example.com/?a=1&b=\"2\")") == "<p><a href=\"https://example.com/?a=1&amp;b=&quot;2&quot;\">文</a></p>\n")
     }
 
+    @Test("本文の印は質問と送る文面の欄の置き場になる。コードの中の印は文字のまま")
+    func placesFormSlots() {
+        #expect(body("前提\n\n<!-- ask: q1 -->\n") == "<p>前提</p>\n<div class=\"tb-slot\" data-tb-slot=\"ask:q1\"></div>\n")
+        #expect(body("`<!-- draft: d1 -->`") == "<p><code>&lt;!-- draft: d1 --&gt;</code></p>\n")
+    }
+
     @Test("Markdown の中に書いた HTML はそのままタグにする。diff の塊の行は escape した文字を包む")
     func keepsHTML() {
         #expect(body("<details><summary>開く</summary></details>") == "<details><summary>開く</summary></details>\n")
