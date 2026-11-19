@@ -34,7 +34,14 @@ public enum DocExternalHosts {
             return attribute.matches(in: attributes, range: NSRange(location: 0, length: attrs.length)).flatMap { m -> [String] in
                 let key = attrs.substring(with: m.range(at: 1)).lowercased()
                 if key == "href", name == "a" || name == "area" { return [] }
-                guard let value = (2...4).lazy.map({ m.range(at: $0) }).first(where: { $0.location != NSNotFound }).map(attrs.substring(with:)) else { return [] }
+                // 値は "…"・'…'・囲みなしのどれか 1 つの group に入る
+                var found: NSRange?
+                for group in 2...4 where m.range(at: group).location != NSNotFound {
+                    found = m.range(at: group)
+                    break
+                }
+                guard let found else { return [] }
+                let value = attrs.substring(with: found)
                 // srcset は「URL 幅の記述, …」の並び
                 return key == "srcset" ? value.split(separator: ",").compactMap { $0.split(separator: " ").first.map(String.init) } : [value]
             }
