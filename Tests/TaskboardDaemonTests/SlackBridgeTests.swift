@@ -243,6 +243,7 @@ struct SlackBridgeTests {
         #expect(text.hasPrefix(TaskboardNotice.marker(.slack, ["id": "1"])))
         #expect(text.hasSuffix(TaskboardNotice.slackRequestHeading + "\nこれやっといて"))
         #expect(text.contains("ゆき"))
+        #expect(text.contains(Copy.text("agent.notice.slack.intake")))
         #expect(!text.contains(botToken))
         let reactions = w.calls.filter { $0.method == "reactions.add" }
         #expect(reactions.map { $0.form["name"] } == ["eyes"])
@@ -257,6 +258,7 @@ struct SlackBridgeTests {
         await w.conversations.setLead(.conversation("lead-1"), task: w.task.number)
         await w.bridge.receive(mention(event: "Ev1", channel: "CROUTE"), board: w.board.id)
         #expect(await w.conversations.sent.map(\.conversation) == ["lead-1"])
+        #expect(await w.conversations.sent.first?.text.contains(Copy.text("agent.notice.slack.intake")) == true)
 
         let fresh = try await world()
         await fresh.bridge.receive(mention(event: "Ev2", channel: "CROUTE"), board: fresh.board.id)

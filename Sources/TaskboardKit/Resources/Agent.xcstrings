@@ -6931,6 +6931,17 @@
         }
       }
     },
+    "agent.notice.slack.intake" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 受け方: この会話は依頼を受け続ける受付。返答の文だけで答えられる質問以外（ファイルの作成・編集、commit・push・PR、slack_reply 以外の投稿・送信、doc_publish を伴う依頼）は、調べる前に task_create（link_session: false）でタスクを切り、session_start で起動した会話に渡す。スレッドの続きは、切ったタスクの会話に session_prompt で取り次ぐ"
+          }
+        }
+      }
+    },
     "agent.notice.wakeService.lines" : {
       "extractionState" : "manual",
       "localizations" : {
