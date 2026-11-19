@@ -244,6 +244,8 @@ private struct TaskPanelBody: View {
                 .environment(\.splitFocus, move)
                 .accessibilityHidden(parked)
                 .allowsHitTesting(!parked)
+                // 入力欄のフォーカスは枠の外へ送っても残るので、打った字が見えない入力欄に入らないよう編集を止める（Esc は今どおり外へ渡る）
+                .disabled(parked)
             if let doc {
                 SplitDivider(vertical: true)
                 DocumentScreen(key: doc.id, inPane: !docAlone).id(doc.id)
