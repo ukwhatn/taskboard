@@ -343,6 +343,7 @@ struct PushDeliverySection: View {
 
 struct DisplaySettingsForm: View {
     @Environment(AppModel.self) private var model
+    @AppStorage(AppPreferences.docEditorURLKey) private var editorURL = ""
 
     var body: some View {
         @Bindable var model = model
@@ -385,6 +386,15 @@ struct DisplaySettingsForm: View {
                         }))
                 }
             }
+            #if os(macOS)
+            Section {
+                LabeledTextField(label: String(localized: "エディタのURL"), text: $editorURL, prompt: DocumentEditorURL.defaultTemplate)
+            } header: {
+                Text("文書")
+            } footer: {
+                Text("［エディタで開く］で使います。「{path}」の位置に元のファイルのパスが入ります。")
+            }
+            #endif
             Section {
                 Button("案件の設定を開く") { model.leaveSettings(.section(.boards)) }
             } footer: {

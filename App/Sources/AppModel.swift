@@ -564,6 +564,11 @@ final class AppModel {
         if let failure = UserFacingError(event, error: error) { failures[window] = failure }
     }
 
+    /// 原因と対処を画面で組んだ失敗を、その窓の帯に出す
+    func fail(_ failure: UserFacingError, in window: WindowID) {
+        failures[window] = failure
+    }
+
     func failure(in window: WindowID) -> UserFacingError? {
         failures[window]
     }

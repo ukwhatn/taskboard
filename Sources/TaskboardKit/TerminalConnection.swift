@@ -46,6 +46,8 @@ public protocol DaemonWriter: Sendable {
     func deleteDocument(id: Int64) async throws
     func documentRevisions(id: Int64) async throws -> [DocRevision]
     func documentContent(id: Int64, rev: Int?) async throws -> DocContent
+    /// publish 元のファイルのパス。同じ Mac の daemon にだけ聞ける（端末の token は 403）
+    func documentSourceFile(id: Int64) async throws -> DocSourceFile
     func comments(doc id: Int64) async throws -> [DocComment]
     func createComment(doc id: Int64, _ request: CommentCreateRequest) async throws -> DocComment
     func updateComment(id: Int64, _ request: CommentUpdateRequest) async throws -> DocComment

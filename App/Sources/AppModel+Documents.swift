@@ -1,4 +1,7 @@
 import Foundation
+#if os(macOS)
+import AppKit
+#endif
 import TaskboardKit
 
 /// 文書・質問・レビューのコメント
@@ -12,6 +15,32 @@ extension AppModel {
     func documentContent(_ key: DocKey, rev: Int?) async throws -> DocContent {
         try await requireSource(key.machine).documentContent(id: key.id, rev: rev)
     }
+
+    #if os(macOS)
+    /// 文書の元のファイルを Finder かエディタで開く（文書がこの Mac のもので、元のファイルがあるときだけ呼ぶ）
+    func openSourceFile(_ key: DocKey, in app: DocumentSourceApp, window: WindowID) async {
+        let event: LocalizedStringResource = app == .finder ? "Finderで表示できませんでした" : "エディタで開けませんでした"
+        do {
+            guard let path = try await requireSource(key.machine).documentSourceFile(id: key.id).path, FileManager.default.fileExists(atPath: path) else {
+                fail(UserFacingError(event, cause: String(localized: "元のファイルが見つかりません")), in: window)
+                return
+            }
+            switch app {
+            case .finder:
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+            case .editor:
+                let template = AppDefaults.store.string(forKey: AppPreferences.docEditorURLKey) ?? ""
+                guard let url = DocumentEditorURL.url(template: template, path: path), NSWorkspace.shared.urlForApplication(toOpen: url) != nil else {
+                    fail(UserFacingError(event, cause: String(localized: "エディタのURLを開けるアプリが見つかりません"), remedy: String(localized: "［設定］>［表示］のエディタのURLを確認してください")), in: window)
+                    return
+                }
+                NSWorkspace.shared.open(url)
+            }
+        } catch {
+            fail(event, error, in: window)
+        }
+    }
+    #endif
 
     func documentRevisions(_ key: DocKey) async throws -> [DocRevision] {
         try await requireSource(key.machine).documentRevisions(id: key.id)

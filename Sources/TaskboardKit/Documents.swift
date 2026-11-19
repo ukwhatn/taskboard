@@ -165,6 +165,15 @@ public struct DocContent: Codable, Hashable, Sendable {
     }
 }
 
+/// `GET /v1/docs/{id}/source`。publish 元のファイルのパス（daemon の token にだけ返す。パスは文書のマシンの中でだけ意味がある）
+public struct DocSourceFile: Codable, Hashable, Sendable {
+    public var path: String?
+
+    public init(path: String?) {
+        self.path = path
+    }
+}
+
 // MARK: - 送る文面
 
 /// `doc_publish` の `drafts` の 1 件。id は本文の印 `<!-- draft: id -->` が指す。欄は概況の送る文面（`PanelDraft`）と同じ

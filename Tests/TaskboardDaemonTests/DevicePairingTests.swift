@@ -217,7 +217,7 @@ struct DevicePairingTests {
 
     // MARK: 端末の token
 
-    @Test("iPhone の端末の token では 9 本の経路が 403 で印が付き、daemon の token では 403 にならない")
+    @Test("iPhone の端末の token では 10 本の経路が 403 で印が付き、daemon の token では 403 にならない")
     func deviceTokenForbiddenRoutes() async throws {
         let fixture = try makeFixture()
         try await app(fixture).test(.router) { client in
@@ -226,7 +226,7 @@ struct DevicePairingTests {
             let routes: [(String, HTTPRequest.Method)] = [
                 ("/v1/pairings", .post), ("/v1/devices/\(other.deviceID)", .delete), ("/v1/import/taskherd", .post), ("/v1/usage/claude", .post),
                 ("/v1/feedback/claim", .post), ("/v1/feedback/ack", .post), ("/v1/tasks/1/feedback/take", .post),
-                ("/v1/resolve", .get), ("/v1/hooks/stop", .post),
+                ("/v1/resolve", .get), ("/v1/hooks/stop", .post), ("/v1/docs/1/source", .get),
             ]
             for (uri, method) in routes {
                 let response = try await client.execute(uri: uri, method: method, headers: bearer(device.token), body: body("{}"))
@@ -245,6 +245,25 @@ struct DevicePairingTests {
             #expect(restart.status != .forbidden && restart.status != .unauthorized, "\(restart.status)")
         }
         #expect(try fixture.store.devices().count == 2)
+    }
+
+    @Test("文書の元のファイルのパスは daemon の token にだけ返す（端末の token は 403、パスの無い文書は null）")
+    func documentSourceOnlyForDaemonToken() async throws {
+        let fixture = try makeFixture()
+        let board = try fixture.store.createBoard(name: "default", columns: nil)
+        let task = try fixture.store.createTask(TaskCreateRequest(boardID: board.id, columnID: "planning", title: "設計"))
+        let withFile = try fixture.store.publish(task: task.number, DocPublishRequest(name: "plan.md", format: .markdown, content: "# 計画", sourcePath: "/tmp/計画 書.md"))
+        let inline = try fixture.store.publish(task: task.number, DocPublishRequest(name: "note.md", format: .markdown, content: "# メモ"))
+        try await app(fixture).test(.router) { client in
+            let device = try await pairDevice(client)
+            let uri = "/v1/docs/\(withFile.document.docID)/source"
+            #expect(try await client.execute(uri: uri, method: .get, headers: bearer(device.token)).status == .forbidden)
+            let own = try await client.execute(uri: uri, method: .get, headers: bearer(daemonToken))
+            #expect(try JSONDecoder().decode(DocSourceFile.self, from: Data(buffer: own.body)).path == "/tmp/計画 書.md")
+            let none = try await client.execute(uri: "/v1/docs/\(inline.document.docID)/source", method: .get, headers: bearer(daemonToken))
+            #expect(try JSONDecoder().decode(DocSourceFile.self, from: Data(buffer: none.body)).path == nil)
+            #expect(try await client.execute(uri: "/v1/docs/999/source", method: .get, headers: bearer(daemonToken)).status == .notFound)
+        }
     }
 
     @Test("iPhone の端末の token でセッションをタスクに紐づけ、外せる（アプリの［セッションを紐づける…］と［このタスクから外す］）")

@@ -418,6 +418,10 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         return try decode(data, response)
     }
 
+    public func documentSourceFile(id: Int64) async throws -> DocSourceFile {
+        try await get("/v1/docs/\(id)/source")
+    }
+
     public func comments(doc id: Int64) async throws -> [DocComment] {
         try await get("/v1/docs/\(id)/comments")
     }

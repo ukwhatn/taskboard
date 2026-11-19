@@ -138,7 +138,7 @@ struct DocumentScreen: View {
     /// nil は既定（質問・コメント・レビュー依頼があれば開く）
     @State private var showsComments: Bool?
     @State private var confirmDelete = false
-    @State private var exportedPDF: PDFFile?
+    @State private var exported: ExportedFile?
     /// 前の版との差分を描いている（版の選択は差分の新しい側を選ぶ）
     @State private var showsDiff = false
     /// 今描いている差分の新しい側の版。本文を描いていれば nil
@@ -286,22 +286,39 @@ struct DocumentScreen: View {
         } message: {
             Text("「\(doc.displayTitle)」を削除しますか？　コメントと質問も削除されます。この操作は元に戻せません。")
         }
-        .fileExporter(isPresented: Binding(get: { exportedPDF != nil }, set: { if !$0 { exportedPDF = nil } }),
-                      document: exportedPDF, contentType: .pdf, defaultFilename: doc.displayTitle) { _ in exportedPDF = nil }
+        .fileExporter(isPresented: Binding(get: { exported != nil }, set: { if !$0 { exported = nil } }),
+                      document: exported, contentType: exported?.type ?? .pdf, defaultFilename: exported?.name) { result in
+            exported = nil
+            if case .failure(let error) = result { exportFailure = UserFacingError("ファイルに書き出せませんでした", error: error) }
+        }
         .alert(exportFailure?.text ?? "", isPresented: Binding(get: { exportFailure != nil }, set: { if !$0 { exportFailure = nil } })) {
             Button("閉じる", role: .cancel) {}
         }
     }
+
+    /// 本文をそのまま（markdown か HTML の文書として）書き出す。名前は文書の名前（拡張子つき）
+    private func exportSource(_ doc: Document) {
+        guard let content else { return }
+        let type: UTType = content.format == .html ? .html : UTType(filenameExtension: "md") ?? .plainText
+        exported = ExportedFile(data: Data(content.content.utf8), type: type, name: doc.name)
+    }
+
+    #if os(macOS)
+    private func openSource(_ app: DocumentSourceApp) {
+        let window = model.beginAction()
+        Task { await model.openSourceFile(key, in: app, window: window) }
+    }
+    #endif
 
     private func copyContent() {
         guard let text = content?.content else { return }
         Pasteboard.copy(text)
     }
 
-    private func exportPDF() async {
+    private func exportPDF(_ doc: Document) async {
         guard let web else { return }
         do {
-            exportedPDF = PDFFile(data: try await web.pdf())
+            exported = ExportedFile(data: try await web.pdf(), type: .pdf, name: doc.displayTitle)
         } catch {
             exportFailure = UserFacingError("PDFを保存できませんでした", error: error)
         }
@@ -494,8 +511,17 @@ struct DocumentScreen: View {
             }
             Button(content?.format == .html ? "HTMLをコピー" : "Markdownをコピー", systemImage: "doc.on.doc") { copyContent() }
                 .disabled(content == nil)
-            Button("PDFで保存…", systemImage: "arrow.down.doc") { Task { await exportPDF() } }
+            Button("PDFで保存…", systemImage: "arrow.down.doc") { Task { await exportPDF(doc) } }
                 .disabled(content == nil)
+            Button("ファイルに書き出す…", systemImage: "square.and.arrow.up") { exportSource(doc) }
+                .disabled(content == nil)
+            #if os(macOS)
+            if doc.hasSourceFile, model.isThisMac(key.machine) {
+                Divider()
+                Button("Finderで表示", systemImage: "folder") { openSource(.finder) }
+                Button("エディタで開く", systemImage: "chevron.left.forwardslash.chevron.right") { openSource(.editor) }
+            }
+            #endif
             if model.canWrite(key.machine) {
                 Divider()
                 Button("文書を削除…", systemImage: "trash", role: .destructive) { confirmDelete = true }
@@ -763,12 +789,19 @@ private struct FormsHandling: ViewModifier {
     }
 }
 
-/// 文書の PDF の書き出し（`fileExporter` に渡す）
-struct PDFFile: FileDocument {
-    static let readableContentTypes: [UTType] = [.pdf]
+/// 文書の書き出し（`fileExporter` に渡す）。PDF と、本文そのまま（markdown・HTML）
+struct ExportedFile: FileDocument {
+    static let readableContentTypes: [UTType] = [.pdf, .html, .plainText] + [UTType(filenameExtension: "md")].compactMap(\.self)
     let data: Data
+    var type: UTType = .pdf
+    var name: String = ""
 
-    init(data: Data) { self.data = data }
+    init(data: Data, type: UTType, name: String) {
+        self.data = data
+        self.type = type
+        self.name = name
+    }
+
     init(configuration: ReadConfiguration) throws { data = configuration.file.regularFileContents ?? Data() }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }

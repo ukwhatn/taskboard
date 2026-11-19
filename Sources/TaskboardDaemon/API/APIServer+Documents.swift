@@ -56,6 +56,13 @@ extension APIServer {
             let rev = request.uri.queryParameters.get("rev", as: Int.self)
             return try json(try mapStoreError { try dependencies.requireStore().content(doc: id, rev: rev) }, encoder)
         }
+        // 元のファイルのパス。同じ Mac のアプリ（daemon の token）だけが［Finderで表示］［エディタで開く］に使う
+        daemonOnly.get("docs/{id}/source") { _, context in
+            let id = try context.parameters.require("id", as: Int64.self)
+            let store = try dependencies.requireStore()
+            guard try store.document(id: id) != nil else { throw APIError.notFound(.document, "文書 \(id) が無い") }
+            return try json(DocSourceFile(path: try store.sourcePath(doc: id)), encoder)
+        }
         v1.get("docs/{id}/comments") { _, context in
             let id = try context.parameters.require("id", as: Int64.self)
             return try json(try mapStoreError { try dependencies.requireStore().comments(doc: id) }, encoder)

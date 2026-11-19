@@ -53,6 +53,8 @@ enum AppPreferences {
     static let taskTerminalHeightKey = "taskPanel.terminalHeight"
     /// 文書ごとに、リモートコンテンツを読み込むと許したホスト（`DocumentRemoteContent`）
     static let docRemoteHostsKey = "doc.remoteHosts"
+    /// 文書の［エディタで開く］の URL（`{path}` を元のファイルのパスに置き換える）
+    static let docEditorURLKey = "doc.editorURL"
     /// セッションの画面でチャットと端末のどちらを出すか
 
     static func sidebarBoardOrderKey(machine: String) -> String { "sidebar.boardOrder.\(machine)" }
