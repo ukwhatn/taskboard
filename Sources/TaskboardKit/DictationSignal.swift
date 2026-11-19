@@ -29,8 +29,9 @@ public enum DictationSignal {
 }
 
 /// 聞いている音から、話し始めと、話し終えた後の無音を見分ける（ハンズフリーで聞くのを終える合図）。
-/// 雑音の大きさ（直近 5 秒の区切りの dB の最小。0 の音の区切りは数えない）より `margin` dB 大きい区切りが 100 ms 続いたら話したとみなす。
-/// 話した後に `silence` 秒、話している区切りが無ければ終わり。話す前の無音は数えない（押してすぐ黙っても切らない）
+/// 20 ms の区切りの大きさを 100 ms で均し、雑音の大きさ（均した大きさの直近 10 秒の 10 パーセンタイル）より `margin` dB 大きい間を話しているとみなす。
+/// 300 ms 続いたら話した、とする。話した後に `silence` 秒、200 ms 以上続けて話している間が無ければ終わり（一瞬の物音では数えを戻さない）。
+/// 聞き始めの 200 ms（マイクの立ち上がりの小さい区切り）と 0 の音（-90 dB 未満。立ち上がりと機器の切り替え）は雑音の大きさに数えない。話す前の無音は数えない（押してすぐ黙っても切らない）
 public struct DictationEndpoint: Sendable {
     public let silence: Double
     public let margin: Float
@@ -38,16 +39,21 @@ public struct DictationEndpoint: Sendable {
     public private(set) var ended = false
 
     private var pending: [Float] = []
-    /// 直近の区切りの dB（雑音の大きさを測る窓）
-    private var recent: [Float] = []
+    private var frames = 0
+    /// 均すための直近の区切りの力（振幅の 2 乗の平均）
+    private var powers: [Float] = []
+    /// 雑音の大きさを測る、均した大きさ（dB）の直近の並び
+    private var smoothed: [Float] = []
     private var run = 0
     private var quietFrames = 0
-    /// 雑音の大きさを測る窓（5 秒）。話し続けても語の間の区切りが窓に残り、雑音が大きくなったら 5 秒で追いつく
-    private static let window = 250
-    /// これより小さい区切りは 0 の音（マイクの立ち上がり・機器の切り替え）で、雑音の大きさに数えない
-    private static let digitalSilence: Float = -90
-    /// 話したとみなす続きの区切りの数（100 ms）
-    private static let speechRun = 5
+
+    private static let skipFrames = 10
+    private static let smoothFrames = 5
+    private static let window = 500
+    private static let speechRun = 15
+    /// 無音の数えを戻すのに要る、続けて話している区切りの数（200 ms。均す 100 ms で一瞬の物音も 100 ms ほど大きく見えるため）
+    private static let resetRun = 10
+    private static let digitalSilence: Float = 1e-9
 
     public init(silence: Double = 2.0, margin: Float = 10) {
         self.silence = silence
@@ -61,28 +67,43 @@ public struct DictationEndpoint: Sendable {
         let length = DictationSignal.frameLength
         var used = 0
         while pending.count - used >= length {
-            take(DictationSignal.decibels(DictationSignal.rms(pending[used..<used + length])))
+            let level = DictationSignal.rms(pending[used..<used + length])
+            take(level * level)
             used += length
         }
         pending.removeFirst(used)
         return ended
     }
 
-    private mutating func take(_ level: Float) {
-        if level > Self.digitalSilence {
-            recent.append(level)
-            if recent.count > Self.window { recent.removeFirst(recent.count - Self.window) }
+    private mutating func take(_ power: Float) {
+        frames += 1
+        guard frames > Self.skipFrames else { return }
+        guard power >= Self.digitalSilence else {
+            // 0 の音は雑音の大きさに数えず、話した後なら無音に数える（雑音を 0 に切るマイクがある）
+            run = 0
+            countQuiet()
+            return
         }
-        let speaking = recent.min().map { level > $0 + margin } ?? false
-        if speaking {
+        powers.append(power)
+        if powers.count > Self.smoothFrames { powers.removeFirst() }
+        let level = 10 * log10(max(powers.reduce(0, +) / Float(powers.count), 1e-10))
+        smoothed.append(level)
+        if smoothed.count > Self.window { smoothed.removeFirst() }
+        let sorted = smoothed.sorted()
+        let floor = sorted[sorted.count / 10]
+        if level > floor + margin {
             run += 1
             if run >= Self.speechRun { heardSpeech = true }
-            quietFrames = 0
+            if run >= Self.resetRun { quietFrames = 0 }
         } else {
             run = 0
-            if heardSpeech { quietFrames += 1 }
         }
-        let silentSeconds = Double(quietFrames * DictationSignal.frameLength) / Double(DictationSignal.sampleRate)
-        if heardSpeech, silentSeconds >= silence { ended = true }
+        if run < Self.resetRun { countQuiet() }
+    }
+
+    private mutating func countQuiet() {
+        guard heardSpeech else { return }
+        quietFrames += 1
+        if Double(quietFrames * DictationSignal.frameLength) / Double(DictationSignal.sampleRate) >= silence { ended = true }
     }
 }
