@@ -811,6 +811,7 @@
             "kind" : "gauge",
             "label" : "回答",
             "note" : "",
+            "place" : "band",
             "tone" : "attention",
             "value" : "4"
           },
@@ -828,6 +829,7 @@
             ],
             "id" : "plan",
             "kind" : "plan",
+            "place" : "head",
             "title" : ""
           },
           "updatedAt" : "2026-10-03T05:00:00Z",
@@ -851,6 +853,7 @@
             ],
             "id" : "notice",
             "kind" : "draft",
+            "place" : "composer",
             "title" : "",
             "to" : "フォーラム"
           },

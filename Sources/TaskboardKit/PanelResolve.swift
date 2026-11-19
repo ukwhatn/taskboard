@@ -108,7 +108,7 @@ extension MachineState {
     private func resolveGauge(_ gauge: PanelGauge, bind: PanelBinding, task: BoardTask) -> PanelGauge {
         var result = gauge
         func fraction(_ done: Int, _ total: Int) {
-            result.value = "\(done) / \(total)"
+            result.value = "\(done)"
             result.amount = Double(done)
             result.basis = PanelBasis(kind: .denominator, value: "\(total)", amount: Double(total))
         }

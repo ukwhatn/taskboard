@@ -150,7 +150,7 @@ struct MCPResultTextTests {
         #expect(lines.contains("- リンク: https://github.com/o/r/pull/1 ・ github_pr ・ id 11"))
         #expect(lines.contains("- リンクの通知: 未通知 0 件（PR・issue の動きは taskboard がこのタスクの lead に通知する）"))
         #expect(lines.contains("- 次の操作: 会話への指示は session_prompt、再開は session_resume（どちらも conversation_id）"))
-        #expect(lines.suffix(2) == ["作業項目は無い", "- 概況: 未登録（panel_set で登録する）"])
+        #expect(lines.suffix(2) == ["作業項目は無い", "- 部品: 無い"])
     }
 
     @Test("MCP の instructions と core の tool の説明は常体で、削除する操作の確認（confirm: true）を残す")

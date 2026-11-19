@@ -88,4 +88,24 @@ struct PhoneSnapshotTests {
             as: .wait(for: 1.5, on: .image(on: Self.config(device), drawHierarchyInKeyWindow: true, precision: 0.98, perceptualPrecision: 0.98)),
             named: "\(device.name)-\(name)")
     }
+
+    /// fixtures `overview-panels` の #214。題の下の帯、会話の上の折りたたんだ部品、欄の切り替えの最後の部品の欄
+    @Test func taskWithParts() async throws {
+        try #require(AppModel.isPhone, "iPhone のシミュレータで回す")
+        let device = try #require(Self.device, "iPhone 17e か 18 Pro のシミュレータで回す")
+        AppDefaults.useScratch("snapshot-parts")
+        let model = AppModel(options: LaunchOptions(scenario: "overview-panels"))
+        try await waitUntil { (model.fleet.machineState(for: MachineID(rawValue: "demo-studio"))?.panels.count ?? 0) > 0 }
+        model.open(URL(string: "taskboard://task/demo-studio/214")!, from: .debug)
+        let root = RootView()
+            .modifier(WindowRoot(model: model))
+            .environment(\.today, Self.today)
+            .environment(\.liveClock, false)
+            .environment(\.defersMount, false)
+        let controller = UIHostingController(rootView: root)
+        assertSnapshot(
+            of: controller,
+            as: .wait(for: 1.5, on: .image(on: Self.config(device), drawHierarchyInKeyWindow: true, precision: 0.98, perceptualPrecision: 0.98)),
+            named: "\(device.name)-task-parts")
+    }
 }

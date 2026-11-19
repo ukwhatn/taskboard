@@ -1,7 +1,7 @@
 import SwiftUI
 import TaskboardKit
 
-/// タスクの題と、列・リンク・期日のチップ。チップの段の右に `accessory`（タスクの画面では会話の札の行）を置く。
+/// タスクの題と、列・リンク・期日のチップ。チップの段の右に `accessory`（タスクの画面では会話の札の行）を置き、その下に会話が帯に置いた計器（`PanelBand`）。
 /// 待ち理由と対応待ちは、会話の中の権限・質問のカードとカードの右クリックの［対応待ちを非表示］で扱い、ここには出さない。
 /// チップは入り切らなければ次の行へ送る（横に流すとパネルの端で切れる）。完了したリンクは後ろに並べ、多ければ［完了した{n}件を表示］に畳む
 struct TaskHeader<Accessory: View>: View {
@@ -31,6 +31,8 @@ struct TaskHeader<Accessory: View>: View {
             title
             // チップと帯は次の回に組む（初めてパネルを開く回で、列の Menu とリンクのチップが 20 ms ほどかかった）
             DeferredMount { details }
+            // 会話が帯に置いた計器（無ければ何も描かない）
+            PanelBand(task: task)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, inset)

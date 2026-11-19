@@ -54,7 +54,7 @@ struct OverviewPanelParts: View {
                     }
                 }
             case .part(let part):
-                PanelPartSection(task: task, panel: panel, part: part, resolved: state?.resolve(part.spec, task: task), staleAt: staleAt(part))
+                PanelPartSection(task: task, part: part, resolved: state?.resolve(part.spec, task: task), staleAt: staleAt(part))
             }
         }
     }
@@ -63,9 +63,8 @@ struct OverviewPanelParts: View {
 }
 
 /// 計器以外の部品 1 つ。題があれば節の見出しにし、古い部品は見出しの右に更新の時刻を出す
-private struct PanelPartSection: View {
+struct PanelPartSection: View {
     let task: BoardTask
-    let panel: OverviewPanel
     let part: PanelPart
     let resolved: PanelResolved?
     let staleAt: Date?
@@ -79,13 +78,31 @@ private struct PanelPartSection: View {
                     if let staleAt { PanelUpdatedLabel(at: staleAt) }
                 }
             }
-            content
+            PanelPartContent(task: task, part: part, resolved: resolved)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private var content: some View {
+    static func title(_ content: PanelContent) -> String {
+        switch content {
+        case .gauge(let v): v.label
+        case .table(let v): v.title
+        case .plan(let v): v.title.isEmpty ? String(localized: "計画") : v.title
+        case .diagram(let v): v.title
+        case .chart(let v): v.title
+        case .draft(let v): v.title.isEmpty ? String(localized: "送る文面") : v.title
+        case .html(let v): v.title
+        }
+    }
+}
+
+/// 部品の中身（見出しを除く）。種類ごとの描き手に振り分ける
+struct PanelPartContent: View {
+    let task: BoardTask
+    let part: PanelPart
+    let resolved: PanelResolved?
+
+    var body: some View {
         switch part.spec.content {
         case .gauge: EmptyView()
         case .table(let table):
@@ -103,22 +120,10 @@ private struct PanelPartSection: View {
             PanelHTMLView(html: html.html)
         }
     }
-
-    static func title(_ content: PanelContent) -> String {
-        switch content {
-        case .gauge(let v): v.label
-        case .table(let v): v.title
-        case .plan(let v): v.title.isEmpty ? String(localized: "計画") : v.title
-        case .diagram(let v): v.title
-        case .chart(let v): v.title
-        case .draft(let v): v.title.isEmpty ? String(localized: "送る文面") : v.title
-        case .html(let v): v.title
-        }
-    }
 }
 
 /// 古い部品の更新の時刻（補足の色）
-private struct PanelUpdatedLabel: View {
+struct PanelUpdatedLabel: View {
     let at: Date
 
     var body: some View {
@@ -187,7 +192,7 @@ extension PanelSymbol {
     }
 }
 
-private struct ToneMark: View {
+struct ToneMark: View {
     let tone: PanelTone?
     let symbol: PanelSymbol?
 
@@ -235,7 +240,7 @@ private struct PanelGaugeCard: View {
             HStack(alignment: .firstTextBaseline, spacing: Space.inline) {
                 Text(verbatim: gauge.value).font(.title2.weight(.semibold)).monospacedDigit().foregroundStyle(gauge.tone.valueColor)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                if let basis = gauge.basis { Text(verbatim: Self.basisText(basis)).textRole(.caption).monospacedDigit() }
+                if let basis = gauge.basis { Text(verbatim: PanelGaugeText.basis(basis)).textRole(.caption).monospacedDigit() }
             }
             if let amount = gauge.amount, let total = gauge.basis?.amount, total > 0, [.denominator, .limit].contains(gauge.basis?.kind) {
                 PanelBar(fraction: amount / total, color: gauge.tone.barColor)
@@ -247,15 +252,6 @@ private struct PanelGaugeCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.fill.quinary, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .accessibilityElement(children: .combine)
-    }
-
-    static func basisText(_ basis: PanelBasis) -> String {
-        switch basis.kind {
-        case .denominator: "/ \(basis.value)"
-        case .limit: String(localized: "上限\(basis.value)")
-        case .deadline: String(localized: "期限\(basis.value)")
-        case .previous: String(localized: "前回\(basis.value)")
-        }
     }
 }
 

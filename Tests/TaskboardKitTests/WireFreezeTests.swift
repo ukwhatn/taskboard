@@ -85,11 +85,12 @@ struct WireFreezeTests {
                             PanelPart(
                                 spec: PanelPartSpec(
                                     id: "answers",
-                                    content: .gauge(PanelGauge(label: "回答", value: "4", amount: 4, basis: PanelBasis(kind: .denominator, value: "6", amount: 6), tone: .attention))),
+                                    content: .gauge(PanelGauge(label: "回答", value: "4", amount: 4, basis: PanelBasis(kind: .denominator, value: "6", amount: 6), tone: .attention)),
+                                    place: .band),
                                 updatedAt: s.generatedAt, updatedTurn: 1),
                             PanelPart(spec: PanelPartSpec(id: "plan", content: .plan(PanelPlan(groups: ["M3"])), bind: PanelBinding(source: .work)), updatedAt: s.generatedAt, updatedTurn: 0),
                             PanelPart(
-                                spec: PanelPartSpec(id: "notice", content: .draft(PanelDraft(to: "フォーラム", body: "改定しました。", checks: [PanelCheck(label: "敬体", ok: true)]))),
+                                spec: PanelPartSpec(id: "notice", content: .draft(PanelDraft(to: "フォーラム", body: "改定しました。", checks: [PanelCheck(label: "敬体", ok: true)])), place: .composer),
                                 updatedAt: s.generatedAt, updatedTurn: 1,
                                 answer: PanelDraftAnswer(answerID: 2, body: "改定しました。", edited: false, answeredAt: s.generatedAt)),
                         ], turn: 3, updatedAt: s.generatedAt)),

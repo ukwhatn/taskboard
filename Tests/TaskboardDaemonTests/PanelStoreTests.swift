@@ -17,10 +17,10 @@ struct PanelStoreTests {
     }
 
     private func gauge(_ id: String, _ value: String) -> PanelPartSpec {
-        PanelPartSpec(id: id, content: .gauge(PanelGauge(label: "回答", value: value, basis: PanelBasis(kind: .denominator, value: "6"))))
+        PanelPartSpec(id: id, content: .gauge(PanelGauge(label: "回答", value: value, basis: PanelBasis(kind: .denominator, value: "6"))), place: .band)
     }
 
-    private let draft = PanelPartSpec(id: "notice", content: .draft(PanelDraft(title: "告知", to: "フォーラムのスレッド", body: "改定しました。")))
+    private let draft = PanelPartSpec(id: "notice", content: .draft(PanelDraft(title: "告知", to: "フォーラムのスレッド", body: "改定しました。")), place: .composer)
 
     @Test("panel_set は並びごと置き換え、中身の変わらない部品は更新の時刻とターン数を残す")
     func setKeepsUnchanged() throws {
@@ -41,19 +41,19 @@ struct PanelStoreTests {
         #expect(try store.panel(task: task.number) == nil && store.panels().isEmpty)
     }
 
-    @Test("予算を超えた登録は誤りで返り、概況は変わらない（MCP も HTTP も同じ入口を通る）")
+    @Test("場所の数を超えた登録は誤りで返り、部品は変わらない（MCP も HTTP も同じ入口を通る）")
     func budgetRejects() throws {
         let (store, task) = try makeStore()
         _ = try store.setPanel(task: task.number, PanelSetRequest(parts: [gauge("a", "1")]), requesterSessionID: nil)
-        let nine = (1...9).map { gauge("g\($0)", "\($0)") }
-        #expect(throws: StoreError.invalid("計器（gauge）は 8 個まで（9 個ある）。人が次に判断するのに使う値だけを残す")) {
-            try store.setPanel(task: task.number, PanelSetRequest(parts: nine), requesterSessionID: nil)
+        let five = (1...5).map { gauge("g\($0)", "\($0)") }
+        #expect(throws: StoreError.invalid("band に置ける部品は 4 個まで（5 個ある）")) {
+            try store.setPanel(task: task.number, PanelSetRequest(parts: five), requesterSessionID: nil)
         }
-        _ = try store.setPanel(task: task.number, PanelSetRequest(parts: Array(nine.prefix(8))), requesterSessionID: nil)
-        #expect(throws: StoreError.invalid("計器（gauge）は 8 個まで（9 個ある）。人が次に判断するのに使う値だけを残す")) {
-            try store.updatePanelPart(task: task.number, PanelUpdateRequest(part: gauge("g9", "9")), requesterSessionID: nil)
+        _ = try store.setPanel(task: task.number, PanelSetRequest(parts: Array(five.prefix(4))), requesterSessionID: nil)
+        #expect(throws: StoreError.invalid("band に置ける部品は 4 個まで（5 個ある）")) {
+            try store.updatePanelPart(task: task.number, PanelUpdateRequest(part: gauge("g5", "5")), requesterSessionID: nil)
         }
-        #expect(try store.panel(task: task.number)?.parts.count == 8)
+        #expect(try store.panel(task: task.number)?.parts.count == 4)
         #expect(throws: StoreError.taskNotFound(999)) { try store.setPanel(task: 999, PanelSetRequest(parts: []), requesterSessionID: nil) }
     }
 

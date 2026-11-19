@@ -81,14 +81,14 @@ extension DebugServer {
             NotificationCenter.default.post(name: .debugSplitDrag, object: nil, userInfo: ["handle": handle])
             return .json(200, ["ok": true])
         case ("POST", "/side-pane"):
-            // {"tab": "status|docs|work|changes|terminal", "close"?: true}。タスク画面の右側の欄を開く（会話の画面の［状態］［差分］もこれを通る）。
+            // {"tab": "status|docs|work|changes|part|terminal", "close"?: true}。タスク画面の右側の欄を開く（part は会話が右の欄に置いた部品）（会話の画面の［状態］［差分］もこれを通る）。
             // terminal は開いている会話の端末の欄（会話と右の欄の下）を、会話の上の帯の［ターミナル］と同じく開く（close で閉じてシェルを止める）
             let name = request.jsonBody?["tab"] as? String
             if let tab = name.flatMap(SidePanel.init(rawValue:)) {
                 model.showSidePane(tab)
                 return .json(200, ["ok": true])
             }
-            guard name == "terminal" else { return .json(400, ["error": "tab は status / docs / work / changes / terminal"]) }
+            guard name == "terminal" else { return .json(400, ["error": "tab は status / docs / work / changes / part / terminal"]) }
             guard let conversation = model.activeConversation?.key else { return .json(404, ["error": "会話が開いていない"]) }
             if request.jsonBody?["close"] as? Bool == true {
                 model.closeTerminal(of: conversation)

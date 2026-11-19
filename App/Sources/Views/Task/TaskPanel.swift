@@ -262,7 +262,7 @@ private struct TaskPanelBody: View {
                 if let shown {
                     let move = beside == nil ? nil : { (side: SplitSide) in moveFocus(side, sessions) }
                     EvenSplit {
-                        SessionColumn(conversation: shown, showsHeader: beside != nil, docksBelow: false, detailsBeside: sidePaneShown, close: nil)
+                        SessionColumn(conversation: shown, showsHeader: beside != nil, docksBelow: false, detailsBeside: sidePaneShown, partsTask: task.id, close: nil)
                             .environment(\.splitFocus, move)
                         if let beside {
                             SplitDivider(vertical: true)
@@ -550,6 +550,8 @@ struct SessionColumn: View {
     var docksBelow = true
     /// 会話の［状態］［差分］を右の欄で開く（左の欄だけ。右に並べた会話はポップオーバーとシート）
     var detailsBeside = false
+    /// 会話の頭と入力欄の上に部品を描くタスク（左の会話だけ。右に並べた会話には描かない）
+    var partsTask: TaskKey?
     let close: (() -> Void)?
 
     var body: some View {
@@ -559,7 +561,7 @@ struct SessionColumn: View {
                     header
                     Divider()
                 }
-                ConversationView(key: conversation.key, feed: model.conversationFeed(for: conversation.key), detailsBeside: detailsBeside).id(conversation.key)
+                ConversationView(key: conversation.key, feed: model.conversationFeed(for: conversation.key), detailsBeside: detailsBeside, partsTask: partsTask).id(conversation.key)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

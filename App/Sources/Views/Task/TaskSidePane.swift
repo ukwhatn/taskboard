@@ -18,11 +18,13 @@ struct TaskSidePane: View {
 
     var body: some View {
         let filled = SidePanelBody.filled(task: task, conversation: nil, model: model)
-        let tab = SidePanel.shown(picked: picked, preferred: preferred, filled: filled)
+        let side = PanelSideItem(task: task.id, model: model)
+        // 選んだ部品の欄が外されたら、前に選んだ欄に戻す
+        let tab = SidePanel.shown(picked: picked == .part && side == nil ? nil : picked, preferred: preferred, filled: filled)
         VStack(spacing: 0) {
             Picker("サイドパネル", selection: Binding(get: { tab }, set: { picked = $0; preferred = $0 })) {
-                ForEach(SidePanel.phoneTabs) { item in
-                    Text(item.label).tag(item)
+                ForEach(SidePanel.phoneTabs(hasPart: side != nil)) { item in
+                    Text(item == .part ? side?.title ?? item.label : item.label).tag(item)
                 }
             }
             .pickerStyle(.segmented)
@@ -59,12 +61,14 @@ struct SidePanelBody: View {
     static func filled(task: BoardTask, conversation: ConversationKey?, model: AppModel) -> (SidePanel) -> Bool {
         let documents = !model.fleet.documents(for: task.id).isEmpty
         let workItems = !model.fleet.workItems(for: task.id).isEmpty
+        let part = model.panelParts(task.id, in: .side) != nil
         return { panel in
             switch panel {
             case .docs: documents
             case .work: workItems
             case .status: true
             case .changes: conversation != nil
+            case .part: part
             }
         }
     }
@@ -95,6 +99,8 @@ struct SidePanelBody: View {
             scrolling(to: scrollTarget) {
                 TaskStatusSections(task: task, editable: editable, conversation: conversation, openConversation: openConversation)
             }
+        case .part:
+            scrolling { PanelSideBody(task: task) }
         case .changes:
             if let conversation {
                 ConversationDiffScreen(feed: model.conversationFeed(for: conversation), inPanel: true).id(conversation)

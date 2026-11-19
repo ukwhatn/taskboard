@@ -45,6 +45,8 @@ enum AppPreferences {
     static let taskSidePanelsKey = "taskPanel.sidePanels"
     /// Mac と iPad のタスク画面の右側の幅（境目を動かして残した幅。0 なら既定）
     static let taskSideWidthKey = "taskPanel.sideWidth"
+    /// 会話の頭の部品を折りたたんでいるか（`PanelHead`。タスクによらず 1 つ）
+    static let taskPanelHeadCollapsedKey = "taskPanel.headCollapsed"
     /// Mac と iPad のタスク画面の下の端末の欄の高さ（境目を動かして残した高さ。0 なら既定）
     static let taskTerminalHeightKey = "taskPanel.terminalHeight"
     /// セッションの画面でチャットと端末のどちらを出すか

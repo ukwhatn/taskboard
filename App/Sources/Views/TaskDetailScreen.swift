@@ -1,7 +1,7 @@
 import SwiftUI
 import TaskboardKit
 
-/// iPhone のタスク画面。題と待ち理由、会話（委譲先を含む）、右の欄と同じ切り替え（文書・作業項目・状態・差分）を縦に並べる。
+/// iPhone のタスク画面。題と待ち理由（会話が帯に置いた計器を含む）、会話が会話の頭に置いた部品、会話（委譲先を含む）、右の欄と同じ切り替え（文書・作業項目・状態・差分と、右の欄の部品）を縦に並べる。
 /// 会話を押すとその画面へ進む。題とメモは押してその場で直し、リンクはチップの並びの＋で足す。削除は上のバーのメニュー、リンクを外すのは長押し。Mac と iPad はパネル（`TaskPanel`）
 struct TaskDetailScreen: View {
     @Environment(AppModel.self) private var model
@@ -27,6 +27,9 @@ struct TaskDetailScreen: View {
             VStack(alignment: .leading, spacing: Space.section) {
                 TaskHeader(task: task, signals: model.cardSignals(for: task), showsNote: false, editable: canEdit)
                 VStack(alignment: .leading, spacing: Space.section) {
+                    // 会話が会話の頭に置いた部品（初めは折りたたむ）
+                    PanelHead(task: key, divided: false)
+                        .environment(\.pageInset, 0)
                     if !conversations.isEmpty || canEdit {
                         PageSection("会話") {
                             VStack(alignment: .leading, spacing: Space.row) {

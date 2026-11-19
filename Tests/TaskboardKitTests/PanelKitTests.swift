@@ -8,7 +8,7 @@ struct PanelKitTests {
     private let machine = MachineID(rawValue: "m-test")
 
     private func gauge(_ id: String, value: String = "4") -> PanelPartSpec {
-        PanelPartSpec(id: id, content: .gauge(PanelGauge(label: "回答", value: value, basis: PanelBasis(kind: .denominator, value: "6", amount: 6))))
+        PanelPartSpec(id: id, content: .gauge(PanelGauge(label: "回答", value: value, basis: PanelBasis(kind: .denominator, value: "6", amount: 6))), place: .band)
     }
 
     private func table(_ id: String, primary: Bool = false, columns: [String] = ["番号", "内容"], cells: [String] = ["D3", "表示名"]) -> PanelPartSpec {
@@ -33,7 +33,7 @@ struct PanelKitTests {
     @Test("会話が渡す JSON は kind と各型の欄が同じ階層で、読んで書き直しても同じ部品になる")
     func flatJSON() throws {
         let json = """
-            [{"id": "answers", "kind": "gauge", "label": "梅田さんの回答", "value": "4", "basis": {"kind": "denominator", "value": "6", "amount": 6}, "amount": 4, "tone": "attention"},
+            [{"id": "answers", "kind": "gauge", "place": "band", "label": "梅田さんの回答", "value": "4", "basis": {"kind": "denominator", "value": "6", "amount": 6}, "amount": 4, "tone": "attention"},
              {"id": "plan", "kind": "plan", "groups": ["M3"]},
              {"id": "progress", "kind": "gauge", "label": "動作確認", "bind": {"source": "work", "group": "M3"}},
              {"id": "flow", "kind": "diagram", "style": "flow", "nodes": [{"label": "記録"}, {"label": "突き合わせ", "tone": "waiting"}]},
@@ -42,6 +42,7 @@ struct PanelKitTests {
         let parts = try JSONDecoder().decode([PanelPartSpec].self, from: Data(json.utf8))
         guard case .gauge(let answers) = parts[0].content else { Issue.record("gauge でない"); return }
         #expect(answers.label == "梅田さんの回答" && answers.tone == .attention && answers.basis?.amount == 6 && answers.note.isEmpty)
+        #expect(parts.map(\.place) == [.band, .head, .head, .head, .head], "place を省いた部品は会話の頭に置く")
         #expect(parts[1].bind == PanelBinding(source: .work), "plan は bind を省いても作業項目に紐づく")
         #expect(parts[2].bind == PanelBinding(source: .work, group: "M3"))
         guard case .chart(let chart) = parts[4].content else { Issue.record("chart でない"); return }
@@ -50,11 +51,22 @@ struct PanelKitTests {
         #expect(again == parts)
     }
 
+    @Test("場所ごとの数と種類から外れた登録は、どの場所かと、その種類を置ける場所を書いた誤りになる")
+    func places() {
+        let draft = { (id: String) in PanelPartSpec(id: id, content: .draft(PanelDraft(to: "告知のスレッド", body: "改定しました。")), place: .composer) }
+        let side = PanelPartSpec(id: "s", content: .chart(PanelChart(style: .bar, title: "件数", series: [PanelSeries(points: [PanelPoint(x: "a", y: 1)])])), place: .side)
+        #expect(message((1...4).map { gauge("g\($0)") } + [table("t"), draft("d1"), draft("d2"), side]) == nil, "4 か所の上限ちょうどは通る")
+        #expect(message((1...5).map { gauge("g\($0)") }) == "band に置ける部品は 4 個まで（5 個ある）")
+        #expect(message([table("a"), table("b")]) == "head に置ける部品は 1 個まで（2 個ある）")
+        #expect(message([draft("d1"), draft("d2"), draft("d3")]) == "composer に置ける部品は 2 個まで（3 個ある）")
+        #expect(
+            message([PanelPartSpec(id: "g", content: .gauge(PanelGauge(label: "回答", value: "4")))])
+                == "g: head に置けるのは table・plan・diagram・chart・html だけ（gauge が渡された）。gauge は place を band にする。place を省いた部品は head に置く")
+        #expect(message([PanelPartSpec(id: "t", content: .table(PanelTable(title: "表", columns: ["a"])), place: .composer)])?.hasPrefix("t: composer に置けるのは draft だけ") == true)
+    }
+
     @Test("予算を超えた登録は、どれを超えたかを書いた誤りになる")
     func budgets() {
-        #expect(message((1...8).map { gauge("g\($0)") }) == nil)
-        #expect(message((1...9).map { gauge("g\($0)") }) == "計器（gauge）は 8 個まで（9 個ある）。人が次に判断するのに使う値だけを残す")
-        #expect(message([table("a", primary: true), table("b", primary: true), table("c", primary: true)]) == "主表（primary の table）は 2 個まで（3 個ある）")
         #expect(message([table("a", columns: ["1", "2", "3", "4", "5", "6"], cells: [])]) == "a: 列は 1〜5 個（6 個ある）")
         let long = String(repeating: "あ", count: 21)
         #expect(message([table("a", cells: ["D3", long])]) == "a: セルと列の見出しは 1 行で 20 字まで（「\(long)」）")
@@ -62,12 +74,11 @@ struct PanelKitTests {
         #expect(message([gauge("x"), gauge("x")]) == "部品の id「x」が重複している")
         #expect(message([gauge("日本語")]) == "部品の id「日本語」は使えない。英数字と . _ - で 1〜40 字にする")
         #expect(message([gauge("g", value: "")]) == "g: value が空", "紐づけない計器は値が必要")
-        #expect(message([PanelPartSpec(id: "g", content: .gauge(PanelGauge(label: "済み")), bind: PanelBinding(source: .work))]) == nil)
+        #expect(message([PanelPartSpec(id: "g", content: .gauge(PanelGauge(label: "済み")), bind: PanelBinding(source: .work), place: .band)]) == nil)
         let points = (0..<51).map { PanelPoint(x: "\($0)", y: Double($0)) }
         #expect(
             message([PanelPartSpec(id: "c", content: .chart(PanelChart(style: .bar, title: "件数", series: [PanelSeries(points: points)])))])
                 == "c: 点は全部の系列で 50 個まで（51 個ある）")
-        #expect(message((1...21).map { gauge("p\($0)") })?.hasPrefix("部品は 20 個まで") == true)
         #expect(message([PanelPartSpec(id: "d", content: .diagram(PanelDiagram(style: .flow, nodes: [])))]) == "d: nodes が空")
     }
 
@@ -136,7 +147,7 @@ struct PanelKitTests {
             state.workItems[value.id] = value
         }
         let bound = PanelPartSpec(id: "g", content: .gauge(PanelGauge(label: "M3")), bind: PanelBinding(source: .work, group: "M3"))
-        #expect(state.resolve(bound, task: task)?.gauge?.value == "1 / 2")
+        #expect(state.resolve(bound, task: task)?.gauge?.value == "1")
         #expect(state.resolve(bound, task: task)?.gauge?.basis?.amount == 2)
         let rows = state.resolve(PanelPartSpec(id: "t", content: .table(PanelTable(title: "項目")), bind: PanelBinding(source: .work)), task: task)?.rows
         #expect(rows?.map(\.cells) == [["M3.2", "項目2", "作業中"], ["M3.1", "項目1", "完了"], ["", "項目3", "着手できる"]])
@@ -144,7 +155,7 @@ struct PanelKitTests {
         var next = state.workItems[WorkItemKey(machine: machine, id: 2)]!
         next.state = .done
         state.workItems[next.id] = next
-        #expect(state.resolve(bound, task: task)?.gauge?.value == "2 / 2")
+        #expect(state.resolve(bound, task: task)?.gauge?.value == "2")
         #expect(state.resolve(bound, task: task)?.gauge?.tone == .done)
         #expect(state.resolve(gauge("plain"), task: task) == nil, "紐づけない部品は解決しない")
     }
@@ -158,13 +169,33 @@ struct PanelKitTests {
         #expect(panel.parts.map(panel.isStale) == [false, true, false])
     }
 
-    @Test("fixtures の overview-panels は全部の種類の部品を持ち、予算と書式を守る（daemon が受け付ける登録と同じ）")
+    @Test("場所の部品は、その場所が受ける種類だけを、上限の数まで登録の並びで返す")
+    func partsInPlace() {
+        let parts = (1...6).map { PanelPart(spec: gauge("g\($0)"), updatedAt: .distantPast, updatedTurn: 0) }
+            + [PanelPart(spec: PanelPartSpec(id: "wrong", content: .gauge(PanelGauge(label: "a", value: "1")), place: .side), updatedAt: .distantPast, updatedTurn: 0)]
+        let panel = OverviewPanel(machine: machine, taskNumber: 1, parts: parts, turn: 0, updatedAt: .distantPast)
+        #expect(panel.parts(in: .band).map(\.id) == ["g1", "g2", "g3", "g4"])
+        #expect(panel.parts(in: .side).isEmpty, "右の欄は計器を受けない")
+        #expect(panel.parts(in: .head).isEmpty)
+    }
+
+    private static func fixture(_ name: String) -> URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("App/Fixtures/\(name).json")
+    }
+
+    @Test("fixtures の部品の一覧は全部の種類を持ち、1 つずつなら daemon が受け付ける")
+    func catalogParts() throws {
+        let parts = try WireJSON.decoder().decode([PanelPart].self, from: Data(contentsOf: Self.fixture("panel-catalog")))
+        #expect(Set(parts.map(\.spec.content.kind)) == Set(PanelContent.Kind.allCases))
+        for part in parts { #expect(try PanelValidation.check([part.spec]).isEmpty, "\(part.id)") }
+    }
+
+    @Test("fixtures の overview-panels の #214 は 4 か所に部品を置き、daemon が受け付ける登録と同じ")
     func fixtureParts() throws {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("App/Fixtures/overview-panels.json")
-        let snapshot = try WireJSON.decoder().decode(StateSnapshot.self, from: Data(contentsOf: url))
+        let snapshot = try WireJSON.decoder().decode(StateSnapshot.self, from: Data(contentsOf: Self.fixture("overview-panels")))
         let panel = try #require(snapshot.panels.first)
-        #expect(Set(panel.parts.map(\.spec.content.kind)) == Set(PanelContent.Kind.allCases))
+        #expect(PanelPlace.allCases.map { panel.parts(in: $0).count } == [4, 1, 1, 1])
         #expect(try PanelValidation.check(panel.parts.map(\.spec)).isEmpty)
         var state = MachineState()
         state.apply(.stateSnapshot(snapshot))

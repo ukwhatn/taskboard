@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""会話が登録する概況の部品を、全部の種類で並べた fixtures（overview-panels.json）を作る。
+"""会話が置く部品の fixtures を作る。
 
-demo.json（架空の EC サイトの開発）を元に、#214「決済画面を新しい決済 API に移す」へ次を加える。
-- 概況の部品: 計器（値と基準・紐づけ）、主表、計画（作業項目のまとまり）、図（流れ・時系列・比較・関係）、グラフ（折れ線・棒）、
-  送る文面（承認待ち）、自由の HTML、紐づけた表（リンク・子のタスク）
+demo.json（架空の EC サイトの開発）を元に、#214「決済画面を新しい決済 API に移す」へ次を加えて overview-panels.json に書く。
+- 4 か所の部品: 帯に計器 4 個（値と基準・紐づけ）、会話の頭に判断事項の表、入力欄の上に送る文面（承認待ち）、右の欄に子のタスクの表（紐づけ）
 - 作業項目のまとまり（M1〜M3）と番号（M2.3 など）、#215 の会話を #214 の会話の委譲先にする（子のタスク）
 
-#214 の会話は止まった状態にし、開くと概況の面が主になるようにする。`--scenario overview-panels` で起こす。
+全部の種類の部品（計器、表、計画、図の 4 型、グラフの 2 型、送る文面、HTML、紐づけた表）は panel-catalog.json に並べる。
+種類ごとの描き分けの snapshot（OverviewPanelSnapshotTests）が読む。1 つのタスクには場所の上限を超えて置けないので、#214 とは分けてある。
+
+#214 の会話は止まった状態にする。`--scenario overview-panels` で起こす。
 作り直すときは `python3 scripts/fixtures/make-overview-panels.py`（先に make-demo.py を回した demo.json を読む）。
 """
 import copy
@@ -57,7 +59,11 @@ for conversation in data["conversations"]:
         conversation["parentConversationID"] = "d-checkout"
 
 
+PLACES = {"gauge": "band", "draft": "composer"}
+
+
 def part(spec, hm="11:30", turn=5, answer=None):
+    spec = {**spec, "place": spec.get("place", PLACES.get(spec["kind"], "head"))}
     value = {"spec": spec, "updatedAt": at(hm), "updatedTurn": turn}
     if answer:
         value["answer"] = answer
@@ -122,12 +128,16 @@ parts = [
     part({"id": "links", "kind": "table", "title": "PR と課題", "bind": {"source": "links"}}),
     part({"id": "children", "kind": "table", "title": "子のタスク", "bind": {"source": "children"}}),
 ]
-data["panels"] = [{"machine": MACHINE, "taskNumber": TASK, "parts": parts, "turn": 5, "updatedAt": at("11:30")}]
+catalog = {p["spec"]["id"]: p for p in parts}
+placed = [catalog[i] for i in ["merchant", "m2", "launch", "questions", "decisions", "notice"]]
+placed.append({**catalog["children"], "spec": {**catalog["children"]["spec"], "place": "side"}})
+data["panels"] = [{"machine": MACHINE, "taskNumber": TASK, "parts": placed, "turn": 5, "updatedAt": at("11:30")}]
 
-text = json.dumps(data, ensure_ascii=False, indent=1) + "\n"
 FORBIDDEN = re.compile(r"ukwhatn|dena|scpwiki|watanabe|/Users/(?!demo\b)|fixture-|taskboard/pull|doorman|console", re.I)
-leaks = sorted(set(m.group(0) for m in FORBIDDEN.finditer(text)))
-if leaks:
-    raise SystemExit(f"架空でない値が残っている: {leaks}")
-(root / "App/Fixtures/overview-panels.json").write_text(text)
-print("App/Fixtures/overview-panels.json")
+for name, value in [("overview-panels.json", data), ("panel-catalog.json", parts)]:
+    text = json.dumps(value, ensure_ascii=False, indent=1) + "\n"
+    leaks = sorted(set(m.group(0) for m in FORBIDDEN.finditer(text)))
+    if leaks:
+        raise SystemExit(f"架空でない値が残っている: {leaks}")
+    (root / "App/Fixtures" / name).write_text(text)
+    print("App/Fixtures/" + name)

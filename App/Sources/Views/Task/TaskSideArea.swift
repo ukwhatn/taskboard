@@ -26,9 +26,12 @@ struct TaskSideArea: View {
 
     var body: some View {
         let set = SidePanelSet(json: stored)
-        let panels = SidePanel.allCases
-        let opened = set.shown
-        let picked = singlePick
+        let side = PanelSideItem(task: task.id, model: model)
+        let panels = SidePanel.fixed
+        // 部品の欄は、部品のあるタスクだけで出す（開いている組はこの端末で 1 つなので、組からは外さない）
+        let opened = set.shown.filter { $0 != .part || side != nil }
+        // 選んだ部品の欄が外されたら、選んでいないのと同じにする
+        let picked = singlePick == .part && side == nil ? nil : singlePick
         let single = single || swap != nil
         let detailsShown = swap?.wrappedValue ?? true
         let open = single ? [picked ?? opened.first ?? .status] : opened
@@ -36,15 +39,15 @@ struct TaskSideArea: View {
         VStack(spacing: 0) {
             // 入れ替える幅では、帯を常に下に置く（会話を出している間は帯だけ）
             if swap == nil {
-                strip(panels: panels, open: open, set: set, single: single, detailsShown: detailsShown)
+                strip(panels: panels, side: side, open: open, set: set, single: single, detailsShown: detailsShown)
                 Divider()
-                grid(shown: shown, open: open, set: set, single: single)
+                grid(shown: shown, side: side, set: set, single: single)
             } else {
                 if detailsShown {
-                    grid(shown: shown, open: open, set: set, single: single)
+                    grid(shown: shown, side: side, set: set, single: single)
                     Divider()
                 }
-                strip(panels: panels, open: open, set: set, single: single, detailsShown: detailsShown)
+                strip(panels: panels, side: side, open: open, set: set, single: single, detailsShown: detailsShown)
             }
         }
         .onChange(of: model.prFocusRequest) { _, _ in
@@ -60,8 +63,8 @@ struct TaskSideArea: View {
         }
     }
 
-    /// 欄を開け閉めするボタンの帯。入れ替える幅では先頭に［会話］
-    private func strip(panels: [SidePanel], open: [SidePanel], set: SidePanelSet, single: Bool, detailsShown: Bool) -> some View {
+    /// 欄を開け閉めするボタンの帯。入れ替える幅では先頭に［会話］、部品のあるタスクでは区切りの後ろに部品の欄
+    private func strip(panels: [SidePanel], side: PanelSideItem?, open: [SidePanel], set: SidePanelSet, single: Bool, detailsShown: Bool) -> some View {
         HStack(spacing: Space.inline) {
             if let swap {
                 Button("会話", systemImage: "bubble.left.and.text.bubble.right") { swap.wrappedValue = false }
@@ -74,26 +77,11 @@ struct TaskSideArea: View {
                     .accessibilityAddTraits(detailsShown ? [] : .isSelected)
             }
             ForEach(panels) { panel in
-                let isOpen = open.contains(panel)
-                let selected = isOpen && detailsShown
-                Button(panel.label, systemImage: panel.symbol) {
-                    if let swap, !selected {
-                        // 入れ替える幅では、押した欄を出す
-                        singlePick = panel
-                        swap.wrappedValue = true
-                    } else if single {
-                        singlePick = panel
-                    } else {
-                        toggle(panel, set: set, open: open)
-                    }
-                }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .symbolVariant(selected ? .fill : .none)
-                    .foregroundStyle(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                    .hitTarget()
-                    .help(help(panel, isOpen: selected))
-                    .accessibilityAddTraits(selected ? .isSelected : [])
+                stripButton(panel, label: panel.label, symbol: panel.symbol, open: open, set: set, single: single, detailsShown: detailsShown)
+            }
+            if let side {
+                Divider().frame(height: HitTarget.size / 2)
+                stripButton(.part, label: side.title, symbol: side.symbol, open: open, set: set, single: single, detailsShown: detailsShown)
             }
             Spacer(minLength: 0)
         }
@@ -101,8 +89,31 @@ struct TaskSideArea: View {
         .padding(.vertical, Space.inline)
     }
 
+    private func stripButton(_ panel: SidePanel, label: String, symbol: String, open: [SidePanel], set: SidePanelSet, single: Bool, detailsShown: Bool) -> some View {
+        let isOpen = open.contains(panel)
+        let selected = isOpen && detailsShown
+        return Button(label, systemImage: symbol) {
+            if let swap, !selected {
+                // 入れ替える幅では、押した欄を出す
+                singlePick = panel
+                swap.wrappedValue = true
+            } else if single {
+                singlePick = panel
+            } else {
+                toggle(panel, set: set)
+            }
+        }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .symbolVariant(selected ? .fill : .none)
+            .foregroundStyle(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+            .hitTarget()
+            .help(help(label, isOpen: selected, single: self.single))
+            .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
     @ViewBuilder
-    private func grid(shown: [SidePanel], open: [SidePanel], set: SidePanelSet, single: Bool) -> some View {
+    private func grid(shown: [SidePanel], side: PanelSideItem?, set: SidePanelSet, single: Bool) -> some View {
         if shown.isEmpty {
             EmptyState("開いているパネルはありません", symbol: "rectangle.split.2x2", message: swap == nil ? "上のボタンでパネルを開けます。" : "下のボタンでパネルを開けます。")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -110,14 +121,14 @@ struct TaskSideArea: View {
             SidePanelGrid(panels: shown, set: set, store: { stored = $0.json }) { panel in
                 VStack(spacing: 0) {
                     SidePanelHeader(
-                        title: panel.label,
-                        symbol: panel.symbol, expanded: expanded == panel, showsControls: !single
+                        title: panel == .part ? side?.title ?? panel.label : panel.label,
+                        symbol: panel == .part ? side?.symbol ?? panel.symbol : panel.symbol, expanded: expanded == panel, showsControls: !single
                     ) {
                         expanded = expanded == panel ? nil : panel
                     } close: {
                         if expanded == panel { expanded = nil }
                         var next = set
-                        next.toggle(panel, current: open)
+                        next.toggle(panel, current: set.shown)
                         stored = next.json
                     }
                     Divider()
@@ -133,12 +144,13 @@ struct TaskSideArea: View {
         }
     }
 
-    private func help(_ panel: SidePanel, isOpen: Bool) -> String {
-        single || !isOpen ? String(localized: "\(panel.label)を開く") : String(localized: "\(panel.label)を閉じる")
+    private func help(_ label: String, isOpen: Bool, single: Bool) -> String {
+        single || !isOpen ? String(localized: "\(label)を開く") : String(localized: "\(label)を閉じる")
     }
 
-    private func toggle(_ panel: SidePanel, set: SidePanelSet, open: [SidePanel]) {
+    private func toggle(_ panel: SidePanel, set: SidePanelSet) {
         var next = set
+        let open = set.shown
         next.toggle(panel, current: open)
         if expanded == panel || (expanded != nil && !open.contains(panel)) { expanded = nil }
         stored = next.json

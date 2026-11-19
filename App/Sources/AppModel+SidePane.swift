@@ -5,6 +5,8 @@ import TaskboardKit
 /// 会話のシェルは欄にせず、会話と右側の下に全幅で出す（`TaskTerminalArea`）
 enum SidePanel: String, CaseIterable, Identifiable, Codable {
     case status, docs, work, changes
+    /// 会話が右の欄に置いた部品（`PanelPlace.side`）。部品のあるタスクだけで出し、人が開くまで閉じている
+    case part
 
     var id: String { rawValue }
 
@@ -14,6 +16,7 @@ enum SidePanel: String, CaseIterable, Identifiable, Codable {
         case .docs: String(localized: "文書")
         case .work: String(localized: "作業項目")
         case .changes: String(localized: "差分")
+        case .part: String(localized: "部品")
         }
     }
 
@@ -23,11 +26,15 @@ enum SidePanel: String, CaseIterable, Identifiable, Codable {
         case .docs: "doc.text"
         case .work: "checklist"
         case .changes: "plusminus"
+        case .part: "rectangle.on.rectangle"
         }
     }
 
-    /// iPhone の切り替えに並べる欄（端末は会話の画面からシートで開く）
-    static let phoneTabs: [SidePanel] = [.docs, .work, .status, .changes]
+    /// 上の帯にいつも並べる欄（部品の欄は、部品のあるタスクだけで区切りの後ろに出す）
+    static let fixed: [SidePanel] = [.status, .docs, .work, .changes]
+
+    /// iPhone の切り替えに並べる欄（端末は会話の画面からシートで開く）。部品のあるタスクは最後に部品の欄を加える
+    static func phoneTabs(hasPart: Bool) -> [SidePanel] { [.docs, .work, .status, .changes] + (hasPart ? [.part] : []) }
 
     /// iPhone で出す欄。このタスクで選んだ欄があればそれ、無ければこの端末で前に選んだ欄。前に選んだ欄の中身がこのタスクで空なら、文書 → 作業項目 → 状態の順で中身のあるものに戻す
     static func shown(picked: SidePanel?, preferred: SidePanel, filled: (SidePanel) -> Bool) -> SidePanel {

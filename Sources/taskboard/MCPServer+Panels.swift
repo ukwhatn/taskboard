@@ -2,7 +2,7 @@ import Foundation
 import MCP
 import TaskboardKit
 
-/// 会話が登録する概況の tool。予算と書式の検証は daemon の書き込みの入口で行い、ここは引数を部品の型に読むだけ
+/// 会話が 4 か所に置く部品の tool。予算と書式の検証は daemon の書き込みの入口で行い、ここは引数を部品の型に読むだけ
 extension TaskboardTools {
     static let panelPartSchema: Value = .object([
         "type": .string("object"),
@@ -10,6 +10,7 @@ extension TaskboardTools {
         "properties": .object([
             "id": property("string", Copy.text("agent.tool.panel.id")),
             "kind": property("string", Copy.text("agent.tool.panel.kind"), enum: PanelContent.Kind.allCases.map(\.rawValue)),
+            "place": property("string", Copy.text("agent.tool.panel.place"), enum: PanelPlace.allCases.map(\.rawValue)),
             "bind": .object([
                 "type": .string("object"),
                 "description": .string(Copy.text("agent.tool.panel.bind")),
@@ -108,7 +109,7 @@ extension TaskboardTools {
                 notes.append(part.answer == nil ? Copy.text("agent.mcp.panel.summary.waiting") : Copy.text("agent.mcp.panel.summary.approved"))
             }
             let tail = notes.isEmpty ? "" : " ・ " + notes.joined(separator: " ・ ")
-            return "- \(part.id)（\(part.spec.content.kind.rawValue)）" + Copy.text("agent.mcp.panel.summary.updated", ["at": formatter.string(from: part.updatedAt)]) + tail
+            return "- \(part.id)（\(part.spec.content.kind.rawValue)・\(part.spec.place.rawValue)）" + Copy.text("agent.mcp.panel.summary.updated", ["at": formatter.string(from: part.updatedAt)]) + tail
         }
     }
 }

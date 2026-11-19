@@ -443,24 +443,58 @@ public struct PanelBinding: Codable, Hashable, Sendable {
     }
 }
 
+/// 部品を置く場所。場所ごとに受ける種類と数が決まっている（`PanelValidation`）
+public enum PanelPlace: String, Codable, Hashable, Sendable, CaseIterable {
+    /// タスクの見出しの下の 1 行。計器だけを 4 個まで
+    case band
+    /// 会話の一覧の上。表・計画・図・グラフ・HTML のどれか 1 つ
+    case head
+    /// 入力欄の上。送る文面を 2 件まで
+    case composer
+    /// 右の欄。会話の頭と同じ種類を 1 つ
+    case side
+
+    /// この場所に置ける部品の数
+    public var limit: Int {
+        switch self {
+        case .band: 4
+        case .head, .side: 1
+        case .composer: 2
+        }
+    }
+
+    /// この場所が受ける種類
+    public var kinds: [PanelContent.Kind] {
+        switch self {
+        case .band: [.gauge]
+        case .composer: [.draft]
+        case .head, .side: [.table, .plan, .diagram, .chart, .html]
+        }
+    }
+}
+
 /// 会話が渡す部品 1 つ（id は会話が付ける）
 public struct PanelPartSpec: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var content: PanelContent
     public var bind: PanelBinding?
+    public var place: PanelPlace
 
-    public init(id: String, content: PanelContent, bind: PanelBinding? = nil) {
+    public init(id: String, content: PanelContent, bind: PanelBinding? = nil, place: PanelPlace = .head) {
         self.id = id
         self.content = content
         self.bind = bind
+        self.place = place
     }
 
-    private enum CodingKeys: String, CodingKey { case id, kind, bind }
+    private enum CodingKeys: String, CodingKey { case id, kind, bind, place }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
         bind = try c.decodeIfPresent(PanelBinding.self, forKey: .bind)
+        // place の無い登録（場所を持つ前の版の会話）は会話の頭に置く
+        place = try c.decodeIfPresent(PanelPlace.self, forKey: .place) ?? .head
         content =
             switch try c.decode(PanelContent.Kind.self, forKey: .kind) {
             case .gauge: .gauge(try PanelGauge(from: decoder))
@@ -489,6 +523,7 @@ public struct PanelPartSpec: Codable, Hashable, Sendable, Identifiable {
         try c.encode(id, forKey: .id)
         try c.encode(content.kind, forKey: .kind)
         try c.encodeIfPresent(bind, forKey: .bind)
+        try c.encode(place, forKey: .place)
     }
 }
 
@@ -550,6 +585,11 @@ public struct OverviewPanel: Codable, Hashable, Sendable, Identifiable {
     /// 会話が 2 ターン以上更新していない部品（紐づけた部品は state の今の値を描くので古くならない）
     public func isStale(_ part: PanelPart) -> Bool {
         part.spec.bind == nil && turn - part.updatedTurn >= PanelBudget.staleTurns
+    }
+
+    /// その場所に置いた部品。場所の数と種類に収まる分だけを、登録の並びで返す（daemon は外れた登録を断るので、外れるのは手で作ったデータだけ）
+    public func parts(in place: PanelPlace) -> [PanelPart] {
+        Array(parts.filter { $0.spec.place == place && place.kinds.contains($0.spec.content.kind) }.prefix(place.limit))
     }
 
     /// 承認を待つ送る文面

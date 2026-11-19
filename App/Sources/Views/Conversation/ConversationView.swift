@@ -26,6 +26,8 @@ struct ConversationView: View {
     private let revealedMenu: String?
     /// 環境・コンテキスト・コネクタを置く詳細の欄が隣にある（タスクのパネル）。無ければ上の帯の［状態］から出す
     private let detailsBeside: Bool
+    /// 会話の頭と入力欄の上に部品を描くタスク（タスクのパネルの左の会話だけ）
+    private let partsTask: TaskKey?
     @AppStorage(AppPreferences.chatFontSizeKey) private var fontSize = SessionTextSize.chatDefault
     @FocusState private var composerFocused: Bool
     /// 入力欄の帯が出たらフォーカスを当てる（帯は画面より 1 回あとに組むので、画面の onAppear では欄がまだ無い）
@@ -42,11 +44,13 @@ struct ConversationView: View {
 
     /// `draft`・`revealedMenu`・`openFile` は snapshot 用（入力欄の文、ボタンを出しておく発言、開いた状態で出すファイル）
     init(
-        key: ConversationKey, feed: ConversationFeed, detailsBeside: Bool = false, draft: String = "", revealedMenu: String? = nil, openFile: ChatFileRef? = nil
+        key: ConversationKey, feed: ConversationFeed, detailsBeside: Bool = false, partsTask: TaskKey? = nil, draft: String = "", revealedMenu: String? = nil,
+        openFile: ChatFileRef? = nil
     ) {
         self.key = key
         self.feed = feed
         self.detailsBeside = detailsBeside
+        self.partsTask = partsTask
         self.revealedMenu = revealedMenu
         initialDraft = draft
         _openFile = State(initialValue: openFile)
@@ -64,6 +68,9 @@ struct ConversationView: View {
             if let conversation, feed.phase != .removed, openable, !AppModel.isPhone {
                 topBar(conversation)
                 Divider()
+            }
+            if let partsTask, feed.phase != .removed, openable {
+                PanelHead(task: partsTask, maxHeight: height / 3)
             }
             if search.isOpen {
                 ConversationSearchBar(feed: feed, search: $search, size: size, focused: $searchFocused)
@@ -308,6 +315,9 @@ struct ConversationView: View {
                     restore: { restorePastedText($0) }
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let partsTask {
+                PanelComposerDrafts(task: partsTask, maxHeight: height > 0 ? height / 3 : .infinity)
             }
             ConversationComposerArea(
                 key: key, conversation: conversation, feed: feed, drafts: model.chatDrafts, initialDraft: initialDraft, size: size, writable: blocked == nil,

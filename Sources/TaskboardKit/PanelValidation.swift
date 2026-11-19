@@ -1,10 +1,7 @@
 import Foundation
 
-/// 概況の量の予算。超えた登録は daemon が誤りで返す（黙って切らない）。値は docs/daemon.md「概況の部品」と同じ
+/// 部品の中身の量の予算。超えた登録は daemon が誤りで返す（黙って切らない）。値は docs/daemon.md「概況の部品」と同じ。場所ごとの数は `PanelPlace.limit`
 public enum PanelBudget {
-    public static let parts = 20
-    public static let gauges = 8
-    public static let primaryTables = 2
     public static let columns = 5
     public static let cellChars = 20
     public static let rows = 50
@@ -21,7 +18,6 @@ public enum PanelBudget {
     public static let draftToChars = 200
     public static let draftBodyChars = 4_000
     public static let checks = 8
-    public static let htmlParts = 3
     public static let htmlChars = 20_000
     public static let idChars = 40
     /// 会話が更新しないまま、このターン数を過ぎた部品は時刻を補足の色で出す
@@ -41,27 +37,32 @@ public struct PanelInvalid: Error, Hashable, Sendable {
 public enum PanelValidation {
     /// 守られていなければ `PanelInvalid` を投げる。受け付けたうえで返す注意を返す
     public static func check(_ parts: [PanelPartSpec]) throws -> [String] {
-        guard parts.count <= PanelBudget.parts else { throw PanelInvalid(Copy.text("agent.panel.invalid.count", ["limit": "\(PanelBudget.parts)"])) }
         var seen = Set<String>()
         for part in parts {
             guard isValidID(part.id) else { throw PanelInvalid(Copy.text("agent.panel.invalid.id", ["id": part.id, "limit": "\(PanelBudget.idChars)"])) }
             guard seen.insert(part.id).inserted else { throw PanelInvalid(Copy.text("agent.panel.invalid.duplicate", ["id": part.id])) }
+            try place(part)
         }
-        let gauges = parts.filter { $0.content.kind == .gauge }.count
-        guard gauges <= PanelBudget.gauges else {
-            throw PanelInvalid(Copy.text("agent.panel.invalid.gauges", ["count": "\(gauges)", "limit": "\(PanelBudget.gauges)"]))
-        }
-        let primary = parts.filter { if case .table(let t) = $0.content { t.primary } else { false } }.count
-        guard primary <= PanelBudget.primaryTables else {
-            throw PanelInvalid(Copy.text("agent.panel.invalid.primary", ["count": "\(primary)", "limit": "\(PanelBudget.primaryTables)"]))
-        }
-        let htmls = parts.filter { $0.content.kind == .html }.count
-        guard htmls <= PanelBudget.htmlParts else {
-            throw PanelInvalid(Copy.text("agent.panel.invalid.html.count", ["count": "\(htmls)", "limit": "\(PanelBudget.htmlParts)"]))
+        for place in PanelPlace.allCases {
+            let count = parts.filter { $0.place == place }.count
+            guard count <= place.limit else {
+                throw PanelInvalid(Copy.text("agent.panel.invalid.place.count", ["place": place.rawValue, "count": "\(count)", "limit": "\(place.limit)"]))
+            }
         }
         var warnings: [String] = []
         for part in parts { warnings += try check(part) }
         return warnings
+    }
+
+    /// 場所が受ける種類か。外れたら、その種類を受ける場所を添えて返す（place を省いた登録は head になるため）
+    private static func place(_ part: PanelPartSpec) throws {
+        let kind = part.content.kind
+        guard !part.place.kinds.contains(kind) else { return }
+        let fits = PanelPlace.allCases.filter { $0.kinds.contains(kind) }.map(\.rawValue).joined(separator: "・")
+        throw PanelInvalid(
+            Copy.text(
+                "agent.panel.invalid.place.kind",
+                ["id": part.id, "place": part.place.rawValue, "kinds": part.place.kinds.map(\.rawValue).joined(separator: "・"), "kind": kind.rawValue, "fits": fits]))
     }
 
     static func isValidID(_ id: String) -> Bool {
