@@ -113,6 +113,7 @@ public final class Store: Sendable {
         registerPanelMigration(&migrator)  // v45（Store+Panels）
         registerBriefingMigration(&migrator)  // v46（Store+Briefings。表だけ残す）
         registerLinkStatusCacheMigration(&migrator)  // v47（Store+LinkStatusCache）
+        registerDocDraftMigration(&migrator)  // v48（Store+DocDrafts）
         return migrator
     }
 

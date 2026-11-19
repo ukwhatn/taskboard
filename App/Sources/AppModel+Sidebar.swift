@@ -31,7 +31,7 @@ enum TaskRowStatus: CaseIterable, Comparable {
         switch item.kind {
         case .conversationRequest(_, let request) where request.kind == .plan: self = .planApproval
         case .conversationRequest(_, let request): self = request.waiting.permissionPrompt == nil ? .question : .blocked
-        case .question, .panelDraft: self = .question
+        case .question, .panelDraft, .docDraft: self = .question
         case .reviewRequest: self = .reviewRequested
         case .manualWork: self = .manualWork
         case .pullRequestTurn(_, .reviewRequested): self = .reviewRequested

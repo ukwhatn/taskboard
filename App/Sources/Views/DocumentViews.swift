@@ -28,6 +28,7 @@ struct DocumentList: View {
     var body: some View {
         let state = model.fleet.machineState(for: task.machine)
         VStack(alignment: .leading, spacing: Space.row) {
+            DocumentJudgments(task: task, documents: documents)
             if let request = state?.reviewRequests[task.id] {
                 Banner(kind: .waiting, message: String(localized: "レビューを頼まれています"), detail: request.note.isEmpty ? nil : request.note) {
                     if let first = documents.first {
@@ -142,6 +143,14 @@ struct DocumentScreen: View {
     @State private var width: CGFloat = 0
     /// 返信・質問の回答の書きかけがあるか（中の部品が `DocumentPendingInputKey` で知らせる）
     @State private var pendingInput = false
+    /// 本文の欄で［承認］を押した送る文面（確認のダイアログを出す）
+    @State private var approving: Approving?
+
+    struct Approving: Identifiable {
+        var draft: DocDraft
+        var body: String
+        var id: String { draft.id }
+    }
 
     struct Composer: Identifiable {
         var id = UUID()
@@ -180,7 +189,7 @@ struct DocumentScreen: View {
                     VStack(spacing: 0) {
                         if !sideBySide || !commentsShown, let ask = openAsk {
                             Banner(kind: .waiting, message: String(localized: "質問が\(ask.questions.count)件あります")) {
-                                Button("回答する") { showsComments = true }.controlSize(.small)
+                                Button("回答する") { focusForm(AppModel.formSlot(for: ask)) }.controlSize(.small)
                             }
                             .padding(.horizontal, inset)
                             .padding(.vertical, Space.row)
@@ -200,7 +209,8 @@ struct DocumentScreen: View {
         .onPreferenceChange(DocumentPendingInputKey.self) { pendingInput = $0 }
         // タスクのパネルも Esc の前に見る（フォーカスが帯にあると、Esc はパネルが受ける）
         .transformPreference(DocumentPendingInputKey.self) {
-            $0 = $0 || [composer, floating].contains { $0?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
+            $0 = $0 || web?.formsPendingInput == true
+                || [composer, floating].contains { $0?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
         }
         #if os(macOS)
         // パネルの中だけ。別ウィンドウの Esc は何もしない（iPhone のシートは下の見えないボタン）
@@ -246,7 +256,24 @@ struct DocumentScreen: View {
             guard web == nil else { return }
             let controller = DocumentWebController()
             controller.openInApp = { [model] url in model.open(url, from: .link) }
+            controller.onFormAction = { action in handleForm(action, doc: doc) }
             web = controller
+        }
+        .onChange(of: formsInput(doc), initial: true) { pushForms(doc) }
+        .onChange(of: web != nil) { pushForms(doc) }
+        .onChange(of: model.docFormFocus, initial: true) { _, focus in
+            guard let focus, focus.doc == key, web != nil else { return }
+            focusForm(focus.slot)
+            model.docFormFocus = nil
+        }
+        .confirmationDialog(
+            "送る文面の承認", isPresented: Binding(get: { approving != nil }, set: { if !$0 { approving = nil } }), titleVisibility: .visible,
+            presenting: approving
+        ) { item in
+            Button("承認") { approve(item) }
+            Button("キャンセル", role: .cancel) {}
+        } message: { item in
+            Text("「\(item.draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
         }
         .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)") { await loadContent() }
         .task(id: "\(key)/\(doc.openComments)/\(doc.draftComments)/\(askSignature)") { await loadSide(task: task) }
@@ -351,6 +378,74 @@ struct DocumentScreen: View {
         asks.first { $0.status == .open } ?? model.fleet.machineState(for: key.machine)?.openAsk(forDoc: key.id)
     }
 
+    // MARK: 本文の欄
+
+    /// 欄の中身を決める値（変わったら描き直す）
+    private func formsInput(_ doc: Document) -> String {
+        let askPart = formAsks.map { "\($0.askID):\($0.status.rawValue):\($0.deliveredAt != nil)" }.joined(separator: ",")
+        let draftPart = doc.drafts.map { "\($0.id):\($0.draft.body.hashValue):\($0.answer?.answerID ?? 0)" }.joined(separator: ",")
+        return "\(askPart)|\(draftPart)|\(model.canWrite(key.machine))|\(bodyTextSize)"
+    }
+
+    /// 欄に出す質問の束。読み込んだ一覧に、接続していない（fixtures）ときは state の未回答の質問を足す
+    private var formAsks: [Ask] {
+        var all = asks
+        if let open = model.fleet.machineState(for: key.machine)?.openAsk(forDoc: key.id), !all.contains(where: { $0.askID == open.askID }) { all.append(open) }
+        return all
+    }
+
+    private func pushForms(_ doc: Document) {
+        let blocked = model.writeBlock(key.machine, "送信できません")?.text
+        web?.setForms(DocumentForms.payload(asks: formAsks, drafts: doc.drafts, canWrite: model.canWrite(key.machine), blocked: blocked, textSize: bodyTextSize))
+    }
+
+    /// 欄の位置まで送る（狭い幅でコメントを出していれば本文に切り替える）
+    private func focusForm(_ slot: String?) {
+        if width < DocumentMetrics.bodyMinWidth + DocumentMetrics.comments.lowerBound { showsComments = false }
+        guard let slot else { return }
+        web?.scroll(toForm: slot)
+    }
+
+    private func handleForm(_ action: DocumentFormAction, doc: Document) {
+        switch action {
+        case .answer(let id, let answers):
+            guard let ask = formAsks.first(where: { $0.askID == id }) else { return }
+            Task {
+                do {
+                    try await model.answer(ask, answers)
+                    web?.formResult(kind: "ask", id: "\(id)", error: nil)
+                    await loadSide(task: TaskKey(machine: doc.machine, number: doc.taskNumber))
+                } catch {
+                    web?.formResult(kind: "ask", id: "\(id)", error: UserFacingError("回答を送信できませんでした", error: error)?.text)
+                }
+            }
+        case .cancel(let id):
+            guard let ask = formAsks.first(where: { $0.askID == id }) else { return }
+            Task {
+                do {
+                    try await model.cancelAsk(ask)
+                    web?.formResult(kind: "ask", id: "\(id)", error: nil)
+                    await loadSide(task: TaskKey(machine: doc.machine, number: doc.taskNumber))
+                } catch {
+                    web?.formResult(kind: "ask", id: "\(id)", error: UserFacingError("質問を閉じられませんでした", error: error)?.text)
+                }
+            }
+        case .approve(let id, let body):
+            guard let draft = model.fleet.document(for: key)?.drafts.first(where: { $0.id == id }) else { return }
+            approving = Approving(draft: draft, body: body)
+        }
+    }
+
+    private func approve(_ item: Approving) {
+        Task {
+            do {
+                try await model.approveDocDraft(key, draft: item.draft.id, body: item.body)
+            } catch {
+                web?.formResult(kind: "draft", id: item.draft.id, error: UserFacingError("送る文面を承認できませんでした", error: error)?.text)
+            }
+        }
+    }
+
     private func commentToggle(commentsShown: Bool) -> some View {
         Button {
             showsComments = !commentsShown
@@ -389,7 +484,7 @@ struct DocumentScreen: View {
 
     /// 質問・コメント・レビュー依頼があればコメントの欄を開いて出す
     private func defaultShowsComments(_ doc: Document) -> Bool {
-        doc.openComments > 0 || doc.draftComments > 0 || model.fleet.machineState(for: key.machine)?.openAsk(forDoc: key.id) != nil
+        doc.openComments > 0 || doc.draftComments > 0
             || model.fleet.machineState(for: key.machine)?.reviewRequests[TaskKey(machine: doc.machine, number: doc.taskNumber)] != nil
             || composer != nil
     }
@@ -438,9 +533,14 @@ struct DocumentScreen: View {
                             Button("再読み込み") { Task { await loadSide(task: task) } }.controlSize(.small)
                         }
                     }
-                    // 接続していない（fixtures）ときは state が持つ未回答の質問を出す
+                    // 答えるのは本文の欄。ここは回答の状況と、欄へ送る入口だけ
                     if let open = openAsk {
-                        AskForm(ask: open).id(open.askID)
+                        HStack(alignment: .firstTextBaseline, spacing: Space.row) {
+                            Label(String(localized: "質問\(open.questions.count)件の回答待ち"), systemImage: "questionmark.bubble")
+                                .font(.callout).foregroundStyle(.orange)
+                            Spacer(minLength: Space.row)
+                            Button("質問へ移動") { focusForm(AppModel.formSlot(for: open)) }.controlSize(.small)
+                        }
                     }
                     let answered = asks.filter { $0.status == .answered }
                     if !answered.isEmpty {

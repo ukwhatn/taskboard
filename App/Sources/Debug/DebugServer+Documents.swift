@@ -29,6 +29,12 @@ extension DebugServer {
             let found = await web.debugSelect(text)
             try? await Task.sleep(for: .milliseconds(300))
             return .json(200, ["found": found, "rect": web.selectionRect.map { ["x": $0.minX, "y": $0.minY, "width": $0.width, "height": $0.height] } as Any])
+        case ("POST", "/doc/js"):
+            // {"script": "..."}。本文の欄を押す（欄の中の操作は MessageProxy を通る本物の経路）。結果は文字にして返す
+            guard let script = request.jsonBody?["script"] as? String else { return .json(400, ["error": "script が要る"]) }
+            guard let web = DocumentWebController.current else { return .json(404, ["error": "文書が開いていない"]) }
+            let result = await web.debugEvaluate(script)
+            return .json(200, ["result": result.map { "\($0)" } as Any, "pendingInput": web.formsPendingInput])
         case ("POST", "/doc/close"):
             model.closeDoc()
             return .json(200, ["ok": true])

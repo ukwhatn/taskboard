@@ -36,6 +36,6 @@ private struct AskOptionHTMLPreview: View {
     }
 
     private func load() {
-        web.load(content: DocContent(docID: 0, rev: 0, format: .html, content: html), highlights: [], textSize: 13)
+        web.load(content: DocContent(docID: 0, rev: 0, format: .html, content: html), highlights: [], textSize: 13, forms: false)
     }
 }

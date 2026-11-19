@@ -26,6 +26,23 @@ extension TaskboardTools {
         ], required: ["question", "options"]),
     ])
 
+    /// `doc_publish` の drafts。欄は概況の送る文面と同じ
+    static let draftsSchema: Value = .object([
+        "type": .string("array"), "maxItems": .int(DocDraftSpec.maxCount),
+        "description": .string(Copy.text("agent.tool.doc_publish.drafts")),
+        "items": schema([
+            "id": property("string", Copy.text("agent.tool.doc_publish.drafts.id")),
+            "title": property("string", Copy.text("agent.tool.doc_publish.drafts.title")),
+            "to": property("string", Copy.text("agent.tool.doc_publish.drafts.to")),
+            "body": property("string", Copy.text("agent.tool.doc_publish.drafts.body")),
+            "checks": .object([
+                "type": .string("array"), "maxItems": .int(PanelBudget.checks),
+                "description": .string(Copy.text("agent.tool.doc_publish.drafts.checks")),
+                "items": schema(["label": property("string"), "ok": property("boolean"), "note": property("string")], required: ["label", "ok"]),
+            ]),
+        ], required: ["id", "to", "body"]),
+    ])
+
     static let workItemForAskProperty = property(
         "integer",
         Copy.text("agent.mcp.documents.workItemForAskProperty"))
@@ -42,6 +59,7 @@ extension TaskboardTools {
                 "format": property("string", Copy.text("agent.tool.doc_publish.format"), enum: ["markdown", "html"]),
                 "title": property("string", Copy.text("agent.tool.doc_publish.title")),
                 "questions": questionsSchema,
+                "drafts": draftsSchema,
                 "work_item": workItemForAskProperty,
             ])) { tools, args in try await tools.docPublish(args) },
         ToolEntry(
@@ -96,6 +114,16 @@ extension TaskboardTools {
         }
     }
 
+    /// 送る文面の入力を `DocDraftSpec` に（JSON は概況の部品と同じ欄なので、そのまま decode する）
+    static func drafts(from value: Value?) throws -> [DocDraftSpec]? {
+        guard let value, value.arrayValue != nil else { return nil }
+        do {
+            return try JSONDecoder().decode([DocDraftSpec].self, from: JSONEncoder().encode(value))
+        } catch {
+            throw ToolError.invalid(Copy.text("agent.mcp.documents.drafts"))
+        }
+    }
+
     private func docPublish(_ args: [String: Value]) async throws -> String {
         let number = try await resolveTaskNumber(args)
         let path = args.string("path")
@@ -124,9 +152,11 @@ extension TaskboardTools {
         }
         let questions = try Self.questions(from: args["questions"])
         if let questions, let problem = AskQuestion.validate(questions) { throw ToolError.invalid(problem) }
+        let drafts = try Self.drafts(from: args["drafts"])
+        if let drafts, let problem = DocDraftSpec.validate(drafts) { throw ToolError.invalid(problem) }
         let request = DocPublishRequest(
             name: name, format: format, content: body, title: args.string("title"), sourcePath: sourcePath, questions: questions, requester: requester,
-            workItem: args.int64("work_item"))
+            workItem: args.int64("work_item"), drafts: drafts)
         let result = try await client.publishDocument(task: number, request)
         return Self.describe(publish: result, task: number)
     }
@@ -139,6 +169,10 @@ extension TaskboardTools {
         if let askID = result.askID {
             lines.append("- ask_id: \(askID)")
             lines.append(Copy.text("agent.mcp.documents.lines.4"))
+        }
+        let drafts = result.document.drafts
+        if !drafts.isEmpty {
+            lines.append(Copy.text("agent.mcp.documents.lines.drafts", ["count": "\(drafts.count)", "open": "\(result.document.openDrafts.count)"]))
         }
         if result.pendingFeedback > 0 { lines.append(Copy.text("agent.mcp.documents.lines.5", ["pendingFeedback": "\(result.pendingFeedback)"])) }
         return lines.joined(separator: "\n")
@@ -180,11 +214,8 @@ extension TaskboardTools {
                 asked: questions.count, askID: result.askID, document: Copy.text("agent.mcp.documents.result", ["docID": "\(existing.docID)", "name": "\(name)", "revision": "\(result.revision)"]),
                 app: Self.appURL(existing.machine, task: number, doc: existing.docID), task: number, pendingFeedback: result.pendingFeedback)
         }
-        if body.isEmpty {
-            body = "# \(title)\n\n" + questions.map { q in
-                "## \(q.header ?? q.id)\n\n\(q.question)\n\n" + q.options.map { "- **\($0.displayLabel)**" + ($0.isRecommended ? Copy.text("agent.mcp.documents.result.2") : "") + ($0.description.map { " — \($0)" } ?? "") }.joined(separator: "\n")
-            }.joined(separator: "\n\n")
-        }
+        // 前提の無い質問を作らせない（答える人が前提を別の所で読み直すことになる）
+        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ToolError.invalid(Copy.text("agent.mcp.documents.context")) }
         let format = DocFormat.infer(fromName: name) ?? .markdown
         let result = try await client.publishDocument(
             task: number, DocPublishRequest(

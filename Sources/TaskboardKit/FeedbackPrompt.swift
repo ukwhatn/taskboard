@@ -53,12 +53,14 @@ extension FeedbackText {
         for (number, items) in Dictionary(grouping: bundle.drafts, by: \.taskNumber).sorted(by: { $0.key < $1.key }) {
             var lines = [TaskboardNotice.draftPrefix + "\(number)）。"]
             for item in items.sorted(by: { ($0.answeredAt, $0.answerID) < ($1.answeredAt, $1.answerID) }) {
+                if let document = item.docName { lines.append(Copy.text("agent.notice.feedbackPrompt.draft.document", ["name": document])) }
                 lines.append(
                     Copy.text(
                         item.edited ? "agent.notice.feedbackPrompt.draft.edited" : "agent.notice.feedbackPrompt.draft",
                         ["id": item.partID, "to": item.to, "body": item.body]))
             }
-            lines.append(Copy.text("agent.notice.feedbackPrompt.draft.send"))
+            if items.contains(where: { $0.docName == nil }) { lines.append(Copy.text("agent.notice.feedbackPrompt.draft.send")) }
+            if items.contains(where: { $0.docName != nil }) { lines.append(Copy.text("agent.notice.feedbackPrompt.draft.send.document")) }
             blocks.append(lines.joined(separator: "\n"))
         }
         for entry in bundle.reviews {

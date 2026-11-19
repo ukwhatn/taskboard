@@ -210,6 +210,61 @@
         }
       }
     },
+    "agent.doc.drafts.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "送る文面は 1 つの文書に {{limit}} 件まで"
+          }
+        }
+      }
+    },
+    "agent.doc.drafts.notFound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "送る文面 {{id}} が無い"
+          }
+        }
+      }
+    },
+    "agent.doc.marker.duplicate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 {{slot}} が 2 か所にある。1 つの質問・送る文面の欄は、本文の 1 か所にだけ置く"
+          }
+        }
+      }
+    },
+    "agent.doc.marker.unknownAsk" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 ask: {{id}} が指す質問が無い。質問の id は questions の並び順の q1, q2…（questions を省いた publish では、今の質問の id）"
+          }
+        }
+      }
+    },
+    "agent.doc.marker.unknownDraft" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 draft: {{id}} が指す送る文面が無い。drafts の id を指す（drafts を省いた publish では、今の文面の id）"
+          }
+        }
+      }
+    },
     "agent.guidance.ask" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2443,6 +2498,17 @@
         }
       }
     },
+    "agent.mcp.documents.context" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "context が無い。前提（背景・判断材料・trade-off）を markdown で context に書く。publish 済みの文書に質問だけ付けるなら、name にその文書名を渡す"
+          }
+        }
+      }
+    },
     "agent.mcp.documents.docs" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2450,6 +2516,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "タスク #{{number}} に文書は無い"
+          }
+        }
+      }
+    },
+    "agent.mcp.documents.drafts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drafts の各項目は id・to・body（文字列）と、任意の title（文字列）・checks（label・ok・note の配列）を持つ"
           }
         }
       }
@@ -2586,6 +2663,17 @@
         }
       }
     },
+    "agent.mcp.documents.lines.drafts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 送る文面: {{count}} 件（承認待ち {{open}} 件）。承認は taskboard がこのセッションに届ける"
+          }
+        }
+      }
+    },
     "agent.mcp.documents.options" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2681,17 +2769,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "[{{docID}}] {{name}} ・ rev {{revision}}（既存の文書に質問だけ付けた。本文は変えていない）"
-          }
-        }
-      }
-    },
-    "agent.mcp.documents.result.2" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "（推奨）"
           }
         }
       }
@@ -6513,6 +6590,17 @@
         }
       }
     },
+    "agent.notice.feedbackPrompt.draft.document" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 文書 {{name}} に置いた文面:"
+          }
+        }
+      }
+    },
     "agent.notice.feedbackPrompt.draft.edited" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6531,6 +6619,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "承認した本文で送信する。送るのは会話で、taskboard は送らない。送ったら、その部品を panel_update で更新するか外す。"
+          }
+        }
+      }
+    },
+    "agent.notice.feedbackPrompt.draft.send.document" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "承認した本文で送信する。送るのは会話で、taskboard は送らない。送ったら、送った文面を drafts から外して文書を doc_publish で更新する。"
           }
         }
       }
@@ -7553,7 +7652,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "人に選択肢で質問する。文書を読んで決める判断（計画の承認・設計の選択・2 問以上の判断）に使い、会話の流れの中で決める判断は AskUserQuestion、手作業の依頼は work_update の blocker_kind manual で頼む。質問は文書（既定 questions.md）に埋まり、受信箱の「対応待ち」に出る。ブロックしないので、呼んだ後は作業を続けるか、止まって待つ。回答は taskboard がこのセッションに届ける（host の会話では人の発言として入り、taskboard の外の Claude Code では Stop hook が渡す。届かなければ feedback_list で取る）"
+            "value" : "人に選択肢で質問する。文書を読んで決める判断（計画の承認・設計の選択・2 問以上の判断）に使い、会話の流れの中で決める判断は AskUserQuestion、手作業の依頼は work_update の blocker_kind manual で頼む。前提（背景・判断材料・trade-off）を context に書く。context の無い呼び出しは断る（name に publish 済みの文書名を渡すときを除く）。前提が長いときと、質問を本文の途中に置くときは、doc_publish の questions と本文の印 <!-- ask: q1 --> を使う。質問は文書（既定 questions.md）に載り、受信箱の「対応待ち」に出る。ブロックしないので、呼んだ後は作業を続けるか、止まって待つ。回答は taskboard がこのセッションに届ける（host の会話では人の発言として入り、taskboard の外の Claude Code では Stop hook が渡す。届かなければ feedback_list で取る）"
           }
         }
       }
@@ -7564,7 +7663,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "質問の前に読ませる markdown（背景・判断材料・trade-off）。新しい文書に載せるときだけ"
+            "value" : "質問の前に読ませる markdown（背景・判断材料・trade-off）。新しい文書に載せるときは必須。本文に <!-- ask: q1 --> を置くと、その位置に質問の欄が出る（印の無い質問は本文の末尾）"
           }
         }
       }
@@ -7575,7 +7674,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "質問を載せる文書名。省くと questions.md（呼ぶたびに書き換わる）。publish 済みの文書名を渡すと、本文を変えずにその文書へ質問だけ付く（context は渡さない）"
+            "value" : "質問を載せる文書名。省くと questions.md（呼ぶたびに書き換わる）。publish 済みの文書名を渡すと、本文を変えずにその文書へ質問だけ付く（context は渡さない。質問は本文の末尾に出る）"
           }
         }
       }
@@ -7949,7 +8048,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。questions を付けると質問フォームが埋まり、回答は taskboard がこのセッションに届ける（ブロックしない）。文書を読んで決める判断を聞くときに使う（使い分けは ask_user の説明）"
+            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。判断を待つ質問（questions）と、人に承認してほしい送る文面（drafts）は、返答の文だけで書かず、前提（背景・判断材料・trade-off）と一緒にこの文書に書き、本文の答えてほしい位置に印を置く。印は markdown なら <!-- ask: q1 --> と <!-- draft: id -->、HTML なら <div data-ask=\"q1\"></div> と <div data-draft=\"id\"></div>。質問の id は questions の並び順の q1, q2…、文面の id は drafts の id。印の位置に回答と承認の欄が出て、印の無い質問と文面は本文の末尾に出る。無い id を指す印と、同じ印の重複は断る。回答と承認は taskboard がこのセッションに届ける（ブロックしない）"
           }
         }
       }
@@ -7961,6 +8060,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本文。渡すときは name が必須"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人に承認してほしい送る文面（Slack・メール・PR コメントの文案）。本文の印 <!-- draft: id --> の位置に欄が出て、人は本文を編集してから［承認］する。承認と本文は taskboard がこのセッションに届け、送るのは会話（taskboard は送らない）。省略は今ある文面を変えず、空配列は全部外す。本文を書き換えた文面は承認を待ち直す"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "送る本文（4,000 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts.checks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "送る前に会話が確認した項目（8 個まで。label は 20 字、note は 120 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts.id" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 <!-- draft: id --> が指す id（英数字と ._- で 40 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "題（60 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.drafts.to" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "宛先（「#dev の PROJ-1 のスレッド」など。200 字まで）"
           }
         }
       }

@@ -65,7 +65,7 @@ public enum PanelValidation {
                 ["id": part.id, "place": part.place.rawValue, "kinds": part.place.kinds.map(\.rawValue).joined(separator: "・"), "kind": kind.rawValue, "fits": fits]))
     }
 
-    static func isValidID(_ id: String) -> Bool {
+    public static func isValidID(_ id: String) -> Bool {
         !id.isEmpty && id.count <= PanelBudget.idChars
             && id.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) && $0.isASCII || "._-".unicodeScalars.contains($0) }
     }
@@ -171,22 +171,27 @@ public enum PanelValidation {
                 }
             }
         case .draft(let draft):
-            try text(draft.title, "title", id, limit: PanelBudget.titleChars)
-            try text(draft.to, "to", id, limit: PanelBudget.draftToChars, required: true)
-            try text(draft.body, "body", id, limit: PanelBudget.draftBodyChars, required: true)
-            guard draft.checks.count <= PanelBudget.checks else {
-                throw PanelInvalid(Copy.text("agent.panel.invalid.checks", ["id": id, "count": "\(draft.checks.count)", "limit": "\(PanelBudget.checks)"]))
-            }
-            for check in draft.checks {
-                try text(check.label, "checks.label", id, limit: PanelBudget.cellChars, required: true)
-                try text(check.note, "checks.note", id, limit: PanelBudget.noteChars)
-            }
+            try check(draft, id: id)
         case .html(let html):
             try text(html.title, "title", id, limit: PanelBudget.titleChars)
             try text(html.html, "html", id, limit: PanelBudget.htmlChars, required: true)
             warnings += try PanelHTMLCheck.check(html.html, id: id)
         }
         return warnings
+    }
+
+    /// 送る文面の欄の予算（概況の部品と文書の `drafts` で同じ）
+    public static func check(_ draft: PanelDraft, id: String) throws {
+        try text(draft.title, "title", id, limit: PanelBudget.titleChars)
+        try text(draft.to, "to", id, limit: PanelBudget.draftToChars, required: true)
+        try text(draft.body, "body", id, limit: PanelBudget.draftBodyChars, required: true)
+        guard draft.checks.count <= PanelBudget.checks else {
+            throw PanelInvalid(Copy.text("agent.panel.invalid.checks", ["id": id, "count": "\(draft.checks.count)", "limit": "\(PanelBudget.checks)"]))
+        }
+        for check in draft.checks {
+            try text(check.label, "checks.label", id, limit: PanelBudget.cellChars, required: true)
+            try text(check.note, "checks.note", id, limit: PanelBudget.noteChars)
+        }
     }
 
     private static func text(_ value: String, _ field: String, _ id: String, limit: Int, required: Bool = false) throws {

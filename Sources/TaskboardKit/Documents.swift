@@ -46,12 +46,14 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
     public var openComments: Int
     /// 下書きのコメント数（まだセッションに届いていない）
     public var draftComments: Int
+    /// 本文に置いた送る文面（`doc_publish` の `drafts`）。承認を待つものと承認済みのもの
+    public var drafts: [DocDraft]
     public var createdAt: Date
     public var updatedAt: Date
 
     public init(
         machine: MachineID, docID: Int64, taskNumber: Int, name: String, format: DocFormat, title: String? = nil, latestRev: Int,
-        hasSourceFile: Bool = false, openComments: Int = 0, draftComments: Int = 0, createdAt: Date, updatedAt: Date
+        hasSourceFile: Bool = false, openComments: Int = 0, draftComments: Int = 0, drafts: [DocDraft] = [], createdAt: Date, updatedAt: Date
     ) {
         self.machine = machine
         self.docID = docID
@@ -63,9 +65,52 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
         self.hasSourceFile = hasSourceFile
         self.openComments = openComments
         self.draftComments = draftComments
+        self.drafts = drafts
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case machine, docID, taskNumber, name, format, title, latestRev, hasSourceFile, openComments, draftComments, drafts, createdAt, updatedAt
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        machine = try c.decode(MachineID.self, forKey: .machine)
+        docID = try c.decode(Int64.self, forKey: .docID)
+        taskNumber = try c.decode(Int.self, forKey: .taskNumber)
+        name = try c.decode(String.self, forKey: .name)
+        format = try c.decode(DocFormat.self, forKey: .format)
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        latestRev = try c.decode(Int.self, forKey: .latestRev)
+        hasSourceFile = try c.decode(Bool.self, forKey: .hasSourceFile)
+        openComments = try c.decode(Int.self, forKey: .openComments)
+        draftComments = try c.decode(Int.self, forKey: .draftComments)
+        drafts = try c.decodeIfPresent([DocDraft].self, forKey: .drafts) ?? []
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+    }
+
+    /// `drafts` は 1 件以上のときだけ書く（送る文面の無い文書の state の形を変えない）
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(machine, forKey: .machine)
+        try c.encode(docID, forKey: .docID)
+        try c.encode(taskNumber, forKey: .taskNumber)
+        try c.encode(name, forKey: .name)
+        try c.encode(format, forKey: .format)
+        try c.encodeIfPresent(title, forKey: .title)
+        try c.encode(latestRev, forKey: .latestRev)
+        try c.encode(hasSourceFile, forKey: .hasSourceFile)
+        try c.encode(openComments, forKey: .openComments)
+        try c.encode(draftComments, forKey: .draftComments)
+        if !drafts.isEmpty { try c.encode(drafts, forKey: .drafts) }
+        try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(updatedAt, forKey: .updatedAt)
+    }
+
+    /// 承認を待つ送る文面
+    public var openDrafts: [DocDraft] { drafts.filter { $0.answer == nil } }
 
     /// 一覧に出す名前。title があればそれ、無ければファイル名
     public var displayTitle: String { title?.isEmpty == false ? title! : name }
@@ -93,6 +138,68 @@ public struct DocContent: Codable, Hashable, Sendable {
         self.rev = rev
         self.format = format
         self.content = content
+    }
+}
+
+// MARK: - 送る文面
+
+/// `doc_publish` の `drafts` の 1 件。id は本文の印 `<!-- draft: id -->` が指す。欄は概況の送る文面（`PanelDraft`）と同じ
+public struct DocDraftSpec: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var draft: PanelDraft
+
+    public init(id: String, draft: PanelDraft) {
+        self.id = id
+        self.draft = draft
+    }
+
+    private enum CodingKeys: String, CodingKey { case id }
+
+    /// JSON は id と `PanelDraft` の欄を同じ階層に並べる（概況の部品と同じ）
+    public init(from decoder: any Decoder) throws {
+        id = try decoder.container(keyedBy: CodingKeys.self).decode(String.self, forKey: .id)
+        draft = try PanelDraft(from: decoder)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try draft.encode(to: encoder)
+    }
+
+    /// 数・id・欄の予算。守られていなければ会話へ返す理由
+    public static func validate(_ drafts: [DocDraftSpec]) -> String? {
+        if drafts.count > maxCount { return Copy.text("agent.doc.drafts.count", ["limit": "\(maxCount)"]) }
+        var seen = Set<String>()
+        for spec in drafts {
+            guard PanelValidation.isValidID(spec.id) else { return Copy.text("agent.panel.invalid.id", ["id": spec.id, "limit": "\(PanelBudget.idChars)"]) }
+            guard seen.insert(spec.id).inserted else { return Copy.text("agent.panel.invalid.duplicate", ["id": spec.id]) }
+            do {
+                try PanelValidation.check(spec.draft, id: spec.id)
+            } catch let invalid as PanelInvalid {
+                return invalid.message
+            } catch {
+                return "\(error)"
+            }
+        }
+        return nil
+    }
+
+    public static let maxCount = 8
+}
+
+/// 文書に置いた送る文面と、人の承認。会話が本文を書き換えると承認は外れる
+public struct DocDraft: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var draft: PanelDraft
+    public var answer: PanelDraftAnswer?
+    public var updatedAt: Date
+
+    public init(id: String, draft: PanelDraft, answer: PanelDraftAnswer? = nil, updatedAt: Date) {
+        self.id = id
+        self.draft = draft
+        self.answer = answer
+        self.updatedAt = updatedAt
     }
 }
 
@@ -260,10 +367,13 @@ public struct Ask: Codable, Hashable, Identifiable, Sendable {
     public var createdAt: Date
     public var answeredAt: Date?
     public var deliveredAt: Date?
+    /// `doc_publish` の `questions` で本文と一緒に出した束。本文の印 `<!-- ask: q1 -->` はこの束の質問を指す。
+    /// `ask_user` で既存の文書に付けた束は false で、本文の末尾に出る
+    public var inBody: Bool
 
     public init(
         machine: MachineID, askID: Int64, taskNumber: Int, docID: Int64, status: Status, questions: [AskQuestion], answers: [AskAnswer]? = nil,
-        createdAt: Date, answeredAt: Date? = nil, deliveredAt: Date? = nil
+        createdAt: Date, answeredAt: Date? = nil, deliveredAt: Date? = nil, inBody: Bool = false
     ) {
         self.machine = machine
         self.askID = askID
@@ -275,6 +385,42 @@ public struct Ask: Codable, Hashable, Identifiable, Sendable {
         self.createdAt = createdAt
         self.answeredAt = answeredAt
         self.deliveredAt = deliveredAt
+        self.inBody = inBody
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case machine, askID, taskNumber, docID, status, questions, answers, createdAt, answeredAt, deliveredAt, inBody
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        machine = try c.decode(MachineID.self, forKey: .machine)
+        askID = try c.decode(Int64.self, forKey: .askID)
+        taskNumber = try c.decode(Int.self, forKey: .taskNumber)
+        docID = try c.decode(Int64.self, forKey: .docID)
+        status = try c.decode(Status.self, forKey: .status)
+        questions = try c.decode([AskQuestion].self, forKey: .questions)
+        answers = try c.decodeIfPresent([AskAnswer].self, forKey: .answers)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        answeredAt = try c.decodeIfPresent(Date.self, forKey: .answeredAt)
+        deliveredAt = try c.decodeIfPresent(Date.self, forKey: .deliveredAt)
+        inBody = try c.decodeIfPresent(Bool.self, forKey: .inBody) ?? false
+    }
+
+    /// `inBody` は true のときだけ書く（前の版の state の形を変えない）
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(machine, forKey: .machine)
+        try c.encode(askID, forKey: .askID)
+        try c.encode(taskNumber, forKey: .taskNumber)
+        try c.encode(docID, forKey: .docID)
+        try c.encode(status, forKey: .status)
+        try c.encode(questions, forKey: .questions)
+        try c.encodeIfPresent(answers, forKey: .answers)
+        try c.encode(createdAt, forKey: .createdAt)
+        try c.encodeIfPresent(answeredAt, forKey: .answeredAt)
+        try c.encodeIfPresent(deliveredAt, forKey: .deliveredAt)
+        if inBody { try c.encode(inBody, forKey: .inBody) }
     }
 
     /// 全問に回答があるか。無い質問の id を返す
@@ -519,10 +665,12 @@ public struct DocPublishRequest: Codable, Hashable, Sendable {
     public var requester: FeedbackRequester?
     /// 質問に結ぶ作業項目（同じタスクのもの）。出すと回答待ちになり、回答か取り下げで作業中に戻る
     public var workItem: Int64?
+    /// 本文に置く送る文面。省略は「今ある文面に触らない」、空配列は全部外す
+    public var drafts: [DocDraftSpec]?
 
     public init(
         name: String, format: DocFormat, content: String, title: String? = nil, sourcePath: String? = nil, questions: [AskQuestion]? = nil,
-        requester: FeedbackRequester? = nil, workItem: Int64? = nil
+        requester: FeedbackRequester? = nil, workItem: Int64? = nil, drafts: [DocDraftSpec]? = nil
     ) {
         self.name = name
         self.format = format
@@ -532,6 +680,7 @@ public struct DocPublishRequest: Codable, Hashable, Sendable {
         self.questions = questions
         self.requester = requester
         self.workItem = workItem
+        self.drafts = drafts
     }
 
     /// 名前の制約。パス区切りと `.` `..` を弾く

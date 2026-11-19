@@ -9,7 +9,9 @@ extension AppModel {
     func open(inbox item: InboxItem, from source: NavigationSource) {
         switch item.kind {
         case .question(let ask):
-            navigate(to: .doc(DocKey(machine: ask.machine, id: ask.docID)), from: source)
+            openDocument(DocKey(machine: ask.machine, id: ask.docID), at: Self.formSlot(for: ask), from: source)
+        case .docDraft(let doc, let draft):
+            openDocument(doc.id, at: DocMarker(kind: .draft, id: draft.id).slot, from: source)
         case .document(let doc):
             navigate(to: .doc(doc.id), from: source)
         case .reviewRequest(let request):

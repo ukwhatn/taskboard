@@ -46,6 +46,8 @@ public enum FeedbackText {
         var finishedWork: [FinishedDigest]
         struct DraftDigest: Encodable {
             var part: String
+            /// 文書に置いた文面なら、その文書の名前
+            var document: String?
             var to: String
             /// 人が承認した本文（編集していれば編集後）
             var body: String
@@ -72,7 +74,7 @@ public enum FeedbackText {
                     })
             },
             finishedWork: bundle.finishedWork.map { .init(workItem: $0.itemID, title: $0.title, request: $0.request) },
-            approvedDrafts: bundle.drafts.map { .init(part: $0.partID, to: $0.to, body: $0.body, edited: $0.edited) })
+            approvedDrafts: bundle.drafts.map { .init(part: $0.partID, document: $0.docName, to: $0.to, body: $0.body, edited: $0.edited) })
     }
 
     /// `feedback_list` と `review_request --wait` が返す全文。

@@ -28,6 +28,8 @@ public struct InboxItem: Hashable, Identifiable, Sendable {
         case conversationRequest(Conversation, ConversationRequest)
         /// 会話が概況に置いた、承認を待つ送る文面。タスクの概況の部品で本文を編集して［承認］する
         case panelDraft(OverviewPanel, PanelPart)
+        /// 会話が文書の本文に置いた、承認を待つ送る文面。文書の本文の欄で本文を編集して［承認］する
+        case docDraft(Document, DocDraft)
     }
 
     public enum Group: Hashable, Sendable {
@@ -148,6 +150,16 @@ extension MachineState {
                         details: [String(localized: "宛先：\(draft.to)"), taskTitle(panel.taskNumber)], at: part.updatedAt))
             }
         }
+        for doc in documents.values {
+            guard let task = tasks[TaskKey(machine: machineID, number: doc.taskNumber)], !isTerminal(task) else { continue }
+            for draft in doc.openDrafts {
+                items.append(
+                    InboxItem(
+                        id: "docdraft/\(doc.docID)/\(draft.id)", kind: .docDraft(doc, draft), group: .waiting, machine: machineID,
+                        taskNumber: doc.taskNumber, title: draft.draft.title.isEmpty ? String(localized: "送る文面の承認") : draft.draft.title,
+                        details: [String(localized: "宛先：\(draft.draft.to)"), taskTitle(doc.taskNumber), doc.displayTitle], at: draft.updatedAt))
+            }
+        }
         let taskByURL = Dictionary(
             tasks.values.flatMap { task in task.pullRequestLinks.map { ($0.url, task.number) } }, uniquingKeysWith: { a, _ in a })
         // 自分の PR と bot（Dependabot など）からのレビュー依頼は、タスクにリンクしたものだけを依頼にする（リンクしないものは、お知らせと PR の一覧に出す）。
@@ -164,7 +176,8 @@ extension MachineState {
                     title: pr.title, details: [pr.shortLabel, number.map(taskTitle)].compactMap { $0 }, at: pr.updatedAt))
         }
         let openAskDocs = Set(asks.values.filter { $0.status == .open }.map(\.docID))
-        for doc in documents.values where now.timeIntervalSince(doc.updatedAt) < noticeWindow && !openAskDocs.contains(doc.docID) {
+        // 質問・送る文面の依頼を出した文書は、お知らせに重ねない
+        for doc in documents.values where now.timeIntervalSince(doc.updatedAt) < noticeWindow && !openAskDocs.contains(doc.docID) && doc.openDrafts.isEmpty {
             expires(doc.updatedAt)
             items.append(
                 InboxItem(

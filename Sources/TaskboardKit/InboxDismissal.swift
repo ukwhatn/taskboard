@@ -73,6 +73,7 @@ extension InboxItem {
         case .document, .pullRequest, .scheduleRun, .orchestratorReply: ""
         // 会話が本文を書き直したら、非表示にしていても出直す
         case .panelDraft(_, let part): Self.stamp(part.updatedAt)
+        case .docDraft(_, let draft): Self.stamp(draft.updatedAt)
         }
     }
 

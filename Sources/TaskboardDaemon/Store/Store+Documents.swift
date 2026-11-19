@@ -120,6 +120,8 @@ extension Store {
         if let questions = request.questions, let problem = AskQuestion.validate(questions) { throw StoreError.invalid(problem) }
         if let title = request.title, title.count > 500 { throw StoreError.invalid("title は 500 文字まで") }
         if let path = request.sourcePath, !path.hasPrefix("/") { throw StoreError.invalid("sourcePath は絶対パス") }
+        if let drafts = request.drafts, let problem = DocDraftSpec.validate(drafts) { throw StoreError.invalid(problem) }
+        let markers = DocMarkers.markers(in: request.content, format: request.format)
         var touchedAsks: [Int64] = []
         var workChanged = false
         let response = try database.write { db in
@@ -146,16 +148,21 @@ extension Store {
                 docID = row.id!
                 revision = 1
             }
+            // 印は、渡した質問・文面か、省いたなら今ある質問（本文と一緒に出した束）・文面を指す
+            let questionIDs = try request.questions.map { Set($0.map(\.id)) } ?? Set(Self.latestInBodyAsk(db, doc: docID)?.questions.map(\.id) ?? [])
+            let draftIDs = try request.drafts.map { Set($0.map(\.id)) } ?? Self.docDraftIDs(db, doc: docID)
+            if let problem = DocMarkers.problem(markers, questions: questionIDs, drafts: draftIDs) { throw StoreError.invalid(problem) }
             var revisionRow = RevisionRow(id: nil, docId: docID, rev: revision, content: request.content, createdAt: now)
             try revisionRow.insert(db)
             try Self.touchTask(db, number: number, at: now)
             var askID: Int64?
             if let questions = request.questions {
                 (askID, touchedAsks, workChanged) = try Self.swapOpenAsk(
-                    db, task: number, doc: docID, questions: questions, requester: requester, workItem: request.workItem, now: now)
+                    db, task: number, doc: docID, questions: questions, requester: requester, workItem: request.workItem, inBody: true, now: now)
             } else {
                 askID = try AskRow.filter(Column("docId") == docID && Column("status") == "open").fetchOne(db)?.id
             }
+            if let drafts = request.drafts { try Self.replaceDocDrafts(db, doc: docID, with: drafts, requester: requester, at: now) }
             guard let document = try Self.fetchDocuments(db, machine: machineID, ids: [docID]).first else { throw StoreError.docNotFound(docID) }
             return DocPublishResponse(
                 document: document, revision: revision, isNew: existing == nil, askID: askID,
@@ -175,7 +182,7 @@ extension Store {
             let now = Date()
             let askID: Int64?
             (askID, touchedAsks, workChanged) = try Self.swapOpenAsk(
-                db, task: row.taskNumber, doc: id, questions: questions, requester: requester, workItem: workItem, now: now)
+                db, task: row.taskNumber, doc: id, questions: questions, requester: requester, workItem: workItem, inBody: false, now: now)
             try Self.touchTask(db, number: row.taskNumber, at: now)
             guard let document = try Self.fetchDocuments(db, machine: machineID, ids: [id]).first else { throw StoreError.docNotFound(id) }
             return DocPublishResponse(
@@ -291,7 +298,7 @@ extension Store {
     /// 作業項目は渡したものか、差し替える前の質問に結ばれていたものを新しい質問に結び、回答待ちにする（取り下げなら作業中に戻す）。
     /// 返すのは open な質問、書いた質問（取り下げたものと作ったもの）、作業項目を書いたか
     private static func swapOpenAsk(
-        _ db: Database, task number: Int, doc docID: Int64, questions: [AskQuestion], requester: String?, workItem: Int64?, now: Date
+        _ db: Database, task number: Int, doc docID: Int64, questions: [AskQuestion], requester: String?, workItem: Int64?, inBody: Bool, now: Date
     ) throws -> (open: Int64?, touched: [Int64], workChanged: Bool) {
         if let workItem {
             let owner = try Int.fetchOne(db, sql: "SELECT taskNumber FROM workItem WHERE id = ?", arguments: [workItem])
@@ -301,6 +308,10 @@ extension Store {
         let existing = try AskRow.filter(Column("docId") == docID && Column("status") == "open").fetchOne(db)
         if let existing, existing.questions == serialized {
             var touched: [Int64] = []
+            if inBody, !existing.inBody, let id = existing.id {
+                try db.execute(sql: "UPDATE ask SET inBody = 1 WHERE id = ?", arguments: [id])
+                touched = [id]
+            }
             if let requester {
                 try db.execute(sql: "UPDATE ask SET requesterSessionId = ? WHERE id = ?", arguments: [requester, existing.id])
                 touched = existing.id.map { [$0] } ?? []
@@ -323,10 +334,15 @@ extension Store {
         }
         var row = AskRow(
             id: nil, taskNumber: number, docId: docID, status: "open", questions: serialized, answers: nil, createdAt: now, answeredAt: nil, deliveredAt: nil,
-            requesterSessionId: requester, workItemId: linked)
+            requesterSessionId: requester, workItemId: linked, inBody: inBody)
         try row.insert(db)
         if let linked { try waitOnAsk(db, item: linked, questions: questions, at: now) }
         return (row.id, touched + [row.id!], linked != nil)
+    }
+
+    /// 本文と一緒に出した最新の質問の束（本文の印はこの束を指す）
+    private static func latestInBodyAsk(_ db: Database, doc docID: Int64) throws -> Ask? {
+        try AskRow.filter(Column("docId") == docID && Column("inBody") == true).order(Column("id").desc).fetchOne(db).map { ask(from: $0, machine: MachineID(rawValue: "")) }
     }
 
     /// 質問に結んだ作業項目を回答待ちにする。終わった項目（済み・やめた）は動かさない
@@ -770,7 +786,7 @@ extension Store {
             return Document(
                 machine: machine, docID: id, taskNumber: row.taskNumber, name: row.name, format: DocFormat(rawValue: row.format) ?? .markdown,
                 title: row.title, latestRev: latest, hasSourceFile: row.sourcePath != nil, openComments: open, draftComments: drafts,
-                createdAt: row.createdAt, updatedAt: row.updatedAt)
+                drafts: try fetchDocDrafts(db, doc: id), createdAt: row.createdAt, updatedAt: row.updatedAt)
         }
     }
 
@@ -792,7 +808,7 @@ extension Store {
         Ask(
             machine: machine, askID: row.id!, taskNumber: row.taskNumber, docID: row.docId, status: Ask.Status(rawValue: row.status) ?? .cancelled,
             questions: decodeJSON([AskQuestion].self, row.questions) ?? [], answers: row.answers.flatMap { decodeJSON([AskAnswer].self, $0) },
-            createdAt: row.createdAt, answeredAt: row.answeredAt, deliveredAt: row.deliveredAt)
+            createdAt: row.createdAt, answeredAt: row.answeredAt, deliveredAt: row.deliveredAt, inBody: row.inBody)
     }
 
     private static func review(from row: ReviewRow) -> Review {
@@ -864,6 +880,7 @@ private struct AskRow: Codable, FetchableRecord, MutablePersistableRecord {
     var requesterSessionId: String?
     var deliveryAttempts = 0
     var workItemId: Int64?
+    var inBody = false
 
     mutating func didInsert(_ inserted: InsertionSuccess) {
         id = inserted.rowID

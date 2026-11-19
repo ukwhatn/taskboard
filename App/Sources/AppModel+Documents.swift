@@ -34,6 +34,17 @@ extension AppModel {
         try await requireSource(ask.machine).cancelAsk(id: ask.askID)
     }
 
+    /// 文書を開いて、本文の中の質問か送る文面の欄（`ask:q1`・`draft:id`）まで送る
+    func openDocument(_ key: DocKey, at slot: String?, from source: NavigationSource) {
+        navigate(to: .doc(key), from: source)
+        docFormFocus = slot.map { DocFormFocus(doc: key, slot: $0) }
+    }
+
+    /// 文書の送る文面の［承認］。本文は人が編集した後のもの。承認と本文は publish した会話に届く
+    func approveDocDraft(_ key: DocKey, draft: String, body: String) async throws {
+        _ = try await requireSource(key.machine).approveDocDraft(doc: key.id, draft: draft, body: body)
+    }
+
     func addComment(_ key: DocKey, rev: Int, anchor: CommentAnchor?, body: String) async throws -> DocComment {
         try await requireSource(key.machine).createComment(doc: key.id, CommentCreateRequest(rev: rev, anchor: anchor, body: body))
     }
@@ -71,8 +82,20 @@ extension AppModel {
         _ = try await source.submitReview(task: key.number)
     }
 
+    /// 開いている質問の束の、最初の質問の欄（受信箱と「判断待ち」から開く先）
+    static func formSlot(for ask: Ask) -> String? {
+        ask.questions.first.map { DocMarker(kind: .ask, id: $0.id).slot }
+    }
+
     func deleteDocument(_ key: DocKey) async throws {
         try await requireSource(key.machine).deleteDocument(id: key.id)
         if openDoc == key { openDoc = nil }
     }
+}
+
+/// 文書の中で送る先の欄。送る文書と欄の名前（`DocMarker.slot`）。押すたびに別の値にする（同じ欄をもう一度押しても送る）
+struct DocFormFocus: Equatable {
+    var doc: DocKey
+    var slot: String
+    var id = UUID()
 }

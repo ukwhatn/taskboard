@@ -37,7 +37,7 @@ public enum NotifyKind: String, CaseIterable, Identifiable, Hashable, Codable, S
     public static func of(_ item: InboxItem) -> NotifyKind? {
         switch item.kind {
         case .conversationRequest: .approval
-        case .question, .manualWork, .panelDraft: .question
+        case .question, .manualWork, .panelDraft, .docDraft: .question
         case .reviewRequest: .review
         case .pullRequest(let notice): of(notice.kind)
         case .pullRequestTurn(_, let reason): of(reason)
@@ -63,7 +63,7 @@ extension InboxItem.Kind {
         case .scheduleRun: String(localized: "定期起動")
         case .orchestratorReply: String(localized: "オーケストレーターの応答")
         case .stalled: String(localized: "更新のないタスク")
-        case .panelDraft: String(localized: "送る文面")
+        case .panelDraft, .docDraft: String(localized: "送る文面")
         }
     }
 }
@@ -139,7 +139,7 @@ public struct InboxNotification: Equatable, Sendable {
     static func link(for item: InboxItem) -> TaskboardLink {
         switch item.kind {
         case .question(let ask): .task(TaskKey(machine: ask.machine, number: ask.taskNumber), doc: ask.docID)
-        case .document(let doc): .task(TaskKey(machine: doc.machine, number: doc.taskNumber), doc: doc.docID)
+        case .document(let doc), .docDraft(let doc, _): .task(TaskKey(machine: doc.machine, number: doc.taskNumber), doc: doc.docID)
         case .conversationRequest(let conversation, _): .conversation(conversation.key)
         case .pullRequest(let notice): .pullRequest(url: notice.url)
         case .pullRequestTurn(let pr, _): .pullRequest(url: pr.url)

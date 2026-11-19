@@ -32,6 +32,13 @@ final class DocumentWebController: NSObject {
         var anchor: CommentAnchor
     }
 
+    /// 本文の中の質問と送る文面の欄の中身（`DocumentForms.Payload` の JSON）。読み込み直したら入れ直す
+    private var formsJSON: String?
+    /// 欄に選んだ選択肢か書いた文がある（Esc で文書を閉じて消さない）
+    private(set) var formsPendingInput = false
+    /// 欄で答えた・承認した・閉じた（`DocumentScreen` が daemon に送る）
+    var onFormAction: (@MainActor (DocumentFormAction) -> Void)?
+
     /// 文書の中の `taskboard://` を押したときの開き先（`AppModel.open(_:)`）。チャットと PR の本文と同じくアプリの中で開く
     var openInApp: (@MainActor (URL) -> Void)?
 
@@ -87,8 +94,8 @@ final class DocumentWebController: NSObject {
         load(html: html, highlights: [])
     }
 
-    func load(content: DocContent, highlights: [HighlightItem], textSize: Double) {
-        load(html: Self.html(for: content, textSize: textSize), highlights: highlights)
+    func load(content: DocContent, highlights: [HighlightItem], textSize: Double, forms: Bool = true) {
+        load(html: Self.html(for: content, textSize: textSize, forms: forms), highlights: highlights)
     }
 
     /// 文字の大きさ（pt）を変える。markdown の文書だけが従う（html の文書は見た目を変えない）
@@ -119,6 +126,37 @@ final class DocumentWebController: NSObject {
         guard let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) else { return }
         webView.evaluateJavaScript("window.__tb && __tb.highlight(\(json), \(activeID.map(String.init) ?? "null"))") { _, _ in }
     }
+
+    /// 欄を描き直す。書きかけの選択と文は残る
+    func setForms(_ payload: DocumentForms.Payload) {
+        guard let data = try? JSONEncoder().encode(payload), let json = String(data: data, encoding: .utf8) else { return }
+        formsJSON = json
+        applyForms()
+    }
+
+    private func applyForms() {
+        guard let formsJSON else { return }
+        webView.evaluateJavaScript("window.__tbForms && __tbForms.set(\(formsJSON))") { _, _ in }
+    }
+
+    /// 欄（`ask:q1`・`draft:id`）の位置まで送る。まだ描いていなければ描いた後に送る
+    func scroll(toForm slot: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: [slot]), let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__tbForms && __tbForms.scrollTo(\(json)[0])") { _, _ in }
+    }
+
+    /// 答えた結果を欄に返す（失敗なら欄に文を出し、ボタンを戻す）
+    func formResult(kind: String, id: String, error: String?) {
+        guard let data = try? JSONSerialization.data(withJSONObject: [kind, id, error as Any]), let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("window.__tbForms && __tbForms.result.apply(null, \(json))") { _, _ in }
+    }
+
+    #if DEBUG
+    /// 欄を押す（DebugServer の `/doc/js`）。欄の中の操作は MessageProxy を通る本物の経路になる
+    func debugEvaluate(_ script: String) async -> Any? {
+        try? await webView.evaluateJavaScript(script)
+    }
+    #endif
 
     func scroll(to commentID: Int64) {
         webView.evaluateJavaScript("window.__tb && __tb.scrollTo(\(commentID))") { _, _ in }
@@ -173,16 +211,20 @@ final class DocumentWebController: NSObject {
 
     // MARK: HTML
 
-    static func html(for content: DocContent, textSize: Double) -> String {
+    /// `forms` は本文の印を質問と送る文面の欄の置き場にし、欄の見た目と動きを足す（選択肢の見本の頁では足さない）
+    static func html(for content: DocContent, textSize: Double, forms: Bool = true) -> String {
+        let formsStyle = forms ? DocumentForms.style : ""
+        let formsTail = forms ? DocumentForms.endSlot + "<script>\(DocumentForms.script)</script>" : ""
         switch content.format {
         case .markdown:
             var escaping = HTMLEscaping()
             let document = Markdown.Document(parsing: content.content, options: [.parseBlockDirectives, .parseSymbolLinks])
-            let body = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
-            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)</style></head><body class=\"tb-markdown\"><main>\(body)</main><script>\(bridgeScript)</script></body></html>"
+            let rendered = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
+            let body = forms ? DocumentForms.placeSlots(in: rendered) : rendered
+            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)</style></head><body class=\"tb-markdown\"><main>\(body)\(formsTail)</main><script>\(bridgeScript)</script></body></html>"
         case .html:
-            // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡しだけ足す。viewport が無ければ足す（iPhone で縮んで出る）
-            var html = content.content
+            // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡し、欄の置き場だけ足す。viewport が無ければ足す（iPhone で縮んで出る）
+            var html = forms ? DocumentForms.placeSlots(in: content.content) : content.content
             if html.range(of: "name=\"viewport\"", options: .caseInsensitive) == nil && html.range(of: "name=viewport", options: .caseInsensitive) == nil {
                 if let head = html.range(of: "<head>", options: .caseInsensitive) {
                     html.replaceSubrange(head, with: "<head>" + viewport)
@@ -190,7 +232,7 @@ final class DocumentWebController: NSObject {
                     html = viewport + html
                 }
             }
-            let injection = "<style>\(highlightStyle)</style><script>\(bridgeScript)</script>"
+            let injection = "<style>\(highlightStyle)\(formsStyle)</style>\(formsTail)<script>\(bridgeScript)</script>"
             if let range = html.range(of: "</body>", options: [.caseInsensitive, .backwards]) {
                 return html.replacingCharacters(in: range, with: injection + "</body>")
             }
@@ -276,7 +318,17 @@ final class DocumentWebController: NSObject {
         init(owner: DocumentWebController) { self.owner = owner }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard let body = message.body as? [String: Any], body["type"] as? String == "selection" else { return }
+            guard let body = message.body as? [String: Any] else { return }
+            if body["type"] as? String == "formsPending" {
+                let value = body["value"] as? Bool ?? false
+                Task { @MainActor in self.owner?.formsPendingInput = value }
+                return
+            }
+            if let action = DocumentFormAction(message: body) {
+                Task { @MainActor in self.owner?.onFormAction?(action) }
+                return
+            }
+            guard body["type"] as? String == "selection" else { return }
             let rect = (body["has"] as? Bool ?? false) ? (body["rect"] as? [String: Double]).map {
                 CGRect(x: $0["x"] ?? 0, y: $0["y"] ?? 0, width: $0["width"] ?? 0, height: $0["height"] ?? 0)
             } : nil
@@ -306,9 +358,37 @@ extension DocumentWebController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         applyHighlights()
+        applyForms()
         webView.evaluateJavaScript("document.documentElement.scrollHeight") { [weak self] value, _ in
             guard let height = value as? Double else { return }
             MainActor.assumeIsolated { self?.contentHeight = CGFloat(height) }
+        }
+    }
+}
+
+/// 本文の欄でした操作。JS の `postMessage` の中身から読む（読めない中身は捨てる）
+enum DocumentFormAction: Equatable {
+    case answer(askID: Int64, answers: [AskAnswer])
+    case cancel(askID: Int64)
+    case approve(draftID: String, body: String)
+
+    init?(message body: [String: Any]) {
+        switch body["type"] as? String {
+        case "answerAsk":
+            guard let id = (body["askID"] as? NSNumber)?.int64Value, let raw = body["answers"] as? [[String: Any]] else { return nil }
+            let answers = raw.compactMap { a -> AskAnswer? in
+                guard let q = a["questionID"] as? String else { return nil }
+                return AskAnswer(questionID: q, selected: a["selected"] as? [String] ?? [], freeText: a["freeText"] as? String)
+            }
+            self = .answer(askID: id, answers: answers)
+        case "cancelAsk":
+            guard let id = (body["askID"] as? NSNumber)?.int64Value else { return nil }
+            self = .cancel(askID: id)
+        case "approveDraft":
+            guard let id = body["draftID"] as? String, let text = body["body"] as? String else { return nil }
+            self = .approve(draftID: id, body: text)
+        default:
+            return nil
         }
     }
 }

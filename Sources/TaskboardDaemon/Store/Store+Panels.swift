@@ -90,6 +90,8 @@ extension Store {
         var answeredAt: Date
         var deliveredAt: Date?
         var deliveryAttempts: Int = 0
+        /// 文書の送る文面の承認なら、その文書の名前（migration v48）
+        var docName: String?
 
         mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
     }
@@ -195,12 +197,7 @@ extension Store {
     /// 人が送る文面を［承認］した。本文は人が編集した後のもの。承認は会話へ未受領の知らせとして届く。
     /// 同じ本文への承認は 1 回だけ（2 回押しても届けるのは 1 回）
     public func approvePanelDraft(task number: Int, partID: String, body: String) throws -> OverviewPanel {
-        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw StoreError.invalid(Copy.text("agent.panel.invalid.empty", ["id": partID, "field": "body"])) }
-        guard trimmed.count <= PanelBudget.draftBodyChars else {
-            throw StoreError.invalid(
-                Copy.text("agent.panel.invalid.text", ["id": partID, "field": "body", "count": "\(trimmed.count)", "limit": "\(PanelBudget.draftBodyChars)"]))
-        }
+        let trimmed = try Self.approvedDraftBody(body, id: partID)
         let panel = try database.write { db -> OverviewPanel? in
             guard var row = try PanelPartRow.filter(Column("taskNumber") == number && Column("partId") == partID).fetchOne(db),
                 let spec = try? JSONDecoder().decode(PanelPartSpec.self, from: Data(row.spec.utf8)), case .draft(let draft) = spec.content
@@ -220,6 +217,17 @@ extension Store {
         changed(.panel(task: number), .task(number))
         guard let panel else { throw StoreError.refused(.notFound, ["kind": "panel_part"], Copy.text("agent.panel.notFound", ["id": partID])) }
         return panel
+    }
+
+    /// 人が承認した本文の検査（概況と文書の送る文面で同じ）。前後の空白を外して返す
+    static func approvedDraftBody(_ body: String, id: String) throws -> String {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw StoreError.invalid(Copy.text("agent.panel.invalid.empty", ["id": id, "field": "body"])) }
+        guard trimmed.count <= PanelBudget.draftBodyChars else {
+            throw StoreError.invalid(
+                Copy.text("agent.panel.invalid.text", ["id": id, "field": "body", "count": "\(trimmed.count)", "limit": "\(PanelBudget.draftBodyChars)"]))
+        }
+        return trimmed
     }
 
     /// タスクに紐づいたセッションがターンを終えた（Stop hook）。概況のあるタスクだけ数える
@@ -299,6 +307,6 @@ extension Store {
     static func draftFeedback(from row: PanelAnswerRow) -> PanelDraftFeedback {
         PanelDraftFeedback(
             answerID: row.id!, taskNumber: row.taskNumber, partID: row.partId, title: row.title, to: row.recipient, original: row.original, body: row.body,
-            answeredAt: row.answeredAt)
+            answeredAt: row.answeredAt, docName: row.docName)
     }
 }

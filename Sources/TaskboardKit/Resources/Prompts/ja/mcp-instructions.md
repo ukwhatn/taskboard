@@ -5,7 +5,7 @@ taskboard は案件 → 列 → タスク → 作業項目のボード。タス�
 - 人への問い: 会話が止まるかと、答えるのに何を読むかで 3 つを使い分ける
   - 先に委任範囲（session_guide・task_get の「委任範囲」）を見る。［委任］と［報告のみ］の項目は問わずに決めて実行する。［報告のみ］の項目は、決めたことを応答で報告する。問うのは［確認］の項目と範囲の外のことだけ
   - 会話の流れの中で決められ、答えが出るまで先に進めない判断は AskUserQuestion（codex は request_user_input）。会話はその場で止まり、利用者は会話の画面で答える
-  - 文書を読んで決める判断（計画の承認・設計の選択・2 問以上の判断）は、doc_publish で文書を載せ、ask_user の name にその文書名を渡して聞く（doc_publish の questions でもよい）。会話は止まらない。回答は taskboard がこのセッションに届ける（届かなければ feedback_list で取る）
+  - 文書を読んで決める判断（計画の承認・設計の選択・2 問以上の判断）と、人に承認してほしい送る文面（Slack・メール・PR コメントの文案）は、返答の文だけで「判断を待っている」と書かない。前提（背景・判断材料・trade-off）を書いた文書を doc_publish で載せて questions・drafts を付け、本文の答えてほしい位置に印（markdown は <!-- ask: q1 --> と <!-- draft: id -->）を置く。利用者は前提を読んだその場で答える。会話は止まらない。回答と承認は taskboard がこのセッションに届ける（届かなければ feedback_list で取る）
   - 手作業の依頼（実機での確認・ケーブルの接続・ログイン）は、その作業項目を work_update で state wait・blocker_kind manual にし、blocker_text に頼む作業を 1 文で書く（作業項目が無ければ work_add で追加する）。受信箱の依頼に出て、利用者が［対応済みにする］を押すと項目が作業中に戻り、済んだことがこのセッションに届く。応答の文だけで頼んだことは依頼として出ない。判断はこの方法で聞かない
   - 質問が指す文面・下書き（「上の文面で送ってよいか」）は、AskUserQuestion の前の応答の文に書くか preview に書く。思考に書いた文は利用者の画面に出ない
   - 選択肢の違いが文で伝わらないとき（画面の配置・表・コードの書き方）は、選択肢に見本を付ける（ask_user・doc_publish は preview に markdown か HTML、AskUserQuestion は preview）。推奨は 1 つにし、ask_user・doc_publish は recommended、AskUserQuestion は label の末尾の「(Recommended)」で示す

@@ -254,6 +254,8 @@ final class AppModel {
     var addingConnection: AddConnectionSheet.Mode?
     /// 開いている文書。タスク画面の中央が端末から文書に切り替わる（iPhone はシート）
     var openDoc: DocKey?
+    /// 開いた文書の中で送る先の欄（`ask:q1`・`draft:id`）。文書の画面が送ったら nil に戻す（`AppModel.openDocument(_:at:from:)`）
+    var docFormFocus: DocFormFocus?
     /// 送っている途中の無視（key は `InboxItem.id`、値は消した revision）。daemon が答えたら外す（`AppModel+Inbox`）。受信箱を組む `Fleet` が持つ
     var inboxPending: [String: String?] {
         get { fleet.inboxPending }

@@ -674,10 +674,14 @@ public struct PanelDraftFeedback: Codable, Hashable, Sendable {
     /// 人が承認した本文
     public var body: String
     public var answeredAt: Date
+    /// 文書に置いた文面なら、その文書の名前（`doc_publish` の name）。概況の部品なら nil
+    public var docName: String?
 
     public var edited: Bool { original != body }
 
-    public init(answerID: Int64, taskNumber: Int, partID: String, title: String, to: String, original: String, body: String, answeredAt: Date) {
+    public init(
+        answerID: Int64, taskNumber: Int, partID: String, title: String, to: String, original: String, body: String, answeredAt: Date, docName: String? = nil
+    ) {
         self.answerID = answerID
         self.taskNumber = taskNumber
         self.partID = partID
@@ -686,5 +690,6 @@ public struct PanelDraftFeedback: Codable, Hashable, Sendable {
         self.original = original
         self.body = body
         self.answeredAt = answeredAt
+        self.docName = docName
     }
 }

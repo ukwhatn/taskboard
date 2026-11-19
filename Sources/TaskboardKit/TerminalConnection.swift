@@ -18,6 +18,7 @@ public protocol DaemonWriter: Sendable {
     /// 手作業待ちの作業項目を済ませる（作業中に戻し、済んだことを会話へ届ける）。`POST /v1/work/{id}/finish`
     func finishManualWork(id: Int64) async throws
     func approvePanelDraft(task: Int, part: String, body: String) async throws -> OverviewPanel
+    func approveDocDraft(doc: Int64, draft: String, body: String) async throws -> Document
     func orchestrator() async throws -> OrchestratorInfo
     /// 返るのはオーケストレーターの様子（起こした会話は `conversationID`）
     func startOrchestrator(_ request: LaunchRequest) async throws -> OrchestratorInfo
