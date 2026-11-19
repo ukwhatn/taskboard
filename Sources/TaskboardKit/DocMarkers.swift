@@ -76,7 +76,7 @@ public enum DocMarkers {
     private static let inlineCode = try! NSRegularExpression(pattern: "(`+)[^`]*?\\1")
 
     /// fenced code の行と backtick の中を外す。shortcut: 字下げのコードの塊は区別しない。印の例を字下げで書いた文書が断られたら swift-markdown で読む
-    private static func withoutCode(_ content: String) -> String {
+    static func withoutCode(_ content: String) -> String {
         var fence: String?
         var lines: [String] = []
         for line in content.split(separator: "\n", omittingEmptySubsequences: false) {

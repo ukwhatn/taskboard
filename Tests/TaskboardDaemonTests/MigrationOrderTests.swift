@@ -57,6 +57,7 @@ struct MigrationOrderTests {
         "v46 briefings",
         "v47 link status cache",
         "v48 document drafts and inline asks",
+        "v49 document external hosts",
     ]
 
     @Test("登録した順は、これまでに出した DB が回ってきた順と同じ。足すのは末尾だけ")

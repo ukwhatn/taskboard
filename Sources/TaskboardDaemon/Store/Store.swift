@@ -114,6 +114,7 @@ public final class Store: Sendable {
         registerBriefingMigration(&migrator)  // v46（Store+Briefings。表だけ残す）
         registerLinkStatusCacheMigration(&migrator)  // v47（Store+LinkStatusCache）
         registerDocDraftMigration(&migrator)  // v48（Store+DocDrafts）
+        registerDocExternalHostsMigration(&migrator)  // v49（Store+Documents）
         return migrator
     }
 

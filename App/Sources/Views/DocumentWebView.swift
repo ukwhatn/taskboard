@@ -5,6 +5,7 @@ import WebKit
 
 /// 文書本文の描画。markdown は swift-markdown で HTML にしてから、html はそのまま WKWebView に載せる。
 /// 外部リソースは content rule list で全部止める。止める規則を用意できなければ本文を載せない。
+/// 利用者が文書ごとに許したときだけ（`DocumentRemoteContent`）、規則を外して描く。
 /// 押したリンクだけをブラウザへ渡し、文書の script・meta refresh・iframe による遷移は止める（文書の script は動く。kairan と同じ割り切り）。
 @MainActor
 @Observable
@@ -23,7 +24,10 @@ final class DocumentWebController: NSObject {
     private(set) var contentHeight: CGFloat = 0
     /// 外部の読み込みを止める規則を用意できなかった。本文は載せない
     private(set) var failure: UserFacingError?
-    private var pending: (html: String, highlights: [HighlightItem])?
+    private var pending: (html: String, highlights: [HighlightItem], allowsRemote: Bool)?
+    private var blockList: WKContentRuleList?
+    /// 今載せている本文に、外部の読み込みを止める規則を付けているか
+    private(set) var blocksRemote = true
     private var highlights: [HighlightItem] = []
     private var activeID: Int64?
 
@@ -77,10 +81,11 @@ final class DocumentWebController: NSObject {
             return
         }
         webView.configuration.userContentController.add(list)
+        blockList = list
         ready = true
         if let pending {
             self.pending = nil
-            load(html: pending.html, highlights: pending.highlights)
+            load(html: pending.html, highlights: pending.highlights, allowsRemote: pending.allowsRemote)
         }
     }
 
@@ -93,11 +98,12 @@ final class DocumentWebController: NSObject {
 
     /// 組み立てた HTML をそのまま載せる（概況の自由の部品。文書の選択とハイライトの橋渡しは入れない）
     func load(page html: String) {
-        load(html: html, highlights: [])
+        load(html: html, highlights: [], allowsRemote: false)
     }
 
-    func load(content: DocContent, highlights: [HighlightItem], textSize: Double, forms: Bool = true) {
-        load(html: Self.html(for: content, textSize: textSize, forms: forms), highlights: highlights)
+    /// `allowsRemote` は利用者がこの文書のリモートコンテンツを許したときだけ true（外部の読み込みを止める規則を外す）
+    func load(content: DocContent, highlights: [HighlightItem], textSize: Double, forms: Bool = true, allowsRemote: Bool = false) {
+        load(html: Self.html(for: content, textSize: textSize, forms: forms), highlights: highlights, allowsRemote: allowsRemote)
     }
 
     /// 文字の大きさ（pt）を変える。markdown の文書だけが従う（html の文書は見た目を変えない）
@@ -105,11 +111,20 @@ final class DocumentWebController: NSObject {
         webView.evaluateJavaScript("document.documentElement.style.setProperty('--tb-size', '\(size)px')") { _, _ in }
     }
 
-    private func load(html: String, highlights: [HighlightItem]) {
+    private func load(html: String, highlights: [HighlightItem], allowsRemote: Bool) {
         guard failure == nil else { return }
-        guard ready else {
-            pending = (html, highlights)
+        guard ready, let blockList else {
+            pending = (html, highlights, allowsRemote)
             return
+        }
+        // 規則の付け外しは次の読み込みから効く。止める側へ戻すのは、許していない文書に切り替えたとき（同じ web view を使い回す）
+        let controller = webView.configuration.userContentController
+        if allowsRemote, blocksRemote {
+            controller.remove(blockList)
+            blocksRemote = false
+        } else if !allowsRemote, !blocksRemote {
+            controller.add(blockList)
+            blocksRemote = true
         }
         self.highlights = highlights
         selectionRect = nil
@@ -192,11 +207,13 @@ final class DocumentWebController: NSObject {
 
     /// 本文の文字と、画像が読み込まれたか（外部遮断の確認用）
     func debugProbe() async -> [String: Any] {
-        let script = "JSON.stringify({text: document.body ? document.body.innerText : null, images: Array.from(document.images).map(i => ({src: i.src, loaded: i.complete && i.naturalWidth > 0})), highlights: ('highlights' in CSS) ? Array.from(CSS.highlights.keys()) : null})"
+        let script = "JSON.stringify({text: document.body ? document.body.innerText : null, images: Array.from(document.images).map(i => ({src: i.src, loaded: i.complete && i.naturalWidth > 0})), stylesheets: Array.from(document.styleSheets).filter(s => s.href).map(s => ({href: s.href, loaded: (() => { try { return s.cssRules.length >= 0 } catch (e) { return e.name === 'SecurityError' } })()})), highlights: ('highlights' in CSS) ? Array.from(CSS.highlights.keys()) : null})"
         guard let result = try? await webView.evaluateJavaScript(script) as? String, let data = result.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return ["error": "評価できない"] }  // ui-copy:ignore（画面に出ない。接続の記録と debug の口だけが読む）
-        return object
+        var probe = object
+        probe["blocksRemote"] = blocksRemote
+        return probe
     }
 
     #if DEBUG

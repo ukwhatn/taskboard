@@ -51,6 +51,8 @@ enum AppPreferences {
     static let taskPanelHeadCollapsedKey = "taskPanel.headCollapsed"
     /// Mac と iPad のタスク画面の下の端末の欄の高さ（境目を動かして残した高さ。0 なら既定）
     static let taskTerminalHeightKey = "taskPanel.terminalHeight"
+    /// 文書ごとに、リモートコンテンツを読み込むと許したホスト（`DocumentRemoteContent`）
+    static let docRemoteHostsKey = "doc.remoteHosts"
     /// セッションの画面でチャットと端末のどちらを出すか
 
     static func sidebarBoardOrderKey(machine: String) -> String { "sidebar.boardOrder.\(machine)" }

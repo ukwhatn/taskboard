@@ -132,12 +132,36 @@ public struct DocContent: Codable, Hashable, Sendable {
     public var rev: Int
     public var format: DocFormat
     public var content: String
+    /// 本文が読み込む外部の資源のホスト（`DocExternalHosts`。publish のときに集めた値）
+    public var externalHosts: [String]
 
-    public init(docID: Int64, rev: Int, format: DocFormat, content: String) {
+    public init(docID: Int64, rev: Int, format: DocFormat, content: String, externalHosts: [String] = []) {
         self.docID = docID
         self.rev = rev
         self.format = format
         self.content = content
+        self.externalHosts = externalHosts
+    }
+
+    private enum CodingKeys: String, CodingKey { case docID, rev, format, content, externalHosts }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        docID = try c.decode(Int64.self, forKey: .docID)
+        rev = try c.decode(Int.self, forKey: .rev)
+        format = try c.decode(DocFormat.self, forKey: .format)
+        content = try c.decode(String.self, forKey: .content)
+        externalHosts = try c.decodeIfPresent([String].self, forKey: .externalHosts) ?? []
+    }
+
+    /// `externalHosts` は 1 件以上のときだけ書く（外部の資源の無い文書の応答の形を変えない）
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(docID, forKey: .docID)
+        try c.encode(rev, forKey: .rev)
+        try c.encode(format, forKey: .format)
+        try c.encode(content, forKey: .content)
+        if !externalHosts.isEmpty { try c.encode(externalHosts, forKey: .externalHosts) }
     }
 }
 

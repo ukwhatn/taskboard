@@ -55,6 +55,40 @@ struct DocumentStoreTests {
         #expect(try store.documents().isEmpty)
     }
 
+    @Test("publish は版ごとに外部の資源のホストを集め、本文と一緒に返す（版でホストが増えればその版だけ増える）")
+    func externalHostsPerRevision() throws {
+        let (store, task) = try makeStore()
+        let first = try store.publish(task: task.number, DocPublishRequest(
+            name: "mock.html", format: .html, content: "<link rel=\"stylesheet\" href=\"https://cdn.example.com/a.css\"><a href=\"https://docs.example.com/\">説明</a>"))
+        _ = try store.publish(task: task.number, DocPublishRequest(
+            name: "mock.html", format: .html, content: "<link rel=\"stylesheet\" href=\"https://cdn.example.com/a.css\"><img src=\"https://img.example.org/b.png\">"))
+        let id = first.document.docID
+        #expect(try store.content(doc: id, rev: 1).externalHosts == ["cdn.example.com"])
+        #expect(try store.content(doc: id, rev: 2).externalHosts == ["cdn.example.com", "img.example.org"])
+        let plain = try store.publish(task: task.number, DocPublishRequest(name: "plan.md", format: .markdown, content: "# 計画"))
+        #expect(try store.content(doc: plain.document.docID, rev: nil).externalHosts.isEmpty)
+    }
+
+    @Test("migration v49 は、それより前に出した版の本文からもホストを集める")
+    func externalHostsBackfill() throws {
+        let queue = try DatabaseQueue()
+        try Store.migrator().migrate(queue, upTo: Store.docDraftMigration)
+        try queue.write { db in
+            let now = Date()
+            try db.execute(sql: "INSERT INTO board (id, name, position, createdAt) VALUES ('b1', 'default', 0, ?)", arguments: [now])
+            try db.execute(sql: "INSERT INTO task (boardId, columnId, title, createdAt, updatedAt) VALUES ('b1', 'working', 't', ?, ?)", arguments: [now, now])
+            let number = db.lastInsertedRowID
+            try db.execute(sql: "INSERT INTO doc (taskNumber, name, format, createdAt, updatedAt) VALUES (?, 'a.md', 'markdown', ?, ?)", arguments: [number, now, now])
+            let doc = db.lastInsertedRowID
+            try db.execute(
+                sql: "INSERT INTO docRevision (docId, rev, content, createdAt) VALUES (?, 1, ?, ?), (?, 2, '# 図なし', ?)",
+                arguments: [doc, "![図](https://img.example.com/a.png)", now, doc, now])
+        }
+        try Store.migrator().migrate(queue)
+        let stored = try queue.read { db in try String.fetchAll(db, sql: "SELECT externalHosts FROM docRevision ORDER BY rev") }
+        #expect(stored == ["[\"img.example.com\"]", "[]"])
+    }
+
     @Test("質問は文書に 1 つだけ open。同じ質問の再 publish は作り直さず、違えば前を cancelled にし、空配列で取り下げ")
     func askSwap() throws {
         let (store, task) = try makeStore()

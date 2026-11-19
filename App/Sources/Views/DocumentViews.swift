@@ -149,6 +149,8 @@ struct DocumentScreen: View {
     struct Approving: Identifiable {
         var draft: DocDraft
         var body: String
+    /// 今の本文のリモートコンテンツを許したか（許した値は `DocumentRemoteContent` が覚える。ここは描き直しのため）
+    @State private var remoteAllowed = false
         var id: String { draft.id }
     }
 
@@ -191,6 +193,14 @@ struct DocumentScreen: View {
                             Banner(kind: .waiting, message: String(localized: "質問が\(ask.questions.count)件あります")) {
                                 Button("回答する") { focusForm(AppModel.formSlot(for: ask)) }.controlSize(.small)
                             }
+                        if let hosts = blockedRemoteHosts {
+                            Banner(kind: .notice, message: String(localized: "リモートコンテンツを読み込んでいません"),
+                                   detail: String(localized: "読み込み先：\(hosts.joined(separator: "・"))")) {
+                                Button("読み込む") { allowRemoteContent() }.controlSize(.small)
+                            }
+                            .padding(.horizontal, inset)
+                            .padding(.vertical, Space.row)
+                        }
                             .padding(.horizontal, inset)
                             .padding(.vertical, Space.row)
                         }
@@ -388,6 +398,20 @@ struct DocumentScreen: View {
     func takeFormFocus() {
         guard let focus = model.docFormFocus, focus.doc == key, web != nil else { return }
         focusForm(focus.slot)
+    /// 止めているリモートコンテンツのホスト。無いか許してあれば nil
+    private var blockedRemoteHosts: [String]? {
+        guard let content, !content.externalHosts.isEmpty, !remoteAllowed else { return nil }
+        return content.externalHosts
+    }
+
+    /// 帯の［読み込む］。今の版のホストを許し、止める規則を外して載せ直す
+    private func allowRemoteContent() {
+        guard let content else { return }
+        DocumentRemoteContent.allow(content.externalHosts, for: key)
+        remoteAllowed = true
+        web?.load(content: content, highlights: highlightItems(), textSize: bodyTextSize, allowsRemote: true)
+    }
+
         model.docFormFocus = nil
     }
 
@@ -605,7 +629,8 @@ struct DocumentScreen: View {
             contentFailure = nil
             if content?.rev != fetched.rev || content?.content != fetched.content {
                 content = fetched
-                web.load(content: fetched, highlights: highlightItems(), textSize: bodyTextSize)
+                remoteAllowed = DocumentRemoteContent.isAllowed(fetched.externalHosts, for: key)
+                web.load(content: fetched, highlights: highlightItems(), textSize: bodyTextSize, allowsRemote: remoteAllowed && !fetched.externalHosts.isEmpty)
             } else {
                 pushHighlights()
             }
