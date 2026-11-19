@@ -94,7 +94,9 @@ actor WhisperRecognizer {
             task: .transcribe, language: "ja", temperature: 0, usePrefillPrompt: true, detectLanguage: false, skipSpecialTokens: true,
             withoutTimestamps: true, chunkingStrategy: .vad)
         if !vocabulary.isEmpty, let tokenizer = pipe.tokenizer {
-            options.promptTokens = tokenizer.encode(text: " " + vocabulary.joined(separator: "、"))
+            // WhisperKit は prompt の末尾の `maxTokenContext / 2 - 1`（111）トークンだけを残す。先頭に並ぶ題・番号・新しい発言の語を残すため、先頭から切って渡す
+            let tokens = tokenizer.encode(text: " " + vocabulary.joined(separator: "、"))
+            options.promptTokens = Array(tokens.prefix(Constants.maxTokenContext / 2 - 1))
         }
         let results = try await pipe.transcribe(audioArray: samples, decodeOptions: options)
         return results.map(\.text).joined().trimmingCharacters(in: .whitespacesAndNewlines)
