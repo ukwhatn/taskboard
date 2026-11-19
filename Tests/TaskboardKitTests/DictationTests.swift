@@ -211,6 +211,30 @@ struct DictationEndpointTests {
         #expect(endpoint.heardSpeech)
     }
 
+    @Test("マイクの立ち上がりの無音（0 の音）を雑音の大きさに数えない")
+    func ignoresDigitalSilence() {
+        var endpoint = DictationEndpoint(silence: 2)
+        endpoint.feed([Float](repeating: 0, count: 4_800))
+        endpoint.feed(noise(0.5))
+        let ended1 = endpoint.feed(noise(1))
+        #expect(!ended1 && !endpoint.heardSpeech)
+        endpoint.feed(speech(1))
+        #expect(endpoint.heardSpeech)
+        let ended2 = endpoint.feed(noise(2.2))
+        #expect(ended2)
+    }
+
+    @Test("聞き始めた後に雑音が大きくなっても、5 秒で追いつき、話し終えたら終わる")
+    func followsRisingNoise() {
+        var endpoint = DictationEndpoint(silence: 2)
+        endpoint.feed(noise(0.5, level: 0.0001))
+        endpoint.feed(noise(6, level: 0.002))
+        endpoint.feed(speech(1, amplitude: 0.05))
+        #expect(endpoint.heardSpeech)
+        let ended = endpoint.feed(noise(2.2, level: 0.002))
+        #expect(ended)
+    }
+
     @Test("区切りの途中で切れた音も続けて数える")
     func splitsFrames() {
         var endpoint = DictationEndpoint(silence: 2)

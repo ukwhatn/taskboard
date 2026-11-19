@@ -110,12 +110,16 @@ final class VoiceSampleBuffer: @unchecked Sendable {
     }
 }
 
-/// 本物のマイク。内蔵のマイクを優先するときは、Mac は入力の機器を内蔵のマイクに固定し（AirPods を通話用の形式に切り替えさせない）、
+/// 本物のマイク。内蔵のマイクを優先するときは、Mac は内蔵のマイクだけに結び付けた入力（`BuiltInInput`）で聞き、
 /// iPhone・iPad は入力の候補から内蔵のマイクを選ぶ
 @MainActor
 final class EngineMicrophone: VoiceMicrophone {
-    private let engine = AVAudioEngine()
+    private lazy var engine = AVAudioEngine()
     var configurationSource: AnyObject { engine }
+    #if os(macOS)
+    /// 内蔵のマイクで聞いている間の入力。nil なら `engine` の入力（既定の入力の機器）で聞く
+    private var builtIn: BuiltInInput?
+    #endif
 
     func prepareInput(preferBuiltIn: Bool) throws -> AVAudioFormat? {
         #if os(iOS)
@@ -128,27 +132,56 @@ final class EngineMicrophone: VoiceMicrophone {
             try session.setPreferredInput(nil)
         }
         #else
-        if preferBuiltIn, let device = BuiltInMicrophone.deviceID(), let unit = engine.inputNode.audioUnit {
-            var device = device
-            AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &device, UInt32(MemoryLayout<AudioDeviceID>.size))
+        // engine の入力は作った時点で既定の入力（AirPods）に結び付き、AirPods を通話用の接続に切り替える（音が途切れ、聞き始めが遅れる）ので、
+        // 内蔵のマイクで聞くときは engine の入力を作らない
+        if preferBuiltIn, let device = BuiltInMicrophone.deviceID() {
+            if builtIn == nil { builtIn = try BuiltInInput(device: device) }
+            return builtIn?.format
         }
+        builtIn = nil
         #endif
         let format = engine.inputNode.outputFormat(forBus: 0)
         return format.sampleRate > 0 && format.channelCount > 0 ? format : nil
     }
 
     func installTap(format: AVAudioFormat, block: @escaping AVAudioNodeTapBlock) {
+        #if os(macOS)
+        if let builtIn {
+            builtIn.tap = block
+            return
+        }
+        #endif
         engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format, block: block)
     }
 
-    func removeTap() { engine.inputNode.removeTap(onBus: 0) }
+    func removeTap() {
+        #if os(macOS)
+        if let builtIn {
+            builtIn.tap = nil
+            return
+        }
+        #endif
+        engine.inputNode.removeTap(onBus: 0)
+    }
 
     func start() throws {
+        #if os(macOS)
+        if let builtIn {
+            try builtIn.start()
+            return
+        }
+        #endif
         engine.prepare()
         try engine.start()
     }
 
     func stop() {
+        #if os(macOS)
+        if let builtIn {
+            builtIn.stop()
+            return
+        }
+        #endif
         engine.stop()
         #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -157,7 +190,87 @@ final class EngineMicrophone: VoiceMicrophone {
 }
 
 #if os(macOS)
+import AudioToolbox
 import CoreAudio
+
+/// 1 つの入力の機器だけを開く AUHAL。届いた音を `tap` に渡す（音の thread で呼ぶ）。`tap` は止めている間に差し替える
+final class BuiltInInput: @unchecked Sendable {
+    let format: AVAudioFormat
+    var tap: AVAudioNodeTapBlock?
+    private let unit: AudioUnit
+    private let buffer: AVAudioPCMBuffer
+
+    init(device: AudioDeviceID) throws {
+        var description = AudioComponentDescription(
+            componentType: kAudioUnitType_Output, componentSubType: kAudioUnitSubType_HALOutput,
+            componentManufacturer: kAudioUnitManufacturer_Apple, componentFlags: 0, componentFlagsMask: 0)
+        guard let component = AudioComponentFindNext(nil, &description) else { throw BuiltInInputError.status(-1) }
+        var created: AudioUnit?
+        try Self.check(AudioComponentInstanceNew(component, &created))
+        guard let unit = created else { throw BuiltInInputError.status(-1) }
+        self.unit = unit
+        var on: UInt32 = 1
+        var off: UInt32 = 0
+        var device = device
+        var deviceFormat = AudioStreamBasicDescription()
+        var formatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        do {
+            try Self.check(AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &on, 4))
+            try Self.check(AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &off, 4))
+            try Self.check(AudioUnitSetProperty(
+                unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &device, UInt32(MemoryLayout<AudioDeviceID>.size)))
+            try Self.check(AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 1, &deviceFormat, &formatSize))
+            guard deviceFormat.mSampleRate > 0,
+                let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: deviceFormat.mSampleRate, channels: 1, interleaved: false),
+                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 8192)
+            else { throw BuiltInInputError.status(-1) }
+            self.format = format
+            self.buffer = buffer
+            var client = format.streamDescription.pointee
+            try Self.check(AudioUnitSetProperty(unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &client, formatSize))
+        } catch {
+            AudioComponentInstanceDispose(unit)
+            throw error
+        }
+        var callback = AURenderCallbackStruct(inputProc: Self.render, inputProcRefCon: Unmanaged.passUnretained(self).toOpaque())
+        do {
+            try Self.check(AudioUnitSetProperty(
+                unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &callback, UInt32(MemoryLayout<AURenderCallbackStruct>.size)))
+            try Self.check(AudioUnitInitialize(unit))
+        } catch {
+            AudioComponentInstanceDispose(unit)
+            throw error
+        }
+    }
+
+    deinit {
+        AudioOutputUnitStop(unit)
+        AudioUnitUninitialize(unit)
+        AudioComponentInstanceDispose(unit)
+    }
+
+    func start() throws { try Self.check(AudioOutputUnitStart(unit)) }
+
+    func stop() { AudioOutputUnitStop(unit) }
+
+    private static let render: AURenderCallback = { refCon, flags, timeStamp, bus, frames, _ in
+        let input = Unmanaged<BuiltInInput>.fromOpaque(refCon).takeUnretainedValue()
+        guard frames <= input.buffer.frameCapacity else { return kAudio_ParamError }
+        input.buffer.frameLength = frames
+        let status = AudioUnitRender(input.unit, flags, timeStamp, bus, frames, input.buffer.mutableAudioBufferList)
+        guard status == noErr else { return status }
+        input.tap?(input.buffer, AVAudioTime(hostTime: timeStamp.pointee.mHostTime))
+        return noErr
+    }
+
+    private static func check(_ status: OSStatus) throws {
+        guard status == noErr else { throw BuiltInInputError.status(status) }
+    }
+}
+
+enum BuiltInInputError: Error {
+    case status(OSStatus)
+}
 
 /// Mac の内蔵のマイク（接続の種類が内蔵で、入力の stream を持つ機器）
 enum BuiltInMicrophone {

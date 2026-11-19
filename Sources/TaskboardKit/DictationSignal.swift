@@ -29,7 +29,7 @@ public enum DictationSignal {
 }
 
 /// 聞いている音から、話し始めと、話し終えた後の無音を見分ける（ハンズフリーで聞くのを終える合図）。
-/// 雑音の大きさ（区切りの dB の下限を、雑音の区切りでゆっくり追う）より `margin` dB 大きい区切りが 100 ms 続いたら話したとみなす。
+/// 雑音の大きさ（直近 5 秒の区切りの dB の最小。0 の音の区切りは数えない）より `margin` dB 大きい区切りが 100 ms 続いたら話したとみなす。
 /// 話した後に `silence` 秒、話している区切りが無ければ終わり。話す前の無音は数えない（押してすぐ黙っても切らない）
 public struct DictationEndpoint: Sendable {
     public let silence: Double
@@ -38,11 +38,14 @@ public struct DictationEndpoint: Sendable {
     public private(set) var ended = false
 
     private var pending: [Float] = []
-    private var floor: Float?
+    /// 直近の区切りの dB（雑音の大きさを測る窓）
+    private var recent: [Float] = []
     private var run = 0
     private var quietFrames = 0
-    /// 雑音の大きさが上がっていくのを追う速さ（区切りごと。1 秒で 1 dB）
-    private static let floorRise: Float = 0.02
+    /// 雑音の大きさを測る窓（5 秒）。話し続けても語の間の区切りが窓に残り、雑音が大きくなったら 5 秒で追いつく
+    private static let window = 250
+    /// これより小さい区切りは 0 の音（マイクの立ち上がり・機器の切り替え）で、雑音の大きさに数えない
+    private static let digitalSilence: Float = -90
     /// 話したとみなす続きの区切りの数（100 ms）
     private static let speechRun = 5
 
@@ -66,15 +69,17 @@ public struct DictationEndpoint: Sendable {
     }
 
     private mutating func take(_ level: Float) {
-        let floor = floor ?? level
-        let speaking = level > floor + margin
+        if level > Self.digitalSilence {
+            recent.append(level)
+            if recent.count > Self.window { recent.removeFirst(recent.count - Self.window) }
+        }
+        let speaking = recent.min().map { level > $0 + margin } ?? false
         if speaking {
             run += 1
             if run >= Self.speechRun { heardSpeech = true }
             quietFrames = 0
         } else {
             run = 0
-            self.floor = min(level, floor + Self.floorRise)
             if heardSpeech { quietFrames += 1 }
         }
         let silentSeconds = Double(quietFrames * DictationSignal.frameLength) / Double(DictationSignal.sampleRate)

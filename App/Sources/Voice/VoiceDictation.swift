@@ -189,7 +189,9 @@ final class VoiceDictation {
         endpoint.feed(samples)
         guard !held else { return }
         let elapsed = Double(heard.count) / Double(DictationSignal.sampleRate)
-        if endpoint.ended || (!endpoint.heardSpeech && elapsed >= Self.silentStartLimit) { finish() }
+        guard endpoint.ended || (!endpoint.heardSpeech && elapsed >= Self.silentStartLimit) else { return }
+        Self.logger.notice("ハンズフリーの聞き取りを終える: 話した \(self.endpoint.heardSpeech, privacy: .public) \(elapsed, format: .fixed(precision: 1), privacy: .public) 秒")
+        finish()
     }
 
     private func finish() {
