@@ -37,9 +37,6 @@ enum UsageLimitSetting {
 
 /// 利用枠の上限の前に区切るか（`MachineSettings.UsagePause`）。ターンの終わりに会話が最後に受けた窓で決める
 enum UsagePauseRule {
-    /// prompt cache の TTL。戻るまでこれより長ければ、待つ前に圧縮する（待つ間にキャッシュが切れ、戻った後の発言で全部を書き直すため）
-    static let cacheTTL: TimeInterval = 3600
-
     /// 閾値以上の窓のうち、戻るのが遅い方の戻る時刻。区切らないなら nil（戻る時刻が過ぎた・分からない窓は数えない）
     static func resetsAt(windows: [String: UsageWindow], pause: MachineSettings.UsagePause, now: Date) -> Date? {
         let thresholds = ["five_hour": pause.fiveHourPercent, "seven_day": pause.sevenDayPercent]
@@ -48,6 +45,4 @@ enum UsagePauseRule {
             return resets
         }.max()
     }
-
-    static func compacts(resetsAt: Date, now: Date) -> Bool { resetsAt.timeIntervalSince(now) > cacheTTL }
 }

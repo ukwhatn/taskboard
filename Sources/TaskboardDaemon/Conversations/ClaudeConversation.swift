@@ -252,10 +252,8 @@ actor ClaudeConversation {
     var lastActive: Date
     /// 最後に返事を終えた時刻。空いた会話の圧縮はここから数え、見回りが 1 度見たら消す（1 つの空きで 1 回まで）
     private var answeredAt: Date?
-    /// 次のターンの終わりは、空いた会話の圧縮か利用枠で区切る前の圧縮で送った /compact のもの（その終わりからは数えず、区切るかも見ない）
+    /// 次のターンの終わりは、空いた会話の圧縮で送った /compact のもの（その終わりからは数えず、区切るかも見ない）
     private var compactingIdle = false
-    /// 利用枠で区切った：入力待ちに入ったら /compact を送る
-    private var pauseCompactPending = false
     /// 最後に受けた `rate_limit_event` の窓（`five_hour`・`seven_day`。ターンの終わりに区切るかを見る）
     private var usageWindows: [String: UsageWindow] = [:]
     /// 答えている途中の問い（id → 答えの中身と、同じ答えで待っている呼び出し）
@@ -1294,37 +1292,14 @@ actor ClaudeConversation {
     /// 定期起動の回が利用枠の上限で断られた（`schedule_runs` の失敗の理由）
     static let scheduleRunLimitedReason = "利用枠の上限で止まりました"
 
-    /// 利用枠が閾値を越えたターンの終わり：戻る時刻の 1 分後まで待つ。戻るまで prompt cache より長ければ、入力待ちに入ってから圧縮する
+    /// 利用枠が閾値を越えたターンの終わり：戻る時刻の 1 分後まで待つ
     private func pauseForUsage(until resets: Date) {
-        let compacts = UsagePauseRule.compacts(resetsAt: resets, now: context.now())
         updateRecord {
             $0.limitResumeAt = Store.storedDate(resets.addingTimeInterval(60))
             $0.limitPaused = true
         }
-        context.logger.info("conversation paused for usage", metadata: ["conversation": .string(id), "resetsAt": .stringConvertible(resets), "compacts": .stringConvertible(compacts)])
+        context.logger.info("conversation paused for usage", metadata: ["conversation": .string(id), "resetsAt": .stringConvertible(resets)])
         publishState()
-        guard compacts else { return }
-        pauseCompactPending = true
-        compactForPauseIfIdle()
-    }
-
-    private func compactForPauseIfIdle() {
-        guard pauseCompactPending, phase == .idle else { return }
-        pauseCompactPending = false
-        Task { await self.compactForPause() }
-    }
-
-    /// 区切った待ちが残っている間だけ送る。人が送った・取り消した・止めたら待ちごと消えている
-    private func compactForPause() async {
-        guard record.limitPaused, record.limitResumeAt != nil, child.acceptsInput, phase == .idle else { return }
-        compactingIdle = true
-        do {
-            _ = try await send(ConversationSendRequest(text: "/compact"), clearingResumeWaits: false)
-            context.logger.info("usage pause compaction sent", metadata: ["conversation": .string(id)])
-        } catch {
-            compactingIdle = false
-            context.logger.warning("usage pause compaction not sent", metadata: ["conversation": .string(id), "error": "\(error)"])
-        }
     }
 
     /// これより小さい会話は空いても圧縮しない（`/context` の Messages の行。圧縮で縮むのはこの分だけ）
@@ -1685,6 +1660,9 @@ actor ClaudeConversation {
         do {
             if child.isRunning { try await stopForOperation() }
             try writeRecord { $0.extraArguments = arguments }
+            // 前のアカウントの上限と窓は、替えた先には当たらない
+            rateLimit = nil
+            usageWindows = [:]
         } catch {
             restoreInput(wasAccepting)
             publishState()
@@ -1900,7 +1878,6 @@ actor ClaudeConversation {
         if next == .running { watchStall() } else { stalledSince = nil; apiRetry = nil }
         publishState()
         guard next == .idle, child.isRunning, !replaying else { return }
-        compactForPauseIfIdle()
         let conversationID = id
         let becameIdle = context.becameIdle
         Task { await becameIdle(conversationID) }
@@ -2160,9 +2137,10 @@ actor ClaudeConversation {
             publishIfDetachableToolsChanged()
             await turnFinished(result, seq: seq)
         case .rateLimits(let windows, let limit):
+            // 控えの読み直しの分は古い窓と上限なので入れない（起こし直した後に、前のアカウントの上限で待ちを付けていた）
+            guard !replaying else { return }
             if let limit { rateLimit = limit }
-            // 控えの読み直しの分は古い窓なので入れない
-            if !replaying, !windows.isEmpty {
+            if !windows.isEmpty {
                 usageWindows.merge(windows) { $1 }
                 await reportUsage(fiveHour: windows["five_hour"], sevenDay: windows["seven_day"])
             }
