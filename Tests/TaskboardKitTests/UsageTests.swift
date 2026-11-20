@@ -62,4 +62,25 @@ struct UsageTests {
         #expect(UsageWindow(usedPercent: 50, resetsAt: now, windowSeconds: 0).projectedPercent(now: now) == nil)
     }
 
+    @Test("使っている Claude の枠: 既定のアカウントがあれば、マシンのログインはログインで動いている会話があるときだけ入れる")
+    func claudeInUse() {
+        let accounts = [ClaudeAccount(name: "main"), ClaudeAccount(name: "sub")]
+        func context(_ id: String, account: String?, at: Date) -> SessionContext {
+            SessionContext(agentSessionID: id, model: nil, effort: nil, usedPercent: nil, inputTokens: nil, windowSize: nil, account: account, at: at)
+        }
+        // アカウントが無いマシンはログインだけ
+        #expect(UsageSnapshot().claudeInUse(now: now) == [nil])
+        // 既定が無ければ、ログインも起こす候補に入る
+        #expect(UsageSnapshot(claudeAccounts: accounts).claudeInUse(now: now) == [nil, "main", "sub"])
+        // 既定があり、ログインの会話が無い（Studio の 11-20 の形: ログインの枠は 5 日前の値で残っていた）
+        let studio = UsageSnapshot(
+            claude: ClaudeUsage(fiveHour: nil, sevenDay: UsageWindow(usedPercent: 3, resetsAt: now.addingTimeInterval(86_400), windowSeconds: 604_800), at: now.addingTimeInterval(-5 * 86_400)),
+            claudeAccounts: accounts, claudeDefaultAccount: "main", contexts: [context("a", account: "sub", at: now)])
+        #expect(studio.claudeInUse(now: now) == ["main", "sub"])
+        // ログインで動いている会話があれば入れる。30 分より前に止まった会話は数えない
+        var running = studio
+        running.contexts.append(context("b", account: nil, at: now.addingTimeInterval(-60)))
+        #expect(running.claudeInUse(now: now) == [nil, "main", "sub"])
+        #expect(running.claudeInUse(now: now.addingTimeInterval(SessionContext.liveFor)) == ["main", "sub"])
+    }
 }

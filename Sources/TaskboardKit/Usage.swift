@@ -150,6 +150,9 @@ public struct CodexUsage: Codable, Hashable, Sendable {
 
 /// 1 セッションの context と model。statusline が 10 秒ごとに送る
 public struct SessionContext: Codable, Hashable, Sendable {
+    /// statusline が止まったセッション（終了・別の pane へ移った）の context は、これより経ったら動いていないとみる
+    public static let liveFor: TimeInterval = 1800
+
     public var agentSessionID: String
     public var model: String?
     public var effort: String?
@@ -222,14 +225,30 @@ public struct UsageSnapshot: Codable, Hashable, Sendable {
     public var claude: ClaudeUsage?
     /// taskboard のアカウントと、その枠（前の版の daemon は送らない）
     public var claudeAccounts: [ClaudeAccount]?
+    /// 割り当ての無い会話を起こすアカウント（`claude-accounts.json` の `default`）。nil ならマシンのログインも起こす候補に入る
+    public var claudeDefaultAccount: String?
     public var codex: CodexUsage?
     public var contexts: [SessionContext]
 
-    public init(claude: ClaudeUsage? = nil, claudeAccounts: [ClaudeAccount]? = nil, codex: CodexUsage? = nil, contexts: [SessionContext] = []) {
+    public init(
+        claude: ClaudeUsage? = nil, claudeAccounts: [ClaudeAccount]? = nil, claudeDefaultAccount: String? = nil, codex: CodexUsage? = nil,
+        contexts: [SessionContext] = []
+    ) {
         self.claude = claude
         self.claudeAccounts = claudeAccounts
+        self.claudeDefaultAccount = claudeDefaultAccount
         self.codex = codex
         self.contexts = contexts
+    }
+
+    /// 今使われている Claude の枠（nil はマシンのログイン）の並び。taskboard のアカウントは全部入れる（起こすたびにどれかへ移る）。
+    /// 既定のアカウントがあればマシンのログインで会話を起こさないので、ログインは、ログインで動いている会話（人が端末で起こしたもの）があるときだけ入れる。
+    /// 使っていない枠を並べると、会話がそれを今の枠と読んで委譲先を決める
+    public func claudeInUse(now: Date) -> [String?] {
+        let names = (claudeAccounts ?? []).map { Optional($0.name) }
+        guard !names.isEmpty, claudeDefaultAccount != nil else { return [nil] + names }
+        let loginRunning = contexts.contains { $0.account == nil && now.timeIntervalSince($0.at) <= SessionContext.liveFor }
+        return (loginRunning ? [nil] : []) + names
     }
 
     /// アカウントの枠。nil はマシンのログイン

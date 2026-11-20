@@ -68,7 +68,7 @@ actor ClaudeAccounts {
         if let nextFallback, fallback == nil {
             logger.warning("claude default account is not usable", metadata: ["account": .string(nextFallback)])
         }
-        await state?.setClaudeAccounts(next.map { ClaudeAccount(name: $0.name, boards: $0.boards) })
+        await state?.setClaudeAccounts(next.map { ClaudeAccount(name: $0.name, boards: $0.boards) }, defaultAccount: fallback)
         return next
     }
 

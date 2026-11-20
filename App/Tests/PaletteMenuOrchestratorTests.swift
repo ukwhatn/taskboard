@@ -62,6 +62,28 @@ import Testing
         #expect(UsageText.rows(usage, engine: .claude, account: nil, now: now).map(\.now) == [99])
         #expect(UsageText.rows(usage, engine: .codex, account: "sub", now: now).isEmpty)
     }
+
+    @Test("既定のアカウントがあるマシンは、ログインで動いている会話が無ければログインの枠を出さず、見出しの棒は最後に枠が届いたアカウントを出す")
+    func accountsInUse() {
+        func week(_ percent: Double) -> UsageWindow { UsageWindow(usedPercent: percent, resetsAt: nil, windowSeconds: 604_800) }
+        // Studio の 11-20 の形: ログインは 5 日前の 3%、main は前の日に 100%、sub が今動いている
+        let usage = UsageSnapshot(
+            claude: ClaudeUsage(fiveHour: nil, sevenDay: week(3), at: now.addingTimeInterval(-5 * 86_400)),
+            claudeAccounts: [
+                ClaudeAccount(name: "main", usage: ClaudeUsage(fiveHour: nil, sevenDay: week(100), at: now.addingTimeInterval(-86_400))),
+                ClaudeAccount(name: "sub", usage: ClaudeUsage(fiveHour: nil, sevenDay: week(56), at: now)),
+            ],
+            claudeDefaultAccount: "main")
+        let rows = UsageText.rows(usage, now: now)
+        #expect(rows.map(\.group) == ["Claude main", "Claude sub"])
+        #expect(UsageText.activeClaudeGroup(usage, now: now)?.group == "Claude sub")
+        #expect(UsageWindowChoice.claudeWeek.includes(rows[1]))
+        #expect(!UsageWindowChoice.claudeFiveHour.includes(rows[1]))
+        // 既定が無ければ、ログインも起こす候補なので出す
+        var noDefault = usage
+        noDefault.claudeDefaultAccount = nil
+        #expect(UsageText.rows(noDefault, now: now).map(\.group) == ["Claude", "Claude main", "Claude sub"])
+    }
 }
 
 /// ⌥⌘1〜3・メニュー・パレットの「◯◯で開く」と、オーケストレーターの送り先

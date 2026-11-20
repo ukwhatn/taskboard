@@ -234,9 +234,10 @@ public actor DaemonState {
         publish(next)
     }
 
-    /// `claude-accounts.json` のアカウント。前から知っているアカウントの枠は残す。無ければ nil（前の版の daemon と同じ形）
-    public func setClaudeAccounts(_ accounts: [ClaudeAccount]) {
+    /// `claude-accounts.json` のアカウントと既定のアカウント。前から知っているアカウントの枠は残す。無ければ nil（前の版の daemon と同じ形）
+    public func setClaudeAccounts(_ accounts: [ClaudeAccount], defaultAccount: String? = nil) {
         var next = usage
+        next.claudeDefaultAccount = accounts.isEmpty ? nil : defaultAccount
         next.claudeAccounts = accounts.isEmpty ? nil : accounts.map { account in
             var account = account
             account.usage = usage.claudeAccounts?.first { $0.name == account.name }?.usage
@@ -267,8 +268,7 @@ public actor DaemonState {
 
     public func usageSnapshot() -> UsageSnapshot { usage }
 
-    /// statusline が止まったセッション（終了・別の pane へ移った）の context は 30 分で落とす
-    static let contextTTL: TimeInterval = 1800
+    static let contextTTL = SessionContext.liveFor
 
     private func publish(_ next: UsageSnapshot) {
         let changed = Self.withoutTimes(next) != Self.withoutTimes(usage)

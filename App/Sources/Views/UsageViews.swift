@@ -54,9 +54,11 @@ enum UsageText {
                     id: id, group: group, label: label, now: window.usedPercent,
                     projected: window.projectedPercent(now: now), reset: reset(window.resetsAt, longWindow: window.windowSeconds >= 86_400, now: now)))
         }
-        add("Claude/5h", "Claude", String(localized: "5時間"), usage.claude?.fiveHour)
-        add("Claude/1w", "Claude", String(localized: "1週間"), usage.claude?.sevenDay)
-        // taskboard のアカウントの枠は表にだけ出す（見出しの棒はマシンのログインの枠）
+        // 使っていない枠（既定のアカウントがあるマシンのログイン）は出さない
+        if usage.claudeInUse(now: now).contains(nil) {
+            add("Claude/5h", "Claude", String(localized: "5時間"), usage.claude?.fiveHour)
+            add("Claude/1w", "Claude", String(localized: "1週間"), usage.claude?.sevenDay)
+        }
         for account in usage.claudeAccounts ?? [] {
             let group = "Claude \(account.name)"
             add("Claude:\(account.name)/5h", group, String(localized: "5時間"), account.usage?.fiveHour)
@@ -74,6 +76,13 @@ enum UsageText {
             }
         }
         return rows
+    }
+
+    /// 見出しの棒に出す Claude の枠の表の見出し（`rows` の group）。使っている枠のうち最後に値が届いたもの（今会話が動いているアカウント）
+    static func activeClaudeGroup(_ usage: UsageSnapshot, now: Date) -> (group: String, at: Date?)? {
+        let active = usage.claudeInUse(now: now).max { (usage.claudeUsage(account: $0)?.at ?? .distantPast) < (usage.claudeUsage(account: $1)?.at ?? .distantPast) }
+        guard let active else { return nil }
+        return (active.map { "Claude \($0)" } ?? "Claude", usage.claudeUsage(account: active)?.at)
     }
 
     static func windowLabel(_ window: UsageWindow?) -> String {
@@ -135,7 +144,8 @@ struct MachineUsageBars: View {
                 let rows = UsageText.rows(usage, now: now)
                 let windows = model.usageWindows
                 let shown = rows.filter { row in windows.contains { $0.includes(row) } }
-                let bars = Array((shown.filter { $0.group == "Claude" } + shown.filter { $0.group == "Codex" }.prefix(1)).prefix(3))
+                let claude = UsageText.activeClaudeGroup(usage, now: now)
+                let bars = Array((shown.filter { $0.group == claude?.group } + shown.filter { $0.group == "Codex" }.prefix(1)).prefix(3))
                 let title = String(localized: "\(name ?? state.machine.map { model.machineName($0.id) } ?? "")の利用枠")
                 if !bars.isEmpty {
                     Button {
@@ -153,7 +163,7 @@ struct MachineUsageBars: View {
                     .accessibilityLabel(title)
                     .accessibilityValue(UsageText.summary(bars))
                     .popover(isPresented: $showDetail) {
-                        UsageTable(title: title, rows: rows, updatedAt: usage.claude?.at)
+                        UsageTable(title: title, rows: rows, updatedAt: claude?.at)
                             // 棒は一覧の節の見出しにあり、見出しの文字の色を引き継いで表の全体が薄くなった
                             .foregroundStyle(Color.primary)
                             .compactSheetTop()

@@ -162,6 +162,32 @@ struct MCPInboxHealthTests {
         #expect(lines == ["Claude: 5 時間 42%", "context（使っている順）", "- s-bbbbbb… 80%", "- s-a… 20% opus"])
     }
 
+    @Test("usage_get と health は使っている Claude の枠だけを出す。既定のアカウントがあれば、ログインで動いている会話の無いマシンのログインの枠は出さない")
+    func usageInUse() {
+        let resets = t0.addingTimeInterval(86_400)
+        func week(_ percent: Double) -> UsageWindow { UsageWindow(usedPercent: percent, resetsAt: resets, windowSeconds: 604_800) }
+        // Studio の 11-20 の形: ログインの枠は 5 日前の 3% のまま残り、会話は main と sub で動いていた
+        let usage = UsageSnapshot(
+            claude: ClaudeUsage(fiveHour: nil, sevenDay: week(3), at: t0.addingTimeInterval(-5 * 86_400)),
+            claudeAccounts: [
+                ClaudeAccount(name: "main", usage: ClaudeUsage(fiveHour: nil, sevenDay: week(100), at: t0)),
+                ClaudeAccount(name: "sub"),
+            ],
+            claudeDefaultAccount: "main")
+        let text = TaskboardTools.describe(usage: usage, now: t0)
+        #expect(text == "Claude main: 7 日 100%（\(TaskboardTools.time(resets)) に戻る）\nClaude sub: まだ届いていない（statusline が送る）", "\(text)")
+
+        var withLogin = usage
+        withLogin.contexts = [SessionContext(agentSessionID: "s-a", model: nil, effort: nil, usedPercent: nil, inputTokens: nil, windowSize: nil, at: t0)]
+        #expect(TaskboardTools.describe(usage: withLogin, now: t0).hasPrefix("Claude（マシンのログイン）: 7 日 3%"))
+
+        var snap = snapshot()
+        snap.usage = usage
+        let health = TaskboardTools.healthReport(snapshot: snap, apnsConfigured: true, now: t0)
+        #expect(health.contains("- Claude main の利用枠: 7 日 100%"))
+        #expect(!health.contains("3%"))
+    }
+
     @Test("health はオーケストレーター・うまくいかなかった定期起動・常設タスクの無い定期起動・APNs の鍵の無さを 1 画面に出す")
     func healthReport() {
         let now = t0.addingTimeInterval(3600)

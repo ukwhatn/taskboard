@@ -148,9 +148,11 @@ extension TaskboardTools {
             if let error = orchestrator.lastError { line += Copy.text("agent.mcp.health.line.3", ["error": "\(error)"]) }
             lines.append(line)
         }
-        if let claude = snapshot.usage?.claude {
-            let windows = [(Copy.text("agent.mcp.health.windows"), claude.fiveHour), (Copy.text("agent.mcp.health.windows.2"), claude.sevenDay)].compactMap { name, window in window.map { "\(name) \(percent($0.usedPercent))" } }
-            if !windows.isEmpty { lines.append(Copy.text("agent.mcp.health.windows.3") + windows.joined(separator: "、")) }
+        if let usage = snapshot.usage {
+            for (name, claude) in claudeInUse(usage, now: now) {
+                let windows = [(Copy.text("agent.mcp.health.windows"), claude?.fiveHour), (Copy.text("agent.mcp.health.windows.2"), claude?.sevenDay)].compactMap { label, window in window.map { "\(label) \(percent($0.usedPercent))" } }
+                if !windows.isEmpty { lines.append(Copy.text("agent.mcp.health.windows.3", ["name": name]) + windows.joined(separator: "、")) }
+            }
         }
 
         let asking = snapshot.conversations.filter { !$0.requests.isEmpty }
@@ -491,15 +493,23 @@ extension TaskboardTools {
         return lines.joined(separator: "\n")
     }
 
-    static func describe(usage: UsageSnapshot) -> String {
+    /// 使っている Claude の枠と、行の名前（`UsageSnapshot.claudeInUse`）。taskboard のアカウントと並ぶときは、ログインに「マシンのログイン」と書く
+    static func claudeInUse(_ usage: UsageSnapshot, now: Date) -> [(name: String, usage: ClaudeUsage?)] {
+        let accounts = usage.claudeInUse(now: now)
+        return accounts.map { account in
+            let name = account.map { "Claude \($0)" } ?? (accounts.count > 1 ? Copy.text("agent.mcp.usage.login") : "Claude")
+            return (name, usage.claudeUsage(account: account))
+        }
+    }
+
+    static func describe(usage: UsageSnapshot, now: Date = Date()) -> String {
         var lines: [String] = []
         func window(_ name: String, _ value: UsageWindow?) -> String? {
             value.map { "\(name) \(percent($0.usedPercent))" + ($0.resetsAt.map { Copy.text("agent.mcp.health.window", ["time": "\(time($0))"]) } ?? "") }
         }
-        if let claude = usage.claude {
-            lines.append("Claude: " + [window(Copy.text("agent.mcp.health.windows"), claude.fiveHour), window(Copy.text("agent.mcp.health.windows.2"), claude.sevenDay)].compactMap { $0 }.joined(separator: "、"))
-        } else {
-            lines.append(Copy.text("agent.mcp.health.window.2"))
+        for (name, claude) in claudeInUse(usage, now: now) {
+            let windows = [window(Copy.text("agent.mcp.health.windows"), claude?.fiveHour), window(Copy.text("agent.mcp.health.windows.2"), claude?.sevenDay)].compactMap { $0 }
+            lines.append(windows.isEmpty ? Copy.text("agent.mcp.health.window.2", ["name": name]) : "\(name): " + windows.joined(separator: "、"))
         }
         if let codex = usage.codex {
             var parts = [window(Copy.text("agent.mcp.health.parts"), codex.primary), window(Copy.text("agent.mcp.health.parts.2"), codex.secondary)].compactMap { $0 }

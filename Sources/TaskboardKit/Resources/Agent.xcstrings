@@ -3945,7 +3945,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Claude: まだ届いていない（statusline が送る）"
+            "value" : "{{name}}: まだ届いていない（statusline が送る）"
           }
         }
       }
@@ -3978,7 +3978,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "- Claude の利用枠: "
+            "value" : "- {{name}} の利用枠: "
           }
         }
       }
@@ -5596,6 +5596,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "（まだ記録が無い）"
+          }
+        }
+      }
+    },
+    "agent.mcp.usage.login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude（マシンのログイン）"
           }
         }
       }
@@ -9489,7 +9500,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Claude Code と Codex の利用枠（5 時間・7 日・月）と、セッションごとの context の使用率を返す"
+            "value" : "このマシンの利用枠（Claude Code は今使っているアカウントごとの 5 時間・7 日、Codex は 5 時間・7 日・月）と、セッションごとの context の使用率を返す。taskboard が会話を起動しないマシンのログインの枠は、ログインで動いている会話が無ければ出さない"
           }
         }
       }

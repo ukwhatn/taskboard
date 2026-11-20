@@ -110,10 +110,11 @@ enum UsageWindowChoice: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Claude の窓は、マシンのログイン（`Claude/5h`）と taskboard のアカウント（`Claude:<名前>/5h`）のどちらの行にも当てる
     func includes(_ row: UsageRowModel) -> Bool {
         switch self {
         case .codex: row.group == "Codex"
-        default: row.id == rawValue
+        default: row.id == rawValue || (row.id.hasPrefix("Claude:") && row.id.hasSuffix(rawValue.dropFirst("Claude".count)))
         }
     }
 }
