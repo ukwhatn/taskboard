@@ -47,22 +47,24 @@ enum UsageText {
     static func rows(_ usage: UsageSnapshot, now: Date) -> [UsageRowModel] {
         var rows: [UsageRowModel] = []
         // id は設定（`UsageWindowChoice`）が見るので、表示の文字と切り離して固定する
-        func add(_ id: String, _ group: String, _ label: String, _ window: UsageWindow?) {
+        func add(_ id: String, _ group: String, _ label: String, _ window: UsageWindow?, projected: Double? = nil) {
             guard let window else { return }
             rows.append(
                 UsageRowModel(
                     id: id, group: group, label: label, now: window.usedPercent,
-                    projected: window.projectedPercent(now: now), reset: reset(window.resetsAt, longWindow: window.windowSeconds >= 86_400, now: now)))
+                    projected: projected ?? window.projectedPercent(now: now), reset: reset(window.resetsAt, longWindow: window.windowSeconds >= 86_400, now: now)))
         }
+        // 1週間の予測は、アカウントを切り替えながら使ったときの戻る直前の値（daemon の見込み）
+        let atReset = usage.claudeForecast?.atReset ?? [:]
         // 使っていない枠（既定のアカウントがあるマシンのログイン）は出さない
         if usage.claudeInUse(now: now).contains(nil) {
             add("Claude/5h", "Claude", String(localized: "5時間"), usage.claude?.fiveHour)
-            add("Claude/1w", "Claude", String(localized: "1週間"), usage.claude?.sevenDay)
+            add("Claude/1w", "Claude", String(localized: "1週間"), usage.claude?.sevenDay, projected: atReset[ClaudeAccount.login])
         }
         for account in usage.claudeAccounts ?? [] {
             let group = "Claude \(account.name)"
             add("Claude:\(account.name)/5h", group, String(localized: "5時間"), account.usage?.fiveHour)
-            add("Claude:\(account.name)/1w", group, String(localized: "1週間"), account.usage?.sevenDay)
+            add("Claude:\(account.name)/1w", group, String(localized: "1週間"), account.usage?.sevenDay, projected: atReset[account.name])
         }
         // Codex のセッションが動いていなくても、枠の値があれば出す（47 §2）
         if let codex = usage.codex {
@@ -125,6 +127,17 @@ enum UsageText {
         return f
     }()
 
+    /// 切り替えを踏まえた 7 日の見込みの 1 文。見込みが無ければ nil
+    static func forecast(_ usage: UsageSnapshot) -> String? {
+        guard let forecast = usage.claudeForecast else { return nil }
+        if let exhausted = forecast.exhaustedAt, let resumes = forecast.resumesAt {
+            let threshold = Int(forecast.threshold.rounded())
+            return String(
+                localized: "\(dateFormatter.string(from: exhausted))ごろに全アカウントが\(threshold)%に達し、\(dateFormatter.string(from: resumes))まで止まる見込みです。")
+        }
+        return String(localized: "\(dateFormatter.string(from: forecast.horizon))まで枠が残る見込みです。")
+    }
+
     /// 読み上げと help の 1 行（「Claude 5時間 42%、Claude 1週間 57%」）
     static func summary(_ rows: [UsageRowModel]) -> String {
         rows.map { "\($0.group) \($0.label) \(percent($0.now))" }.joined(separator: "、")
@@ -163,7 +176,7 @@ struct MachineUsageBars: View {
                     .accessibilityLabel(title)
                     .accessibilityValue(UsageText.summary(bars))
                     .popover(isPresented: $showDetail) {
-                        UsageTable(title: title, rows: rows, updatedAt: claude?.at)
+                        UsageTable(title: title, rows: rows, updatedAt: claude?.at, forecast: UsageText.forecast(usage))
                             // 棒は一覧の節の見出しにあり、見出しの文字の色を引き継いで表の全体が薄くなった
                             .foregroundStyle(Color.primary)
                             .compactSheetTop()
@@ -197,11 +210,12 @@ struct UsageBar: View {
     }
 }
 
-/// 「使用・予測・リセット」の表。予測は今のペースで窓の終わりまで使ったときの値。残り時間と「N分前の値」は時間の経過で進む
+/// 「使用・予測・リセット」の表。予測は今のペースで窓の終わりまで使ったときの値（Claude のアカウントの 1週間は、切り替えを踏まえた戻る直前の見込み）。残り時間と「N分前の値」は時間の経過で進む
 struct UsageTable: View {
     let title: String
     let rows: [UsageRowModel]
     let updatedAt: Date?
+    var forecast: String?
 
     var body: some View {
         LiveClock { now in
@@ -233,6 +247,7 @@ struct UsageTable: View {
                         }
                     }
                 }
+                if let forecast { Text(forecast).textRole(.caption) }
                 if let updatedAt, now.timeIntervalSince(updatedAt) > 600 {
                     // Claude の枠は Claude Code が動いている間だけ届く
                     Text("Claudeの利用枠は\(RelativeTime.text(updatedAt, now: now))の値です。").textRole(.caption)

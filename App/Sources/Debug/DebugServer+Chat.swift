@@ -25,6 +25,7 @@ extension DebugServer {
                 let usage = model.fleet.usage(fleetID: id) ?? UsageSnapshot()
                 return [
                     "machine": state.machine?.name ?? id,
+                    "forecast": UsageText.forecast(usage) as Any,
                     "rows": UsageText.rows(usage, now: Date()).map {
                         ["group": $0.group, "label": $0.label, "now": $0.now, "projected": $0.projected as Any, "reset": $0.reset]
                     },
