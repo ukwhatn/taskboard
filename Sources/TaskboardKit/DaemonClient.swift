@@ -589,6 +589,15 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         try await send("POST", "/v1/hooks/prompt", body)
     }
 
+    public func relayClaudeUsage(_ body: ClaudeAccountUsageRelay) async throws {
+        var req = request(for: "/v1/usage/claude/accounts")
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try WireJSON.encoder().encode(body)
+        let (_, response) = try await session.data(for: req)
+        try expectNoContent(response)
+    }
+
     public func reportClaudeUsage(_ body: ClaudeUsageReport) async throws {
         var req = request(for: "/v1/usage/claude")
         req.httpMethod = "POST"

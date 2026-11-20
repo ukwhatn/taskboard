@@ -234,6 +234,15 @@ public actor DaemonState {
         publish(next)
     }
 
+    /// 別のマシンで受けた同じ名前のアカウントの枠。手元より新しいときだけ採る（無いアカウントは入れない）
+    public func adopt(_ relay: ClaudeAccountUsageRelay) {
+        guard let index = usage.claudeAccounts?.firstIndex(where: { $0.name == relay.account }) else { return }
+        if let current = usage.claudeAccounts?[index].usage, current.at >= relay.usage.at { return }
+        var next = usage
+        next.claudeAccounts?[index].usage = relay.usage
+        publish(next)
+    }
+
     /// `claude-accounts.json` のアカウントと既定のアカウント。前から知っているアカウントの枠は残す。無ければ nil（前の版の daemon と同じ形）
     public func setClaudeAccounts(_ accounts: [ClaudeAccount], defaultAccount: String? = nil) {
         var next = usage

@@ -293,6 +293,8 @@ public final class Fleet {
     /// マシンごとの利用枠（接続設定の id）。statusline のたびに届くので `allMachines` と分ける。
     /// 同じプロパティに持つと、届くたびにマシンの状態を読む画面がすべて描き直される
     public private(set) var usage: [String: UsageSnapshot] = [:]
+    /// 中継した枠の時刻（接続設定の id / アカウントの名前）。同じ値を 2 回送らない
+    @ObservationIgnored private var relayedUsage: [String: Date] = [:]
     /// 会話が使っているツールの名前（接続設定の id → 会話 → 名前）。ツールのたびに届くので `allMachines` と分け、札は `toolName(of:)` の箱で読む
     @ObservationIgnored private var toolActivity: [String: [ConversationKey: String]] = [:]
 
@@ -864,6 +866,29 @@ public final class Fleet {
     private func setUsage(_ id: String, _ snapshot: UsageSnapshot?) {
         guard allMachines[id] != nil, usage[id] != snapshot else { return }
         usage[id] = snapshot
+        relayClaudeUsage()
+    }
+
+    /// Claude のアカウントの枠は、使ったマシンの daemon にしか届かない。名前の同じアカウントの最も新しい枠を、1 分より古い値を持つマシンへ渡す（見込みが 2 台の消費を数えるように）
+    private func relayClaudeUsage() {
+        var newest: [String: (fleetID: String, usage: ClaudeUsage)] = [:]
+        for (fleetID, snapshot) in usage {
+            for account in snapshot.claudeAccounts ?? [] {
+                guard let value = account.usage, newest[account.name].map({ value.at > $0.usage.at }) ?? true else { continue }
+                newest[account.name] = (fleetID, value)
+            }
+        }
+        for (fleetID, snapshot) in usage {
+            guard let writer = sources[fleetID] as? any DaemonWriter else { continue }
+            for account in snapshot.claudeAccounts ?? [] {
+                guard let best = newest[account.name], best.fleetID != fleetID,
+                    best.usage.at.timeIntervalSince(account.usage?.at ?? .distantPast) > 60, relayedUsage["\(fleetID)/\(account.name)"] != best.usage.at
+                else { continue }
+                relayedUsage["\(fleetID)/\(account.name)"] = best.usage.at
+                let relay = ClaudeAccountUsageRelay(account: account.name, usage: best.usage)
+                Task { try? await writer.relayClaudeUsage(relay) }
+            }
+        }
     }
 }
 

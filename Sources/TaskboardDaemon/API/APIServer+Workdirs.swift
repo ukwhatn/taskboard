@@ -30,6 +30,12 @@ extension APIServer {
         v1.get("usage") { _, _ in
             try json(await state.usageSnapshot(), encoder)
         }
+        // 別のマシンで受けた同じアカウントの枠（アプリが中継する）
+        v1.post("usage/claude/accounts") { request, context in
+            let body = try await request.decode(as: ClaudeAccountUsageRelay.self, context: context)
+            await state.adopt(body)
+            return Response(status: .noContent)
+        }
         // 貯めた利用状況（`UsageRecorder`）。from・to は UNIX 秒、bucket は粒度の秒
         v1.get("usage/history") { request, _ in
             let query = request.uri.queryParameters

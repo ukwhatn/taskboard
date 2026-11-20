@@ -19,6 +19,7 @@ public protocol DaemonWriter: Sendable {
     func finishManualWork(id: Int64) async throws
     func approvePanelDraft(task: Int, part: String, body: String) async throws -> OverviewPanel
     func submitDoc(doc: Int64, _ request: DocSubmitRequest) async throws -> Document
+    func relayClaudeUsage(_ body: ClaudeAccountUsageRelay) async throws
     func orchestrator() async throws -> OrchestratorInfo
     /// 返るのはオーケストレーターの様子（起こした会話は `conversationID`）
     func startOrchestrator(_ request: LaunchRequest) async throws -> OrchestratorInfo

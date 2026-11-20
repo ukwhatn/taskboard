@@ -262,6 +262,17 @@ public struct UsageSnapshot: Codable, Hashable, Sendable {
 
 }
 
+/// `POST /v1/usage/claude/accounts`。同じアカウント（名前が同じ）の新しい枠を、別のマシンで受けたアプリが古い値のマシンへ渡す
+public struct ClaudeAccountUsageRelay: Codable, Hashable, Sendable {
+    public var account: String
+    public var usage: ClaudeUsage
+
+    public init(account: String, usage: ClaudeUsage) {
+        self.account = account
+        self.usage = usage
+    }
+}
+
 /// `POST /v1/usage/claude`。`taskboard hook statusline` が statusline の JSON から作る
 public struct ClaudeUsageReport: Codable, Hashable, Sendable {
     public var context: SessionContext
