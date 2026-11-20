@@ -884,9 +884,13 @@ public final class Fleet {
                 guard let best = newest[account.name], best.fleetID != fleetID,
                     best.usage.at.timeIntervalSince(account.usage?.at ?? .distantPast) > 60, relayedUsage["\(fleetID)/\(account.name)"] != best.usage.at
                 else { continue }
-                relayedUsage["\(fleetID)/\(account.name)"] = best.usage.at
+                let key = "\(fleetID)/\(account.name)"
+                relayedUsage[key] = best.usage.at
                 let relay = ClaudeAccountUsageRelay(account: account.name, usage: best.usage)
-                Task { try? await writer.relayClaudeUsage(relay) }
+                // 送れなければ印を外し、次に枠が届いたときに送り直す（古い版の daemon は 404 で断る）
+                Task { [weak self] in
+                    do { try await writer.relayClaudeUsage(relay) } catch { if self?.relayedUsage[key] == relay.usage.at { self?.relayedUsage[key] = nil } }
+                }
             }
         }
     }
