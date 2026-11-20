@@ -147,15 +147,14 @@ struct DocumentScreen: View {
     @State private var width: CGFloat = 0
     /// 返信・質問の回答の書きかけがあるか（中の部品が `DocumentPendingInputKey` で知らせる）
     @State private var pendingInput = false
-    /// 本文の欄で［承認］を押した送る文面（確認のダイアログを出す）
+    /// 承認を含む送信（確認のダイアログを出す）
     @State var approving: Approving?
     /// 今の本文のリモートコンテンツを許したか（許した値は `DocumentRemoteContent` が覚える。ここは描き直しのため）
     @State private var remoteAllowed = false
 
     struct Approving: Identifiable {
-        var draft: DocDraft
-        var body: String
-        var id: String { draft.id }
+        var request: DocSubmitRequest
+        var id: String { request.approvals.map(\.draftID).joined(separator: ",") }
     }
 
     struct Composer: Identifiable {
@@ -453,16 +452,11 @@ struct DocumentScreen: View {
 
     private func handleForm(_ action: DocumentFormAction, doc: Document) {
         switch action {
-        case .answer(let id, let answers):
-            guard let ask = formAsks.first(where: { $0.askID == id }) else { return }
-            Task {
-                do {
-                    try await model.answer(ask, answers)
-                    web?.formResult(kind: "ask", id: "\(id)", error: nil)
-                    await loadSide(task: TaskKey(machine: doc.machine, number: doc.taskNumber))
-                } catch {
-                    web?.formResult(kind: "ask", id: "\(id)", error: UserFacingError("回答を送信できませんでした", error: error)?.text)
-                }
+        case .submit(let request):
+            if request.approvals.isEmpty {
+                submit(request, doc: doc)
+            } else {
+                approving = Approving(request: request)
             }
         case .cancel(let id):
             guard let ask = formAsks.first(where: { $0.askID == id }) else { return }
@@ -475,18 +469,18 @@ struct DocumentScreen: View {
                     web?.formResult(kind: "ask", id: "\(id)", error: UserFacingError("質問を閉じられませんでした", error: error)?.text)
                 }
             }
-        case .approve(let id, let body):
-            guard let draft = model.fleet.document(for: key)?.drafts.first(where: { $0.id == id }) else { return }
-            approving = Approving(draft: draft, body: body)
         }
     }
 
-    func approve(_ item: Approving) {
+    /// 回答と承認を 1 回で送る。承認を含む送信は、確認のダイアログの［承認］から呼ぶ
+    func submit(_ request: DocSubmitRequest, doc: Document) {
         Task {
             do {
-                try await model.approveDocDraft(key, draft: item.draft.id, body: item.body)
+                try await model.submitDocForms(key, request)
+                web?.formResult(kind: "forms", id: "", error: nil)
+                await loadSide(task: TaskKey(machine: doc.machine, number: doc.taskNumber))
             } catch {
-                web?.formResult(kind: "draft", id: item.draft.id, error: UserFacingError("送る文面を承認できませんでした", error: error)?.text)
+                web?.formResult(kind: "forms", id: "", error: UserFacingError("送信できませんでした", error: error)?.text)
             }
         }
     }
@@ -781,11 +775,21 @@ private struct FormsHandling: ViewModifier {
                 "送る文面の承認", isPresented: Binding(get: { screen.approving != nil }, set: { if !$0 { screen.approving = nil } }), titleVisibility: .visible,
                 presenting: screen.approving
             ) { item in
-                Button("承認") { screen.approve(item) }
-                Button("キャンセル", role: .cancel) {}
+                Button("承認") { screen.submit(item.request, doc: doc) }
+                Button("キャンセル", role: .cancel) { screen.web?.formResult(kind: "forms", id: "", error: nil) }
             } message: { item in
-                Text("「\(item.draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
+                Text(Self.approvalMessage(item.request, drafts: doc.drafts))
             }
+    }
+}
+
+extension FormsHandling {
+    /// 1 件なら宛先を名前で示し、複数なら件数で示す
+    static func approvalMessage(_ request: DocSubmitRequest, drafts: [DocDraft]) -> String {
+        if request.approvals.count == 1, let draft = drafts.first(where: { $0.id == request.approvals[0].draftID }) {
+            return String(localized: "「\(draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
+        }
+        return String(localized: "送る文面\(request.approvals.count)件を承認しますか？　承認すると、会話がそれぞれの本文で送信します。")
     }
 }
 

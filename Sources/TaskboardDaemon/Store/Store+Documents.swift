@@ -270,27 +270,29 @@ extension Store {
 
     /// 全問に回答が要る。open でなければ 409 相当。
     public func answerAsk(id: Int64, answers: [AskAnswer]) throws -> Ask {
-        let ask = try database.write { db in
-            guard let row = try AskRow.fetchOne(db, key: id) else { throw StoreError.askNotFound(id) }
-            let ask = Self.ask(from: row, machine: machineID)
-            guard ask.status == .open else { throw StoreError.askNotOpen(id) }
-            let missing = ask.unanswered(in: answers)
-            guard missing.isEmpty else { throw StoreError.askUnanswered(missing) }
-            for answer in answers {
-                if answer.selected.count > 8 || answer.selected.contains(where: { $0.count > 300 }) { throw StoreError.invalid("選択は 8 個・300 文字まで") }
-                if (answer.freeText ?? "").count > 20000 { throw StoreError.refused(.textTooLong, ["limit": "20000"], "自由記述は 20000 文字まで") }
-            }
-            let now = Date()
-            try db.execute(
-                sql: "UPDATE ask SET status = 'answered', answers = ?, answeredAt = ? WHERE id = ? AND status = 'open'",
-                arguments: [Self.encodeJSON(answers), now, id])
-            if let item = row.workItemId { try Self.resumeWorkItem(db, id: item, at: now) }
-            try Self.touchTask(db, number: ask.taskNumber, at: now)
-            guard let updated = try AskRow.fetchOne(db, key: id) else { throw StoreError.askNotFound(id) }
-            return Self.ask(from: updated, machine: machineID)
-        }
+        let ask = try database.write { db in try Self.recordAnswers(db, ask: id, answers: answers, doc: nil, machine: machineID, at: Date()) }
         changed(.ask(ask.askID), .task(ask.taskNumber), .workItems(task: ask.taskNumber))
         return ask
+    }
+
+    /// 質問に回答を書く（`answerAsk` と文書の欄の送信 `submitDocForms` の共通）。`doc` を渡すと、その文書の質問でなければ断る
+    static func recordAnswers(_ db: Database, ask id: Int64, answers: [AskAnswer], doc docID: Int64?, machine: MachineID, at now: Date) throws -> Ask {
+        guard let row = try AskRow.fetchOne(db, key: id), docID.map({ $0 == row.docId }) ?? true else { throw StoreError.askNotFound(id) }
+        let ask = Self.ask(from: row, machine: machine)
+        guard ask.status == .open else { throw StoreError.askNotOpen(id) }
+        let missing = ask.unanswered(in: answers)
+        guard missing.isEmpty else { throw StoreError.askUnanswered(missing) }
+        for answer in answers {
+            if answer.selected.count > 8 || answer.selected.contains(where: { $0.count > 300 }) { throw StoreError.invalid("選択は 8 個・300 文字まで") }
+            if (answer.freeText ?? "").count > 20000 { throw StoreError.refused(.textTooLong, ["limit": "20000"], "自由記述は 20000 文字まで") }
+        }
+        try db.execute(
+            sql: "UPDATE ask SET status = 'answered', answers = ?, answeredAt = ? WHERE id = ? AND status = 'open'",
+            arguments: [Self.encodeJSON(answers), now, id])
+        if let item = row.workItemId { try Self.resumeWorkItem(db, id: item, at: now) }
+        try Self.touchTask(db, number: ask.taskNumber, at: now)
+        guard let updated = try AskRow.fetchOne(db, key: id) else { throw StoreError.askNotFound(id) }
+        return Self.ask(from: updated, machine: machine)
     }
 
     /// 取り下げ。open でなければ何もしない（nil）。

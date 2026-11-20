@@ -69,9 +69,9 @@ extension AppModel {
         docFormFocus = slot.map { DocFormFocus(doc: key, slot: $0) }
     }
 
-    /// 文書の送る文面の［承認］。本文は人が編集した後のもの。承認と本文は publish した会話に届く
-    func approveDocDraft(_ key: DocKey, draft: String, body: String) async throws {
-        _ = try await requireSource(key.machine).approveDocDraft(doc: key.id, draft: draft, body: body)
+    /// 文書の欄を 1 回で送る（質問の回答と送る文面の承認。本文は人が編集した後のもの）。publish した会話に 1 通で届く
+    func submitDocForms(_ key: DocKey, _ request: DocSubmitRequest) async throws {
+        _ = try await requireSource(key.machine).submitDoc(doc: key.id, request)
     }
 
     func addComment(_ key: DocKey, rev: Int, anchor: CommentAnchor?, body: String) async throws -> DocComment {

@@ -781,6 +781,31 @@ public struct AskAnswerRequest: Codable, Hashable, Sendable {
     }
 }
 
+/// `POST /v1/docs/{id}/submit`。文書の欄を 1 回で送る：質問の回答（`askID` と `answers`。無ければ nil と空）と、送る文面の承認。
+/// 1 つの書き込みで記録するので、会話には 1 通で届く
+public struct DocSubmitRequest: Codable, Hashable, Sendable {
+    public struct Approval: Codable, Hashable, Sendable {
+        public var draftID: String
+        /// 人が編集した後の本文
+        public var body: String
+
+        public init(draftID: String, body: String) {
+            self.draftID = draftID
+            self.body = body
+        }
+    }
+
+    public var askID: Int64?
+    public var answers: [AskAnswer]
+    public var approvals: [Approval]
+
+    public init(askID: Int64? = nil, answers: [AskAnswer] = [], approvals: [Approval] = []) {
+        self.askID = askID
+        self.answers = answers
+        self.approvals = approvals
+    }
+}
+
 /// `POST /v1/docs/{id}/comments`。draft として作る。
 public struct CommentCreateRequest: Codable, Hashable, Sendable {
     public var rev: Int

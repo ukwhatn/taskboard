@@ -38,4 +38,23 @@ import Testing
         #expect(body("前 <kbd>⌘</kbd> 後") == "<p>前 <kbd>⌘</kbd> 後</p>\n")
         #expect(body("```diff\n-<a>\n```") == "<pre><code class=\"language-diff\"><span class=\"tb-diff-removed\"><span class=\"tb-sign\">-</span>&lt;a&gt;\n</span></code></pre>\n")
     }
+
+    @Test("欄の［送信］は、質問の回答と承認の印を付けた文面を 1 つの送信として読む。質問の無い文書は askID が null で、承認だけを送る")
+    func readsSubmitMessage() {
+        let both: [String: Any] = [
+            "type": "submitForms", "askID": NSNumber(value: 7),
+            "answers": [["questionID": "q1", "selected": ["A"], "freeText": NSNull()]],
+            "approvals": [["draftID": "slack-1", "body": "明日リリースします。"], ["draftID": "mail", "body": "お世話になっております。"]],
+        ]
+        #expect(
+            DocumentFormAction(message: both)
+                == .submit(
+                    DocSubmitRequest(
+                        askID: 7, answers: [AskAnswer(questionID: "q1", selected: ["A"], freeText: nil)],
+                        approvals: [.init(draftID: "slack-1", body: "明日リリースします。"), .init(draftID: "mail", body: "お世話になっております。")])))
+        let draftsOnly: [String: Any] = ["type": "submitForms", "askID": NSNull(), "answers": [], "approvals": [["draftID": "slack-1", "body": "a"]]]
+        #expect(DocumentFormAction(message: draftsOnly) == .submit(DocSubmitRequest(approvals: [.init(draftID: "slack-1", body: "a")])))
+        // 1 件ずつ承認して送っていた前の版の中身は読まない
+        #expect(DocumentFormAction(message: ["type": "approveDraft", "draftID": "slack-1", "body": "a"]) == nil)
+    }
 }

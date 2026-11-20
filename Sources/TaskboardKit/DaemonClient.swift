@@ -161,10 +161,9 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         return try await send("POST", "/v1/tasks/\(task)/panel/parts/\(id)/approve", PanelDraftApproveRequest(body: body))
     }
 
-    /// 文書の送る文面の［承認］。承認と本文は publish した会話に届く
-    public func approveDocDraft(doc: Int64, draft: String, body: String) async throws -> Document {
-        let id = draft.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/"))) ?? draft
-        return try await send("POST", "/v1/docs/\(doc)/drafts/\(id)/approve", PanelDraftApproveRequest(body: body))
+    /// 文書の欄（質問の回答と送る文面の承認）を 1 回で送る。publish した会話に 1 通で届く
+    public func submitDoc(doc: Int64, _ request: DocSubmitRequest) async throws -> Document {
+        try await send("POST", "/v1/docs/\(doc)/submit", request)
     }
 
     public func workingDirectories() async throws -> WorkingDirectories {

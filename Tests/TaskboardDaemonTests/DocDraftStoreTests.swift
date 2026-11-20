@@ -69,10 +69,10 @@ struct DocDraftStoreTests {
         let doc = try publish(store, task, "<!-- draft: slack-1 -->", drafts: [slack]).document
         #expect(doc.openDrafts.map(\.id) == ["slack-1"])
         #expect(throws: StoreError.invalid(Copy.text("agent.panel.invalid.empty", ["id": "slack-1", "field": "body"]))) {
-            try store.approveDocDraft(doc: doc.docID, draftID: "slack-1", body: "  ")
+            try store.submitDocForms(doc: doc.docID, DocSubmitRequest(approvals: [.init(draftID: "slack-1", body: "  ")]))
         }
-        #expect(try store.approveDocDraft(doc: doc.docID, draftID: "slack-1", body: "明後日リリースします。\n") == task.number)
-        #expect(try store.approveDocDraft(doc: doc.docID, draftID: "slack-1", body: "別の本文") == task.number, "2 回目は何もしない")
+        #expect(try store.submitDocForms(doc: doc.docID, DocSubmitRequest(approvals: [.init(draftID: "slack-1", body: "明後日リリースします。\n")])) == task.number)
+        #expect(try store.submitDocForms(doc: doc.docID, DocSubmitRequest(approvals: [.init(draftID: "slack-1", body: "別の本文")])) == task.number, "2 回目は何もしない")
         let peek = try store.peekUndeliveredFeedback(task: task.number)
         #expect(peek.bundle.drafts.count == 1)
         let approved = try #require(peek.bundle.drafts.first)
@@ -86,8 +86,44 @@ struct DocDraftStoreTests {
         _ = try publish(store, task, "版 3\n<!-- draft: slack-1 -->", drafts: [changed])
         #expect(try store.document(id: doc.docID)?.openDrafts.map(\.id) == ["slack-1"], "本文を変えた文面は承認を待ち直す")
         #expect(throws: StoreError.refused(.notFound, ["kind": "doc_draft"], Copy.text("agent.doc.drafts.notFound", ["id": "x"]))) {
-            try store.approveDocDraft(doc: doc.docID, draftID: "x", body: "a")
+            try store.submitDocForms(doc: doc.docID, DocSubmitRequest(approvals: [.init(draftID: "x", body: "a")]))
         }
+    }
+
+    @Test("文書の欄の送信は、質問の回答と複数の文面の承認を 1 つの書き込みで記録し、同じ未受領の束に載せる")
+    func submitTogether() throws {
+        let (store, task) = try makeStore()
+        let mail = DocDraftSpec(id: "mail", draft: PanelDraft(title: "連絡", to: "先方のメール", body: "お世話になっております。"))
+        let published = try publish(store, task, "<!-- ask: q1 -->\n<!-- draft: slack-1 -->\n<!-- draft: mail -->", questions: [question], drafts: [slack, mail])
+        let askID = try #require(published.askID)
+        let answers = [AskAnswer(questionID: "q1", selected: ["A"], freeText: nil)]
+        #expect(
+            try store.submitDocForms(
+                doc: published.document.docID,
+                DocSubmitRequest(askID: askID, answers: answers, approvals: [.init(draftID: "slack-1", body: "明日リリースします。"), .init(draftID: "mail", body: "お世話になっております。")]))
+                == task.number)
+        let bundle = try store.peekUndeliveredFeedback(task: task.number).bundle
+        #expect(bundle.answeredAsks.map(\.askID) == [askID])
+        #expect(Set(bundle.drafts.map(\.partID)) == ["slack-1", "mail"])
+        #expect(try store.document(id: published.document.docID)?.openDrafts.isEmpty == true)
+    }
+
+    @Test("文書の欄の送信は、どれか 1 つが断られたら回答も承認も書かない。回答も承認も無い送信と、ほかの文書の質問は断る")
+    func submitIsAllOrNothing() throws {
+        let (store, task) = try makeStore()
+        let published = try publish(store, task, "<!-- ask: q1 -->\n<!-- draft: slack-1 -->", questions: [question], drafts: [slack])
+        let askID = try #require(published.askID)
+        let answers = [AskAnswer(questionID: "q1", selected: ["A"], freeText: nil)]
+        #expect(throws: StoreError.refused(.notFound, ["kind": "doc_draft"], Copy.text("agent.doc.drafts.notFound", ["id": "x"]))) {
+            try store.submitDocForms(doc: published.document.docID, DocSubmitRequest(askID: askID, answers: answers, approvals: [.init(draftID: "x", body: "a")]))
+        }
+        #expect(try store.ask(id: askID)?.status == .open, "断った送信の回答は書かない")
+        #expect(throws: StoreError.invalid("送る回答も承認も無い")) { try store.submitDocForms(doc: published.document.docID, DocSubmitRequest()) }
+        let other = try store.publish(task: task.number, DocPublishRequest(name: "other.md", format: .markdown, content: "別の文書"))
+        #expect(throws: StoreError.askNotFound(askID)) {
+            try store.submitDocForms(doc: other.document.docID, DocSubmitRequest(askID: askID, answers: answers))
+        }
+        #expect(try store.peekUndeliveredFeedback(task: task.number).bundle.drafts.isEmpty)
     }
 
     @Test("会話へ届く文は今の送る文面と同じ見出しで始まり、文書名と文書の更新の指示を添える")

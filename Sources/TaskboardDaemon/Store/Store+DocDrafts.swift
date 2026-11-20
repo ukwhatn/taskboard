@@ -90,28 +90,36 @@ extension Store {
         }
     }
 
-    /// 人が文書の送る文面を［承認］した。本文は人が編集した後のもの。概況の送る文面と同じく、同じ本文への承認は 1 回だけで、会話へ未受領の知らせとして届く。
-    /// 属するタスクの番号を返す
-    public func approveDocDraft(doc docID: Int64, draftID: String, body: String) throws -> Int {
-        let trimmed = try Self.approvedDraftBody(body, id: draftID)
-        let number = try database.write { db -> Int in
+    /// 人が文書の欄を送った：質問の回答と、送る文面の承認（本文は人が編集した後のもの）を 1 つの書き込みで記録する。
+    /// どちらも publish した会話への同じ未受領の束に入るので、届け役が間に割り込んでも 1 通で届く。概況の送る文面と同じく、同じ文面への承認は 1 回だけ。
+    /// 回答も承認も無い送信と、どれか 1 つでも断られる送信は、何も書かずに断る。属するタスクの番号を返す
+    public func submitDocForms(doc docID: Int64, _ request: DocSubmitRequest) throws -> Int {
+        guard request.askID != nil || !request.approvals.isEmpty else { throw StoreError.invalid("送る回答も承認も無い") }
+        let bodies = try request.approvals.map { (id: $0.draftID, body: try Self.approvedDraftBody($0.body, id: $0.draftID)) }
+        let (number, askID) = try database.write { db -> (Int, Int64?) in
             guard let doc = try Row.fetchOne(db, sql: "SELECT taskNumber, name FROM doc WHERE id = ?", arguments: [docID]) else { throw StoreError.docNotFound(docID) }
             let number: Int = doc["taskNumber"]
-            guard var row = try DocDraftRow.filter(Column("docId") == docID && Column("draftId") == draftID).fetchOne(db),
-                let draft = try? JSONDecoder().decode(PanelDraft.self, from: Data(row.spec.utf8))
-            else { throw StoreError.refused(.notFound, ["kind": "doc_draft"], Copy.text("agent.doc.drafts.notFound", ["id": draftID])) }
-            guard row.answerId == nil else { return number }
             let now = Date()
-            var answer = PanelAnswerRow(
-                id: nil, taskNumber: number, partId: draftID, title: draft.title, recipient: draft.to, original: draft.body, body: trimmed,
-                requesterSessionId: row.requesterSessionId, answeredAt: now, docName: doc["name"])
-            try answer.insert(db)
-            row.answerId = answer.id
-            try row.update(db)
+            if let askID = request.askID {
+                _ = try Self.recordAnswers(db, ask: askID, answers: request.answers, doc: docID, machine: machineID, at: now)
+            }
+            for approval in bodies {
+                guard var row = try DocDraftRow.filter(Column("docId") == docID && Column("draftId") == approval.id).fetchOne(db),
+                    let draft = try? JSONDecoder().decode(PanelDraft.self, from: Data(row.spec.utf8))
+                else { throw StoreError.refused(.notFound, ["kind": "doc_draft"], Copy.text("agent.doc.drafts.notFound", ["id": approval.id])) }
+                guard row.answerId == nil else { continue }
+                var answer = PanelAnswerRow(
+                    id: nil, taskNumber: number, partId: approval.id, title: draft.title, recipient: draft.to, original: draft.body, body: approval.body,
+                    requesterSessionId: row.requesterSessionId, answeredAt: now, docName: doc["name"])
+                try answer.insert(db)
+                row.answerId = answer.id
+                try row.update(db)
+            }
             try Self.touchTask(db, number: number, at: now)
-            return number
+            return (number, request.askID)
         }
         changed(.document(docID), .task(number))
+        if let askID { changed(.ask(askID), .workItems(task: number)) }
         return number
     }
 }

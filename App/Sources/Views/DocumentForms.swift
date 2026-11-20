@@ -125,8 +125,10 @@ enum DocumentForms {
             "freeText": String(localized: "自由記述"),
             "preview": String(localized: "見本："),
             "send": String(localized: "回答を送信"),
+            "sendApprovals": String(localized: "承認を送信"),
+            "sendBoth": String(localized: "回答と承認を送信"),
             "sending": String(localized: "送信しています…"),
-            "sendHelp": String(localized: "回答を送信（⌘↩）"),
+            "sendHelp": String(localized: "送信（⌘↩）"),
             "close": String(localized: "質問を閉じる"),
             "closeHelp": String(localized: "答えずに閉じる（チャットで話して済んだとき）"),
             "next": String(localized: "次の未回答へ"),
@@ -137,7 +139,10 @@ enum DocumentForms {
             "draft": String(localized: "送る文面"),
             "body": String(localized: "本文"),
             "approve": String(localized: "承認"),
-            "approveHelp": String(localized: "承認（⌘↩）"),
+            "unapprove": String(localized: "承認を外す"),
+            "approveHelp": String(localized: "送信するときにこの本文で承認する"),
+            "marked": String(localized: "承認する"),
+            "markRequired": String(localized: "承認する文面を選ぶと送信できます。"),
             "restore": String(localized: "元の本文に戻す"),
             "checkOK": String(localized: "問題なし"),
             "checkNG": String(localized: "要確認"),
@@ -193,7 +198,7 @@ enum DocumentForms {
     /// 欄の描画と答えの受け渡し。`__tbForms.set(payload)` で描き直す（書きかけの選択と文は残す）
     static let script = """
         (function(){
-        const F = window.__tbForms = { data: null, picks: {}, texts: {}, focus: {}, drafts: {}, busy: {}, errors: {}, pendingScroll: null };
+        const F = window.__tbForms = { data: null, picks: {}, texts: {}, focus: {}, drafts: {}, marked: {}, busy: {}, errors: {}, pendingScroll: null };
         function post(m){ if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tb) window.webkit.messageHandlers.tb.postMessage(m); }
         function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
         function L(k){ return (F.data && F.data.labels[k]) || k; }
@@ -208,12 +213,14 @@ enum DocumentForms {
           const selected = q.options.map(o => o.label).filter(l => picks(ask.askID, q.id).includes(l));
           return { questionID: q.id, selected: selected, freeText: text ? text : null };
         }
+        function openDrafts(){ return F.data ? F.data.drafts.filter(d => !d.approved) : []; }
+        function approvals(){ return openDrafts().filter(d => F.marked[d.id] && F.drafts[d.id] && F.drafts[d.id].text.trim()).map(d => ({ draftID: d.id, body: F.drafts[d.id].text })); }
         function unanswered(ask){ return ask.questions.filter(q => { const a = answerFor(ask, q); return a.selected.length === 0 && !a.freeText; }); }
         function pending(){
           let has = false;
           const ask = openAsk();
           if (ask) has = ask.questions.some(q => picks(ask.askID, q.id).length > 0 || (F.texts[key(ask.askID, q.id)] || '').trim());
-          for (const d of (F.data ? F.data.drafts : [])) { const s = F.drafts[d.id]; if (!d.approved && s && s.text !== d.body) has = true; }
+          for (const d of openDrafts()) { const s = F.drafts[d.id]; if (F.marked[d.id] || (s && s.text !== d.body)) has = true; }
           post({ type: 'formsPending', value: has });
         }
         function previewOption(ask, q){
@@ -288,6 +295,7 @@ enum DocumentForms {
           const head = el('div', 'tb-form-head');
           head.append(el('span', 'tb-form-kind', L('draft')));
           if (d.title) head.append(el('span', null, d.title));
+          if (!d.approved && F.marked[d.id]) head.append(el('span', 'tb-chip tb-accent', L('marked')));
           card.append(head);
           card.append(el('div', 'tb-status', d.to));
           if (d.approved) {
@@ -307,29 +315,37 @@ enum DocumentForms {
             }
             card.append(checks);
           }
-          if (F.errors['draft:' + d.id]) card.append(el('div', 'tb-error', F.errors['draft:' + d.id]));
           const actions = el('div', 'tb-actions');
           const restore = el('button', 'tb-button', L('restore')); restore.type = 'button'; restore.hidden = state.text === d.body;
           restore.addEventListener('click', () => { state.text = d.body; area.value = d.body; restore.hidden = true; approve.disabled = !live; pending(); });
-          const approve = el('button', 'tb-button tb-primary', L('approve')); approve.type = 'button'; approve.title = L('approveHelp');
-          approve.disabled = !live || !state.text.trim() || !!F.busy['draft:' + d.id];
-          approve.addEventListener('click', () => approveDraft(d));
-          area.addEventListener('input', () => { state.text = area.value; restore.hidden = state.text === d.body; approve.disabled = !live || !state.text.trim(); pending(); });
+          const on = !!F.marked[d.id];
+          const approve = el('button', 'tb-button' + (on ? '' : ' tb-primary'), on ? L('unapprove') : L('approve')); approve.type = 'button'; approve.title = L('approveHelp');
+          approve.setAttribute('aria-pressed', on ? 'true' : 'false');
+          approve.disabled = !live || !state.text.trim() || !!F.busy['forms'];
+          approve.addEventListener('click', () => toggleDraft(d));
+          area.addEventListener('input', () => { state.text = area.value; restore.hidden = state.text === d.body; approve.disabled = !live || !state.text.trim(); updateBar(); pending(); });
           actions.append(restore, approve); card.append(actions);
           return card;
         }
-        function approveDraft(d){
-          const state = F.drafts[d.id]; if (!state || !state.text.trim() || !writable()) return;
-          post({ type: 'approveDraft', draftID: d.id, body: state.text });
+        function toggleDraft(d){
+          if (!writable() || F.busy['forms']) return;
+          F.marked[d.id] = !F.marked[d.id]; render(); pending();
+          const again = document.querySelector('[data-tb-card="' + CSS.escape('draft:' + d.id) + '"] .tb-actions button:last-child'); if (again) again.focus();
+        }
+        function canSend(){
+          if (!writable() || F.busy['forms']) return false;
+          const ask = openAsk();
+          return ask ? unanswered(ask).length === 0 : approvals().length > 0;
         }
         function send(){
-          const ask = openAsk(); if (!ask || !writable() || unanswered(ask).length || F.busy['ask']) return;
-          F.busy['ask'] = true; F.errors['ask'] = null; updateBar();
-          post({ type: 'answerAsk', askID: ask.askID, answers: ask.questions.map(q => answerFor(ask, q)) });
+          if (!canSend()) return;
+          const ask = openAsk();
+          F.busy['forms'] = true; F.errors['forms'] = null; render();
+          post({ type: 'submitForms', askID: ask ? ask.askID : null, answers: ask ? ask.questions.map(q => answerFor(ask, q)) : [], approvals: approvals() });
         }
         function cancel(){
-          const ask = openAsk(); if (!ask || !writable() || F.busy['ask']) return;
-          F.busy['ask'] = true; F.errors['ask'] = null; updateBar();
+          const ask = openAsk(); if (!ask || !writable() || F.busy['forms']) return;
+          F.busy['forms'] = true; F.errors['forms'] = null; updateBar();
           post({ type: 'cancelAsk', askID: ask.askID });
         }
         function next(){
@@ -338,19 +354,20 @@ enum DocumentForms {
         }
         function updateBar(){
           const bar = document.getElementById('tb-forms-bar'); if (!bar) return;
-          const ask = openAsk();
-          if (!ask) { bar.hidden = true; document.body.classList.remove('tb-has-bar'); return; }
+          const ask = openAsk(), drafts = openDrafts();
+          if (!ask && !drafts.length) { bar.hidden = true; document.body.classList.remove('tb-has-bar'); return; }
           bar.hidden = false; document.body.classList.add('tb-has-bar');
-          const rest = unanswered(ask), busy = !!F.busy['ask'];
+          const rest = ask ? unanswered(ask) : [], busy = !!F.busy['forms'], marked = approvals().length;
           const actions = el('div', 'tb-actions');
-          const hint = el('span', 'tb-hint', F.errors['ask'] || F.data.blocked || (rest.length ? L('allRequired') : ''));
-          if (F.errors['ask']) hint.classList.add('tb-error');
+          const hint = el('span', 'tb-hint', F.errors['forms'] || F.data.blocked || (rest.length ? L('allRequired') : (!ask && !marked ? L('markRequired') : '')));
+          if (F.errors['forms']) hint.classList.add('tb-error');
           actions.append(hint);
           if (rest.length && ask.questions.length > 1) { const n = el('button', 'tb-button', L('next')); n.type = 'button'; n.addEventListener('click', next); actions.append(n); }
-          const c = el('button', 'tb-button', L('close')); c.type = 'button'; c.title = L('closeHelp'); c.disabled = busy || !writable(); c.addEventListener('click', cancel);
-          const s = el('button', 'tb-button tb-primary', busy ? L('sending') : L('send')); s.type = 'button'; s.title = L('sendHelp');
-          s.disabled = busy || rest.length > 0 || !writable(); s.addEventListener('click', send);
-          actions.append(c, s);
+          if (ask) { const c = el('button', 'tb-button', L('close')); c.type = 'button'; c.title = L('closeHelp'); c.disabled = busy || !writable(); c.addEventListener('click', cancel); actions.append(c); }
+          const label = busy ? L('sending') : ask && marked ? L('sendBoth') : ask ? L('send') : L('sendApprovals');
+          const s = el('button', 'tb-button tb-primary', label); s.type = 'button'; s.title = L('sendHelp');
+          s.disabled = !canSend(); s.addEventListener('click', send);
+          actions.append(s);
           bar.replaceChildren(actions);
         }
         function render(){
@@ -366,12 +383,12 @@ enum DocumentForms {
           const before = openAsk();
           F.data = data;
           const now = openAsk();
-          if (!now || (before && before.askID !== now.askID)) { F.busy['ask'] = false; }
+          if (!now || (before && before.askID !== now.askID)) { F.busy['forms'] = false; }
+          for (const id of Object.keys(F.marked)) { if (!data.drafts.some(d => d.id === id && !d.approved)) delete F.marked[id]; }
           render(); pending();
         };
         F.result = function(kind, id, error){
-          if (kind === 'ask') { F.busy['ask'] = false; F.errors['ask'] = error; updateBar(); }
-          else { F.busy['draft:' + id] = false; F.errors['draft:' + id] = error; render(); }
+          F.busy['forms'] = false; F.errors['forms'] = error; render();
         };
         F.scrollTo = function(name){
           const card = document.querySelector('[data-tb-card="' + CSS.escape(name) + '"]');
@@ -380,12 +397,10 @@ enum DocumentForms {
           card.classList.add('tb-flash'); setTimeout(() => card.classList.remove('tb-flash'), 1200);
           return true;
         };
-        F.firstOpen = function(){ const ask = openAsk(); if (ask && ask.questions.length) return cardName(ask, ask.questions[0]); const d = F.data && F.data.drafts.find(x => !x.approved); return d ? 'draft:' + d.id : null; };
+        F.firstOpen = function(){ const ask = openAsk(); if (ask && ask.questions.length) return cardName(ask, ask.questions[0]); const d = openDrafts()[0]; return d ? 'draft:' + d.id : null; };
         document.addEventListener('keydown', e => {
           if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
-          const card = document.activeElement && document.activeElement.closest('[data-tb-card^="draft:"]');
-          if (card) { const id = card.dataset.tbCard.slice(6); const d = F.data && F.data.drafts.find(x => x.id === id); if (d && !d.approved) { e.preventDefault(); approveDraft(d); } return; }
-          if (openAsk()) { e.preventDefault(); send(); }
+          if (openAsk() || openDrafts().length) { e.preventDefault(); send(); }
         });
         })();
         """

@@ -402,25 +402,26 @@ extension DocumentWebController: WKNavigationDelegate {
 
 /// 本文の欄でした操作。JS の `postMessage` の中身から読む（読めない中身は捨てる）
 enum DocumentFormAction: Equatable {
-    case answer(askID: Int64, answers: [AskAnswer])
+    /// 下の帯の［送信］：質問の回答（質問が無ければ nil と空）と、承認の印を付けた送る文面
+    case submit(DocSubmitRequest)
     case cancel(askID: Int64)
-    case approve(draftID: String, body: String)
 
     init?(message body: [String: Any]) {
         switch body["type"] as? String {
-        case "answerAsk":
-            guard let id = (body["askID"] as? NSNumber)?.int64Value, let raw = body["answers"] as? [[String: Any]] else { return nil }
-            let answers = raw.compactMap { a -> AskAnswer? in
+        case "submitForms":
+            guard let rawAnswers = body["answers"] as? [[String: Any]], let rawApprovals = body["approvals"] as? [[String: Any]] else { return nil }
+            let answers = rawAnswers.compactMap { a -> AskAnswer? in
                 guard let q = a["questionID"] as? String else { return nil }
                 return AskAnswer(questionID: q, selected: a["selected"] as? [String] ?? [], freeText: a["freeText"] as? String)
             }
-            self = .answer(askID: id, answers: answers)
+            let approvals = rawApprovals.compactMap { a -> DocSubmitRequest.Approval? in
+                guard let id = a["draftID"] as? String, let text = a["body"] as? String else { return nil }
+                return DocSubmitRequest.Approval(draftID: id, body: text)
+            }
+            self = .submit(DocSubmitRequest(askID: (body["askID"] as? NSNumber)?.int64Value, answers: answers, approvals: approvals))
         case "cancelAsk":
             guard let id = (body["askID"] as? NSNumber)?.int64Value else { return nil }
             self = .cancel(askID: id)
-        case "approveDraft":
-            guard let id = body["draftID"] as? String, let text = body["body"] as? String else { return nil }
-            self = .approve(draftID: id, body: text)
         default:
             return nil
         }

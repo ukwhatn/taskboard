@@ -25,14 +25,12 @@ extension APIServer {
             let result = try mapStoreError { try store.attachQuestions(doc: id, questions: body.questions, requester: requester, workItem: body.workItem) }
             return try json(result, encoder)
         }
-        // 文書の送る文面の［承認］。承認と本文は publish した会話に届く（概況の送る文面と同じ束）。返すのは承認の後の文書
-        v1.post("docs/{id}/drafts/{draft}/approve") { request, context in
+        // 文書の欄を 1 回で送る：質問の回答と送る文面の承認。どちらも publish した会話への同じ未受領の束に入るので、1 通で届く。返すのは送った後の文書
+        v1.post("docs/{id}/submit") { request, context in
             let id = try context.parameters.require("id", as: Int64.self)
-            // Hummingbird は path の引数を decode しない
-            let draft = try context.parameters.require("draft").removingPercentEncoding ?? context.parameters.require("draft")
-            let body = try await request.decode(as: PanelDraftApproveRequest.self, context: context)
+            let body = try await request.decode(as: DocSubmitRequest.self, context: context)
             let store = try dependencies.requireStore()
-            let number = try mapStoreError { try store.approveDocDraft(doc: id, draftID: draft, body: body.body) }
+            let number = try mapStoreError { try store.submitDocForms(doc: id, body) }
             try await dependencies.requireFeedback().notify(task: number)
             guard let doc = try store.document(id: id) else { throw APIError.notFound(.document, "文書 \(id) が無い") }
             return try json(doc, encoder)
