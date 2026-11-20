@@ -129,6 +129,8 @@ public struct ConversationTimeline: Hashable, Sendable {
             if older { return false }
         }
         agentSessionID = page.agentSessionID
+        let echoes = Dictionary(page.messages.filter { $0.role == .user }.map { (Self.sentID($0.lineID), $0) }, uniquingKeysWith: { a, _ in a })
+        for i in messages.indices { if let echo = echoes[messages[i].id] { messages[i] = echo } }
         if older {
             let known = Set(messages.map(\.id))
             messages = page.messages.filter { !known.contains($0.id) } + messages
@@ -208,6 +210,10 @@ public struct ConversationTimeline: Hashable, Sendable {
                 case "cancelled", "discarded", "refused":
                     let removed = outgoing.remove(at: i)
                     if discarding.remove(clientMessageID) == nil { effects.append(.restoreDraft(removed)) }
+                case "started", "completed":
+                    // CLI がターンに取り込んだ位置に置く。写しが来ないまま末尾に残ると、後のツールの行の下に出続けた（中断の直後に送った発言）
+                    let sent = outgoing.remove(at: i)
+                    place([ChatMessage(id: Self.sentID(sent.clientMessageID), role: .user, kind: .text, text: sent.text, at: event.at)], with: &placer)
                 default: outgoing[i].state = .accepted
                 }
             case .turn:
@@ -234,9 +240,13 @@ public struct ConversationTimeline: Hashable, Sendable {
         return effects
     }
 
+    /// 受けた時点で置いた発言の id。写しの id は engine で違う（Claude は `uuid#0`、Codex は `uuid`）ので、`lineID` で写しと結ぶ
+    static func sentID(_ clientMessageID: String) -> String { "\(clientMessageID)#sent" }
+
     private mutating func place(_ incoming: [ChatMessage], with placer: inout MessagePlacer?) {
         if placer == nil { placer = MessagePlacer(messages) }
         for message in incoming {
+            if message.role == .user { placer?.rename(Self.sentID(message.lineID), to: message.id) }
             if var replay {
                 placer?.place(message, after: &replay.anchor)
                 self.replay = replay
@@ -386,6 +396,18 @@ struct MessagePlacer {
 
     static func index(_ messages: [ChatMessage]) -> [String: Int] {
         Dictionary(messages.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// 置いてある発言の id を替える（受けた時点で置いた発言を、写しの id にして写しで置き換えさせる）
+    mutating func rename(_ id: String, to newID: String) {
+        if let i = pendingIDs.removeValue(forKey: id) {
+            pending[i].id = newID
+            pendingIDs[newID] = i
+        } else if let i = positions.removeValue(forKey: id) {
+            changed = true
+            messages[i].id = newID
+            positions[newID] = i
+        }
     }
 
     /// 同じ id は置き換え、新しい id は末尾に足す
