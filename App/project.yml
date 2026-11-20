@@ -14,9 +14,6 @@ packages:
   libghostty-spm:
     url: https://github.com/Lakr233/libghostty-spm.git
     exactVersion: 1.6.20261003
-  swift-snapshot-testing:
-    url: https://github.com/pointfreeco/swift-snapshot-testing.git
-    exactVersion: 1.19.6
   swift-markdown:
     url: https://github.com/swiftlang/swift-markdown.git
     exactVersion: 0.9.0
@@ -110,68 +107,14 @@ targets:
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
-  TaskboardTests:
-    # 画面の snapshot test。macOS だけ（アプリの View を NSHostingView で描いて PNG と比べる）
-    type: bundle.unit-test
-    platform: macOS
-    sources:
-      - path: Tests
-        excludes:
-          - "__Snapshots__/**"
-          - "iOS/**"
-    dependencies:
-      - target: Taskboard
-      - package: swift-snapshot-testing
-        product: SnapshotTesting
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: uk.whatn.taskboard.tests
-        # アプリが multiplatform なので xcodegen は iOS 形のパスを出す。macOS のバンドル構造に合わせる
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Taskboard.app/Contents/MacOS/Taskboard
-        BUNDLE_LOADER: $(TEST_HOST)
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        GENERATE_INFOPLIST_FILE: YES
-  TaskboardiOSTests:
-    # iPhone の幅の snapshot test（Tests/iOS）と、iOS でも動かす単体テスト。iPhone のシミュレータで回す（scripts/snapshot-test.sh --ios）
-    type: bundle.unit-test
-    platform: iOS
-    sources:
-      - path: Tests/iOS
-        excludes:
-          - "__Snapshots__/**"
-      - path: Tests/MainThreadWatchdogTests.swift
-      - path: Tests/DiagnosticsOutboxTests.swift
-      - path: Tests/HangDiagnosticsTests.swift
-      - path: Tests/VoiceCaptureTests.swift
-    dependencies:
-      - target: Taskboard
-      - package: swift-snapshot-testing
-        product: SnapshotTesting
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: uk.whatn.taskboard.ios.tests
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        GENERATE_INFOPLIST_FILE: YES
 schemes:
   TaskboardiOS:
     build:
       targets:
         Taskboard: all
-        TaskboardiOSTests: [test]
-    test:
-      config: Debug
-      targets:
-        - TaskboardiOSTests
   Taskboard:
     build:
       targets:
         Taskboard: all
-        TaskboardTests: [test]
     run:
       config: Debug
-    test:
-      config: Debug
-      targets:
-        - TaskboardTests

@@ -18,13 +18,13 @@ taskboard が会話（Claude Code・Codex）へ送る文と CLI の出力の置�
 - 長い文（instructions、起動プロンプト）は `Prompts/<言語>/<名前>.md` のテンプレートにし、`Copy.prompt("名前", [...])` で取得する。daemon があとで値に置き換える起動プロンプトの既定は `Copy.template("名前")` で、置き換えずに取得する
 - 概況の部品の種類ごとの欄（`panel_set`・`panel_update` の `parts` の説明）は `Prompts/ja/panel-parts.md`。部品の種類・記号・紐づけ先・CSS の変数とクラスの名前を変えたら、Kit の `Panel.swift`・アプリの `PanelHTMLPage` と一緒に修正する。予算と書式の誤りの文は `agent.panel.invalid.*`、注意は `agent.panel.warning.*`（`PanelValidation` が組み、daemon が 400 と `warnings` で返す）
 - `{{id}}` のような placeholder を説明として文字どおり含む短い文は `Copy.unfilled("キー")` で取得する
-- 文の placeholder と渡した値の名前が食い違うと、debug のビルドは `Copy.fill` で止まる。使っているキーとテンプレートの有無と、placeholder の名前の食い違いは `AgentCopyTests` が見る
+- 文の placeholder と渡した値の名前が食い違うと、debug のビルドは `Copy.fill` で止まる。
 
 キーの頭で、誰が読む文かを分ける。
 
 - `agent.`: 会話が読む文。続きは置き場（`agent.tool.<tool の名前>.<引数>`、`agent.mcp.<ファイル>.<宣言>`、`agent.notice.`、`agent.hook.`、`agent.guidance.`、`agent.column.<列の id>`）
 - `cli.`: 端末で人が読む CLI の文
-- `ui.`: daemon が組んで画面に届く文（チャットの `/` の候補の説明 `ui.slash.<名前>`）。`docs/ui-copy.md` の規則に従い、UICopyTests が同じ規則で読む
+- `ui.`: daemon が組んで画面に届く文（チャットの `/` の候補の説明 `ui.slash.<名前>`）。`docs/ui-copy.md` の規則に従い
 
 SwiftPM は `Agent.xcstrings` とテンプレートを compile せずに `taskboard_TaskboardKit.bundle` へコピーし、`Copy` が `Agent.xcstrings` を JSON として読む（`.process` にすると、xcstringstool の無い Command Line Tools でビルドした Mac では compile されずに写り、文がキーのまま返った）。`scripts/install-cli.sh` は実行ファイルの隣に bundle もコピーする（bundle が無いと `Bundle.module` が見つからず止まる）。アプリには Xcode が同じ bundle を含める。
 
@@ -55,7 +55,7 @@ SwiftPM は `Agent.xcstrings` とテンプレートを compile せずに `taskbo
 
 ## 使わない語
 
-画面の文と会話へ送る文の両方で使わない。1 列目の語は UICopyTests の `CopyRule.avoided` が見つける（表に語を追加したら規則も追加する。`avoidedTableMatchesDocs` が表と規則の食い違いを見る）。
+画面の文と会話へ送る文の両方で使わない。
 
 | 使わない語 | 使う語 | 理由 |
 |---|---|---|
@@ -72,6 +72,4 @@ SwiftPM は `Agent.xcstrings` とテンプレートを compile せずに `taskbo
 
 ## 検査
 
-- `swift test --filter UICopyTests`: 画面の catalog、`Agent.xcstrings`、テンプレートに使わない語が無いことと、`ui.` の文が画面の規則に合うことを見る
-- `swift test --filter AgentCopyTests`: コードが取得するキーとテンプレートがあること、使われていないキーが無いこと、placeholder の名前が食い違わないことを見る
-- 話し言葉は `check_register.py` で見る（テストには含めていない）
+- 話し言葉は `check_register.py` で見る

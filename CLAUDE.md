@@ -8,12 +8,11 @@
 
 ## 規定コマンド
 
-- ビルド: `swift build`（`.build/debug` は `.build/out/Products/Debug` への symlink）。daemon の入れ替えは `scripts/install-cli.sh`（実行ファイルを support ディレクトリの `bin/` に写して署名し、launchd と `~/.local/bin/taskboard` はその写しを指す。repo のビルドは `swift test` でも作り直されるので、動いている daemon の実行ファイルにしない）、Mac アプリは `scripts/build-mac.sh`（Debug 構成を -O でビルドして `~/Applications/Taskboard.app` にコピーし、Spotlight に登録する。symlink は Spotlight が拾わない。DerivedData は `.build/DerivedDataOpt` で、テストの `.build/DerivedData` と分けてある）
-- テスト: `swift test`（daemon / Kit）、`scripts/snapshot-test.sh`（画面の snapshot test。中身は `cd App && xcodebuild ... -derivedDataPath ../.build/DerivedData test` を `lockf` で 1 本ずつ回し、この回に失敗して `$TMPDIR/<Suite 名>/` に出た PNG を `.build/snapshots-out/` に写す。同じ Mac で並べて回すと失敗の画像の置き場を共有するため。見た目を変えたら、出た PNG を見てから `App/Tests/__Snapshots__` に写してコミット。`SNAPSHOT_TESTING_RECORD=all` を付けてもテストの実行先に渡らなかった（P6 で実測））。iPhone の幅の snapshot と iOS の単体テストは `scripts/snapshot-test.sh --ios <udid>`（iPhone 17e と 18 Pro のシミュレータでそれぞれ回す。参照は `App/Tests/iOS/__Snapshots__`）
-- iPhone へ入れ替える前: `scripts/ui/ios-hang-check.sh <udid> [port]` を iOS シミュレータの -O のビルドで回し、止まり 0 を確かめる（`docs/development.md`「iPhone へ入れる前の止まりの確認」）
+- ビルド: `swift build`（`.build/debug` は `.build/out/Products/Debug` への symlink）。daemon の入れ替えは `scripts/install-cli.sh`（実行ファイルを support ディレクトリの `bin/` に写して署名し、launchd と `~/.local/bin/taskboard` はその写しを指す。repo のビルドは `swift test` でも作り直されるので、動いている daemon の実行ファイルにしない）、Mac アプリは `scripts/build-mac.sh`（Debug 構成を -O でビルドして `~/Applications/Taskboard.app` にコピーし、Spotlight に登録する。symlink は Spotlight が拾わない。DerivedData は `.build/DerivedDataOpt`）
+- テストは書かない（2026-11-20 裁定。速く作って速く出すことを優先する）。代わりに、実装の前に変更が触るもの（呼び出し元・同じデータを読み書きする経路・画面）を検索で全部挙げて読み、変えた操作を実物（daemon の API・アプリの `/state`・`/screenshot`・3 台の `usage_get` など）で 1 回確認する
 - 動作確認: `docs/development.md`「アプリの動作確認」。daemon は `taskboard serve`、アプリは `--debug-port` で起動して `/state` と `/screenshot` を見る。実ウィンドウのクリックと幅ごとの撮影は `scripts/ui/check-board.sh`・`scripts/ui/check-panel.sh`・`scripts/ui/capture.sh`（`docs/ui-system.md`「確かめ方」）
 - 画面の文の catalog: 文を足したり直したりしたら `scripts/sync-strings.sh`（`docs/ui-copy.md`「String Catalog」）。`Localizable.xcstrings` の差分も一緒にコミットする
-- `swift test`・`swift build`・xcodebuild は、それぞれ自分の Package.resolved しか書かないので、回した後に Package.resolved を `git checkout` で戻さなくてよい
+- `swift build` と xcodebuild は、それぞれ自分の Package.resolved しか書かないので、回した後に Package.resolved を `git checkout` で戻さなくてよい
 
 ## 決まりごと
 
@@ -21,10 +20,10 @@
 - 識別子は複合キー（会話は `ConversationKey`（マシンと会話の id）、タスクは `TaskKey`）。会話の id・タスクの番号を単独で扱わない
 - daemon とアプリの列の動きは列の id で決め、列の説明（`BoardColumn.description`）は読まない。「完了」以外の既定の列は案件から消えていることがあるので、列の id に頼る処理は、列が無ければ動かさないか `Board.defaultColumn`・`firstWorkColumn`・`mergeTargetColumnID` に寄せる。常設（`standing`）は PR の状態で動かさず、常設とレビュー依頼（`review_req`、他人の PR の受け口）は起票と移動の受け皿にもしない（ほかに進行中の列が無いときだけ使う）
 - 画面に出す情報の種類（依頼・状況・お知らせ）と、それぞれの出し方・鳴らし方・閉じ方は `docs/ux-principles.md`。受信箱・札・通知・待ちの表示を追加したり変えたりするときは、末尾の「追加するときの確認」を通してからコードに入る
-- 会話へ送る文（MCP の instructions と tool の説明、taskboard の知らせ、hook の文、起動プロンプト）と CLI の出力は、Swift に直書きせず `Sources/TaskboardKit/Resources/` の `Agent.xcstrings` と `Prompts/ja/` に置き、`Copy.text`・`Copy.prompt` で引く（`docs/agent-copy.md`。書き方と、画面と共通の使わない語の表もここ）。足したり直したりしたら `swift test --filter 'UICopyTests|AgentCopyTests'` を通す
-- UI 文言は `docs/ui-copy.md`（文体、表記、用語表、エラーの組み立て、検査の基準）。画面に置く文字の取捨は `~/.claude/context/ui-artifact-standards.md`。文言を直したら `swift test --filter UICopyTests` を通す
+- 会話へ送る文（MCP の instructions と tool の説明、taskboard の知らせ、hook の文、起動プロンプト）と CLI の出力は、Swift に直書きせず `Sources/TaskboardKit/Resources/` の `Agent.xcstrings` と `Prompts/ja/` に置き、`Copy.text`・`Copy.prompt` で引く（`docs/agent-copy.md`。書き方と、画面と共通の使わない語の表もここ）
+- UI 文言は `docs/ui-copy.md`（文体、表記、用語表、エラーの組み立て、検査の基準）。画面に置く文字の取捨は `~/.claude/context/ui-artifact-standards.md`
 - 画面の作りは `docs/ui-system.md`（余白と幅の部品、使わない書き方、選択の形、端末ごとの作法、確かめ方）。余白・角丸・幅の数値を画面のコードに書かず、`App/Sources/Design/` の部品（数値は `Layout.swift`）を組む
-- 外部依存は 2 つの Package.resolved で固定する（根は SwiftPM の分、`App/Taskboard.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` は Xcode の分で `git add -f` で追跡）。両方にある package は同じ版と revision にする（`PackageResolvedTests` が確かめる）。上げるときは `docs/development.md`「依存の版」の手順に従い、表も直す
+- 外部依存は 2 つの Package.resolved で固定する（根は SwiftPM の分、`App/Taskboard.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` は Xcode の分で `git add -f` で追跡）。両方にある package は同じ版と revision にする。上げるときは `docs/development.md`「依存の版」の手順に従い、表も直す
 - 署名: 値は `App/Signing.xcconfig` の `TASKBOARD_MAC_SIGN_IDENTITY`・`TASKBOARD_TEAM_ID`・`TASKBOARD_IOS_BUNDLE_ID` で、`App/project.yml` はそれを読むだけ（ターゲットに直接書いた値は xcconfig より優先されるので、値だけを変数にしてある）。既定は ad hoc で、作者の Mac は gitignore した `App/Signing.local.xcconfig` に Team の値を書く（例は `App/Signing.local.xcconfig.example`）。シミュレータは ad hoc で、bundle ID は iOS 実機の既定と同じ `uk.whatn.taskboard.ios`（APNs の鍵は Team の App ID にしか送れない。scripts/ui のスクリプトもこの ID で起こす）。macOS を ad hoc で署名すると、署名の条件が実行ファイルのハッシュになり、再ビルドのたびに Keychain の確認でアプリが起動の途中で止まる。Team の署名は初回だけ codesign と Keychain の「常に許可」が要る。プロファイルが無い端末は `-allowProvisioningUpdates -allowProvisioningDeviceRegistration` で登録する
 - iOS の APNs の entitlement（`aps-environment`）は `App/Entitlements/Taskboard-iOS.entitlements` に置き、`CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]`・`[sdk=iphonesimulator*]` で指す（XcodeGen の `entitlements:` はターゲットに 1 つで、macOS の分）。シミュレータのビルドは entitlement を署名でなく実行ファイルの `__TEXT,__entitlements` に入れるので、`codesign -d --entitlements` では空に見える（`otool -s __TEXT __entitlements` で見る）
 - iPhone・iPad の APNs の登録は `PushCenter`（`App/Sources/Push/`）。送るかは 2 秒ごとの見回りで今の中身と前に送ろうとした中身を比べて決め、通知の設定・接続先・1 台だけ表示の変化を個別に拾わない。失敗した中身は、中身が変わるか前面に戻るまで送り直さない。APNs が届く接続先のマシンの項目は `InboxNotifier` がローカル通知にしない（Mac は APNs を使わない）

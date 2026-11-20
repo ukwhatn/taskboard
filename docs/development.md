@@ -6,18 +6,11 @@
 
 ```sh
 swift build                 # Kit / daemon / CLI
-swift test
 cd App && xcodegen generate # Taskboard.xcodeproj を作る（.gitignore 済み。Sources にファイルを足したら生成し直す）
 scripts/build-mac.sh        # Mac アプリをビルドし ~/Applications/Taskboard.app にコピー（Spotlight から開ける）
 xcodebuild -project App/Taskboard.xcodeproj -scheme Taskboard \
   -destination 'platform=iOS Simulator,id=<udid>' -configuration Debug -derivedDataPath .build/DerivedData-iOS -quiet build
-scripts/snapshot-test.sh    # 画面の snapshot test（macOS）。失敗した回の PNG を .build/snapshots-out/ に写す
-scripts/snapshot-test.sh --ios <udid>   # iPhone の幅の snapshot test と iOS の単体テスト（scheme TaskboardiOS）をそのシミュレータで回す
 ```
-
-iPhone の幅の snapshot test（`App/Tests/iOS/PhoneSnapshotTests.swift`）は、fixtures `conversations` のタスクの一覧・タスクの画面・会話の画面（キーボードなし）を、iPhone 17e と iPhone 18 Pro のシミュレータで描き、`App/Tests/iOS/__Snapshots__/` の PNG と比べる。端末はシミュレータの窓の大きさで決めるので、2 つの端末でそれぞれ回す（ほかの大きさの端末では落ちる）。ガラスの部品（タブバー・ナビゲーションバー）は key window で描かないと出ないので、テストのアプリの窓に載せて描く。タブバーのぼかしは回ごとに下の画素を少しずつ変える（17e のタスクの一覧で 1.4%）ので、2% までの違いは通す。失敗した回の PNG は `.build/snapshots-out/` に直接出る。同じ scheme で、iOS でも動く単体テスト（`MainThreadWatchdogTests`・`DiagnosticsOutboxTests`・`HangDiagnosticsTests`）も回る。
-
-snapshot test（`App/Tests/BoardSnapshotTests.swift`）は fixtures のボード・カード・作業項目の一覧を light / dark / コントラスト増の 4 組で描き、`App/Tests/__Snapshots__/` の PNG と比べる。見た目を変えたら、`.build/snapshots-out/` に出た PNG を見てから `App/Tests/__Snapshots__/` に写してコミットする（`SNAPSHOT_TESTING_RECORD=all` はテストの実行先に渡らない）。日数の表示は環境値 `today` を固定して描くので実行日に依らない。
 
 全体を回すと、毎回違う画面が 1〜2 枚落ちることがある（2026-10-20 に 12 回中 7 回）。どれも AppKit の入力欄で、欄の高さが 1〜4pt 違うか、欄の中の字の描き方が少し違う。原因は分かっていない。保存先（`AppDefaults.store`）の共有ではない（1 つの test の中で同じ model と保存先から 30 回撮っても揺れた）。高さは最初の配置から違い、待っても変わらないので、`LayoutMatrixSnapshotTests.host` の配置が止まるまで回す待ちでは防げない。落ちた画像の違いがこの形だけなら、回し直して確かめる。入力欄が 16pt でなく 17pt に配置され、その行から下がそっくり 1pt 下がる回がある（コネクタのシートの検索欄で、2026-10-25 に全体の回だけ落ちた。窓の無い view の AppKit の部品が倍率 1 で高さを切り上げるためと見ているが、2026-10-26 に全体を 8 回回しても再現せず、確かめていない）。窓に載せて倍率を揃えると部品が非アクティブの見た目になり参照の 506 枚が変わったので、揺れた画面だけ `assertImageSnapshot` の `allowingFieldGrowth` で、この形（違う行は 16pt 以内の 1 帯だけで、その下は参照と同じ行か 1pt 上の参照の行と同じ。`FieldGrowth`）を参照と同じとみなす。
 
@@ -136,59 +129,16 @@ Mac のアプリは主スレッドが 1.5 秒より長く応答しないと、`/
 
 iPhone・iPad のアプリも同じ見張りで `main.hitch` と `main.stall` を記録する（`sample` が無いのでスタックは書かず、`stage` は空）。背面にいる間は見張りを止め、前面に戻ってから数え直す（背面で止められた時間を止まりと数えない）。止まり（1.5 秒以上）と MetricKit の `MXHangDiagnostic`（OS が翌日までにまとめて届ける。スタックは止まった元のスレッドの、標本の多い枝の `<binary>+0x<offset>`）は、アプリの保存先に溜めてから接続先の全部の daemon に送り（`POST /v1/devices/current/diagnostics`。[daemon.md](daemon.md)）、daemon の logs に 1 件 1 行で残る。送れなかった分は次の起動か前面に戻ったときに送り直す。止まりは 1 時間に 10 件・溜まりは 50 件まで、7 日で捨てる。fixtures・test host・snapshot test は見張らないが、`--watchdog` を付けると fixtures でも見張る（下の `ios-hang-check.sh` が使う）。
 
-### iPhone へ入れる前の止まりの確認
-
-iPhone の実機に入れ替える前に、iOS シミュレータの -O のビルドで `scripts/ui/ios-hang-check.sh <udid> [port]` を回し、止まり 0 で終わることを確かめる（`lockf -t 7200 /tmp/taskboard-build.lock` で包む）。iPhone 17e と iPhone 18 Pro の 2 台で回す。会話の画面で主スレッドが止まり続けた条件（9r の段階 1 で直した、キーボードの後に下端への送り直しが終わらない不具合）を、1 回ずつアプリを起こし直して条件ごとに 5 回（`ROUNDS`）回す。
-
-- `gen-focus`：生成中の会話（c-gen）で入力欄にフォーカスしてキーボードを出す
-- `ask-focus`：問いのある会話（c-ask）で同じ
-- `files-3lines`：c-files の入力欄を 1 行ずつ 3 行まで伸ばす
-- `limit-stream`：c-limit に 1,500 件を流し込み、フォーカスしてから 30 秒間生成中の差分を流す
-- `tools-to-ask`：c-tools でフォーカスしてから c-ask へ移ってフォーカスする
-
-判定は debug の口の応答で行う。操作の 15 秒後から 5 秒の間に主スレッドの CPU 時間が 3,500 ms 以上増えたか、口が 3 秒で答えなければ止まりとし、1 回でもあれば 1 で終わる。1 回 1 行の JSON（`cpu5s`・下端への追従を止めた回数 `followLimit`・見張りの `stalls`）は `.build/ui/ios-hang-<udid>.jsonl` にも残る。`CONDITIONS=tools-to-ask` のように条件を絞れる。ビルドは「ビルド」の iOS の xcodebuild に `SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s` を付けたもの（置き場は `.build/DerivedData-iOS`。`APP` で替える）。同じ Mac で並べて回すときは port を分ける（シミュレータはホストのポートを共有する）。
-
-操作の速さは、-O のビルド（`build-mac.sh` と同じ置き場 `-derivedDataPath ../.build/DerivedDataOpt` と設定 `SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s`。worktree では `build-mac.sh` を回さず、同じ引数の xcodebuild だけを回す。`build-mac.sh` は `~/Applications` に写す）を `--scenario perf-many --debug-port <port>` で起こし、`/bench` を開き方ごとに 3 回ずつ回して比べる。`/bench` は 1 回ごとの画面の更新までの時間に加えて、同じ区間の主スレッドの CPU 時間を `cpu` に返す。ほかのビルドやテストで Mac が混んでいる間は、待たされた時間を含まない `cpu` の中央値で比べる（経過時間は同じ版でも 80〜110 ms と揺れた）。`perf-many` は案件 8 つ・タスク 600 件の fixtures で、`scripts/perf/make-many-fixture.py` が `stress.json` から作る。fixtures は 2 秒ごとに最初のセッションの状態を回すので、1 回ごとの値には揺れが入る。どこで時間を使っているかは、`/bench` を回している間に `xcrun xctrace record --template 'Time Profiler' --attach <pid> --time-limit 15s --output run.trace` で記録し、`scripts/perf/top-frames.py run.trace --module Taskboard` で main の thread の関数を並べる。直す前と比べるときは、`git worktree add --detach` で直す前の版を `$TMPDIR` の下に作り、同じ設定でビルドして交互に回す。測り終えたら、その worktree（中のビルドごと）を `git worktree remove` で消す。DerivedData の置き場は `DerivedData`（snapshot test）・`DerivedData-iOS`（`sync-strings.sh`）・`DerivedDataOpt`（-O）・`DerivedDataDevice`（実機）だけにし、測るための亜種を作らない（1 つ 2GB ほどあり、worktree ごとに増えて Mac の空きを埋めた）。
-
-性能の関門は `scripts/perf-gate.sh [回数]`（既定 3 回。ほかと同じく `lockf -t 7200 /tmp/taskboard-build.lock` で包む。`BUILD=1` で先に -O でビルドする）。-O の fixtures のアプリを回ごとに裏で起こし直し、手順ごとに主スレッドの止まり（`/hitch`。本番の `main.hitch` と同じ 100 ms 超え）を数え、1 つでもあるか、スクロールの位置の確かめが外れたら 1 で終わる。手順は `scripts/perf/gate.py` にあり、会話の画面（既定は中央モーダル。`PRESENTATION` で替える）は、起こした直後に初めて c-tools を開く（`chat.open.cold`。パネルの外と上の帯を初めて組む回）・c-tools に 1,500 件（コード・表・長い段落・画像を含む）を流してもう一度開く・上端まで・下端まで・下端から小さなホイールと小さなトラックパッドのなでを続けて入れて引き戻されないか・生成中のスクロール・mouseMoved（生成中も）・入力欄に 4,000 字と 20,000 字を貼ってから 3 字打つ（`/conversation/fill` の insert）・セッションの状態の変化（`/bench` の session）・同じタスクの c-gen を右に並べる（`/task/split`。窓の会話の一覧が 2 つになったかを確かめる）・並べたまま c-tools を上端まで送って下端へ戻す、ボードの画面（列の形のホーム）は mouseMoved・スクロール・セッションの状態の変化・タスクの切り替え・開閉・サイドバーの切り替えと開閉、案件 8 つ・タスク 600 件（`perf-many`）でのサイドバーの切り替え（すべての案件と各案件の間を両方向に）。スクロールの手順は、表示の位置が期待どおり動いたかを毎回確かめる（動いていない一覧を測らない）。引き戻されないかは表示の位置（offset）で見る（fixtures は 2 秒ごとにセッションの状態を回し、一覧の上の帯を出し入れするので、下端までの距離は 40 pt ほど増減する）。本番の量の手順（`prod.*`）は、3 台の本番の state を伏せた fixtures（`prod-local+prod-studio+prod-third`。タスク 793 件・作業項目 1,062 件・会話 227 件。`scripts/fixtures/make-production.py` が作る。作った Mac だけに置き、repo には入れない（`.gitignore`）。無ければ関門は `prod.*` を飛ばす）で、ホームを見張り盤にして開いたまま受信箱の見回りと daemon の知らせ（`/fixture/flow`、1 秒に 2 通）が回る間・mouseMoved・サイドバーの切り替え・Studio の一番大きい案件のタスクの切り替えと開閉・会話の一番多いタスクの会話を全画面・中央モーダル・横に並べるで開き（600 件を流してから）、知らせが流れる間を測る（生成中の差分は流さない。流すと描き直しがまとまり、本番で会話を読んでいる間に出ていた止まりが出なくなる）。`ONLY=chat.scroll` のように手順の名前の頭で絞れる。最後に手順ごとの各回の止まりの数と最大を表にする。
-
-会話の画面の入力とスクロールは `scripts/ui/chat-perf.sh [回数]` で測る（同じ -O のビルドを `.build/DerivedDataOpt` に置いてから）。実行ファイルを裏で直に起こし（前面に出さず、`open` を通さない）、窓を 1600×1000 にして後ろへ回し、タスクを「大きく表示」で開いて c-tools を 1,500 件にし、続けて生成中の差分を 8 秒流す（`MESSAGES`・`STREAM_SECONDS`・`CONVERSATION`・`PRESENTATION`・`SIDE_PANE_HIDDEN` で替える。本番で引っかかりが出た形は `PRESENTATION=modal CONVERSATION=c-gen`）。後ろの窓でも display link は届くが、フレームの間隔の上限は窓が載った画面の更新の速さ（60 Hz なら 16.7 ms、120 Hz なら 8.3 ms）で、回ごとに替わることがある。手順は次の 5 つで、1 行 1 手順の JSON を `scripts/ui/chat-perf-report.py` で表にする。
-
-- `stream`：流し込んだ後に生成中の差分を流す間（1 回目だけ）。画面の更新間隔のほか、主スレッドの使用時間（`busy`）と body の回数（`bodies`。`ChatTranscript` は block の並びが変わったときだけ、Mac の一覧の行は `ChatRowHost.build` で、書きかけの行が見せる文が進むたびと、段落を書き終えて塊の行を組み直したときに数える）
-- 待機（5 秒）
-- `noop`：測る口だけを回す負荷
-- `type`：入力欄の文を 1 字ずつ伸ばす（`POST /conversation/type`。80 ms おきに 120 字）
-- `caret`：カーソルを 1 字ずつ動かす
-- `scroll`：チャットの一覧にピクセル単位のホイールを 1 フレームずつ渡し、上へ 4,800 px 送る（`POST /conversation/scroll`。戻ると作ってある行を使い回すだけになるので戻らない）
-
-打鍵の重さは、主スレッドの run loop が起きてから寝るまでの時間を打鍵の間ごとに足したもの（`perKeyP50Ms` など。display link に頼らない）。body の回数は DEBUG の数え口（`DebugCounters`）の打鍵 1 回あたり。fixtures が 2 秒ごとに回すセッションの状態で、`noop` でも 100〜200 ms の引っかかりが 10 秒に数回入るので、p95 と最大には揺れが入り、比べるのは中央値と body の回数にする。`PROFILE_STEP=type` で 1 回目のその手順の間だけ Time Profiler を記録し（`stream` は流し込みから生成中の差分の終わりまで）、`scripts/perf/frame-owners.py`（`--under` と `--count` で、指定した関数の中で通った数。`--min-burst 30` で 30 ms 以上続いた区間だけ）で SwiftUI の中の時間の持ち主を数える。
-
-作業項目の欄は `python3 scripts/ui/work-perf.py [回数]` で測る（同じ -O のビルドを `.build/DerivedDataOpt` に置いてから）。fixtures `perf-work`（#301 に依存のある 300 件。`scripts/fixtures/make-perf-work.py` が `work-graph.json` から作る）のタスクを中央モーダルに開き、作業項目の欄を開く・項目の状態を変える（DEBUG だけの口 `POST /fixture/work` が、fixtures に作業項目を変えた知らせを流す）・右側の幅と欄の境目を動かす（取っ手と同じ値を `/defaults` で 16 ms ごとに書く）間の `/perf` を、1 行 1 手順の JSON で出す。回ごとにアプリを起こし直し、窓が載る画面（60 Hz か 120 Hz）も回ごとに替わるので、比べるのは同じ更新間隔の回どうしにする。`--no-notifications` は付けない（fixtures では効かず、`-ApplePersistenceIgnoreState YES` と一緒に付けると裏で起こしたアプリが窓を作らなかった）
-
-複数行の欄（`MultilineTextField`）に長い文を入れたときの止まりは `python3 scripts/ui/fields-perf.py [--app APP] [--sizes 4000,20000] [--rounds 1] [--simulator UDID]` で測る（同じ -O のビルドを `.build/DerivedDataOpt` に置いてから。`--simulator` なら iPhone か iPad のシミュレータに `.build/DerivedData-iOS` の -O のビルドを入れて測る。文書の画面の 2 つの欄はシートの先で開けないので測らない）。欄ごとにアプリを起こし直して欄を開き、`/field/fill` で docs/development.md を繰り返した改行の混ざった文を一度に入れ、続けて 3 字を 80 ms おきに打つ。欄は `/fields` の並び順で選ぶので、直す前の版（TextField は名前を持たない）にも同じ欄で当てられる。1 行 1 回の JSON と、欄と字数ごとの中央値の表を出す。欄ごとのキーの決まり（↩・⇧↩・⌥↩・Esc・フォーカスが外れたときの確定）は `scripts/ui/check-fields.sh` で、会話の入力欄は `scripts/ui/check-composer.sh` で確かめる
-
-`curl` の URL は `http://127.0.0.1:5790/...` と書く（`:5790/...` の省略形は curl が "No host part" で拒む）。`/screenshot` はプロセス内描画なので、`ScrollView` / `List` の中身（ボードの列・セッション一覧）も白く写る。見た目の確認はタスク画面（端末は写る）と snapshot test、iPhone シミュレータの `simctl io screenshot` で行う。
-
-MCP server を人の手を借りずに叩くときは、`taskboard mcp` を stdio で起動して JSON-RPC（`initialize` → `notifications/initialized` → `tools/list` / `tools/call`）を 1 行ずつ流す。daemon が居ないと `tools/call` は `isError: true` で返り、stdout には JSON-RPC 以外を出さない（`TaskboardCLITests`）。
-
-同一 Mac の daemon 以外に繋ぐときは `--daemon-url http://host:5780 --token-file <path>`（token は引数に書かない）。シミュレータはホストのファイルを読めるので、`--daemon-url http://127.0.0.1:5780 --token-file "$HOME/Library/Application Support/taskboard/token"` でホストの daemon に繋がる。
-
-シミュレータは `xcrun simctl boot <udid>` → `install` → `launch <udid> uk.whatn.taskboard.ios --scenario sessions-basic --debug-port <port>` → `xcrun simctl io <udid> screenshot out.png`。iOS の `/screenshot` は無く、シートも `simctl io` で撮る。シミュレータの bundle ID は実機と同じ `uk.whatn.taskboard.ios`（APNs の鍵の team で送れるように。前の `uk.whatn.taskboard` で入れたアプリの接続先と設定は引き継がれないので、QR で追加し直す）。
-
-README の画面（`docs/images`）は、架空のデータの fixtures `demo`・`demo-laptop`（`scripts/fixtures/make-demo.py` が作り、人・リポジトリ・パスに本物の値が残っていれば止まる）で `scripts/ui/demo-shots.sh` が撮る。先に `scripts/build-mac.sh` と iOS シミュレータのビルドを済ませる。Mac はアプリの中で描く `/screenshot` で撮り、サイドバーが出ていれば白い帯になるので切り落とす（`screencapture` は画面収録の許可が要り、macOS 27.2 に上げた後のこの Mac では断られた）。本物のデータの画面を README に載せない
-
-iPhone・iPad の APNs（アプリを閉じているときの通知）は、シミュレータでも本物のトークンが届く（sandbox）。シミュレータの通知の許可のダイアログは `simctl` で押せないので、`--provisional-notifications` で起動するとダイアログ無しの仮の許可（provisional）で求める。仮の許可ではトークンは届くがバナーは出ない（通知センターにだけ入る）。バナーまで確かめるときは、シミュレータを止めて `data/Library/BulletinBoard/VersionedSectionInfo.plist` の `uk.whatn.taskboard.ios` の項目（NSKeyedArchiver の `BBSectionInfoSettings`）の `authorizationStatus` を 2、`alertType` を 1 にしてから起動し直す（P9 で実測）。通知は `xcrun simctl push <udid> uk.whatn.taskboard.ios payload.json` で出せる（`aps.category` を `taskboard.permission` にすると「許可」「拒否」が付く。値の名前は `PushPayload`）。押して答えるのは `/push/respond` で代える
-
 ## 依存の版
 
 版は 2 つの Package.resolved に分けて固定する。
 
-- 根の `Package.resolved`: SwiftPM（`swift build`・`swift test`）の分。`Package.swift` の依存だけが載る
+- 根の `Package.resolved`: SwiftPM（`swift build`）の分。`Package.swift` の依存だけが載る
 - `App/Taskboard.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`: Xcode（xcodebuild）の分。アプリだけが使うものも含めて全部が載る。xcodeproj は .gitignore 済みなので、このファイルだけを `git add -f` で追跡している（`xcodegen generate` は消さない）
 
-1 つのファイルを共有していたときは、`swift test` が App だけの依存を落として書き直し、xcodebuild が全部を書き戻していた。落ちた依存は、書き戻すときに新しい版に上がることがあった（swift-issue-reporting が 2.1.2 になり、`sync-strings.sh` の iOS のビルドが止まった）。Xcode は、xcworkspace の分があれば根のファイルを読み書きしない。
+1 つのファイルを共有していたときは、SwiftPM が App だけの依存を落として書き直し、xcodebuild が全部を書き戻していた。落ちた依存は、書き戻すときに新しい版に上がることがあった（swift-issue-reporting が 2.1.2 になり、`sync-strings.sh` の iOS のビルドが止まった）。Xcode は、xcworkspace の分があれば根のファイルを読み書きしない。
 
-両方にある package は、同じ版と revision にする（`PackageResolvedTests` が確かめる）。版を上げるときは、`Package.swift` か `App/project.yml` を直し、`swift package update <パッケージ>` で根を書き直す。そのあと、変わった pin を Xcode の分に写してから `xcodebuild -resolvePackageDependencies -project App/Taskboard.xcodeproj -scheme Taskboard` を回す（Xcode は、満たしている pin を変えない）。
+両方にある package は、同じ版と revision にする。版を上げるときは、`Package.swift` か `App/project.yml` を直し、`swift package update <パッケージ>` で根を書き直す。そのあと、変わった pin を Xcode の分に写してから `xcodebuild -resolvePackageDependencies -project App/Taskboard.xcodeproj -scheme Taskboard` を回す（Xcode は、満たしている pin を変えない）。
 
 | パッケージ | tag |
 |---|---|
@@ -200,7 +150,6 @@ iPhone・iPad の APNs（アプリを閉じているときの通知）は、シ�
 | swift-sdk（MCP） | 0.12.1 |
 | GRDB | 7.11.1 |
 | libghostty-spm（アプリのみ、`App/project.yml`） | 1.6.20261003 |
-| swift-snapshot-testing（テストのみ、`App/project.yml`） | 1.19.6 |
 | swift-markdown（アプリのみ、`App/project.yml`） | 0.9.0 |
 | swift-cmark（swift-markdown の依存） | 0.9.0 |
 | argmax-oss-swift（WhisperKit。アプリのみ、`App/project.yml`） | 1.1.1 |

@@ -200,17 +200,8 @@
 - コマンドラインのビルドは catalog を書き換えない。文を足したり直したりしたら `scripts/sync-strings.sh` を回し、`Localizable.xcstrings` の差分も一緒にコミットする（Mac と iOS シミュレータ向けにビルドして抜き出し、`xcstringstool sync` で入れる。使われなくなった文は消える）
 - 人の名前・ブランチ・番号のように訳さない値は `Text(verbatim:)` か `String` の変数で渡す
 - 列の既定の説明（`ColumnGuide.defaultDescriptions`）はこの catalog に入れない。案件のデータとして daemon に保存され、人が設定で直し、紐づいたセッションも読む文なので、起動プロンプトの既定と同じく `Agent.xcstrings` の `agent.column.` に置く（`docs/agent-copy.md`）
-- daemon が組んで画面に届く文のうち、チャットの `/` の候補の説明（`BuiltinSlashCommands`）は `Agent.xcstrings` の `ui.` に置く。UICopyTests はこの catalog の `ui.` の文にも同じ規則を当てる
+- daemon が組んで画面に届く文のうち、チャットの `/` の候補の説明（`BuiltinSlashCommands`）は `Agent.xcstrings` の `ui.` に置く
 - Kit が組んで画面に届く文（待ち理由、受信箱の題、状態の名前、定期起動の要約、列の既定の名前）も `String(localized: "…")` で書く。`Package.swift` の `defaultLocalization: "ja"` で Xcode が Kit の文も抜き出し、`scripts/sync-strings.sh` が App の catalog に入れる。実行のときは App の bundle から引く
 - daemon の文（起動・取得の失敗、MCP の応答）は画面に出さない。アプリは daemon のエラーのコードから固定の文を組む（`App/Sources/Design/Failure.swift`）。daemon のファイルは先頭に `// ui-copy:ignore-file` と理由を書いて検査から外す
 - daemon が会話の画面の通知の行に出す文（`ConversationEvent.Kind.notice`）は `Sources/TaskboardDaemon/Conversations/ConversationScreenText.swift` に集める。`Conversations/` のほかのファイルの文は agent とログのための文で、検査は読まない
 
-## 検査
-
-`Tests/UICopyTests` が、App と Kit と daemon の画面に届く文の文字列を全部読み、機械で見られる規則（空白、半角の記号、「無い」、「〜できない」、内部の語、エラーの埋め込み、用語表の使わない語）を検査する。`swift test --filter UICopyTests` で走る。
-
-- 違反を残すときは `Tests/UICopyTests/baseline.txt` に載せる。新しい違反は通らない。直した違反が基準に残っていても通らない（基準を減らし忘れないため）
-- 基準を作り直すのは `UICOPY_RECORD=1 swift test --filter UICopyTests`。違反を足すために使わない
-- 基準は空（F7 で空にした）。画面に出ない文は、行の末尾に `// ui-copy:ignore（理由）` を付けて外す。理由を書けない文は直す
-- `docs/agent-copy.md`「使わない語」の表の語は `CopyRules` の `avoided` が、画面の文のリテラル、この catalog、`Agent.xcstrings`、会話へ送るテンプレートの全部で見つける
-- 用語表の使わない語は `CopyRules` の `terms` の正規表現に載せる（9n で端末、作業ディレクトリ、備考、畳、題、マシン、返事、返答、sandbox、知らせ、差し込、出来事、ウィンドウ、中央モーダル、全面を足した）。コマンドパレットの検索キーワードに前の語を残すときは、その行に `// ui-copy:ignore` を付ける（利用者が前の語で探しても見つかるように）

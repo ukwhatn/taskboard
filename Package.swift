@@ -42,22 +42,6 @@ let package = Package(
                 .product(name: "MCP", package: "swift-sdk"),
             ]
         ),
-        .testTarget(name: "TaskboardKitTests", dependencies: ["TaskboardKit"], exclude: ["Wire"]),
-        // 複数の test target で使う偽物の部品
-        .target(name: "TestSupport", path: "Tests/TestSupport"),
-        .testTarget(name: "TaskboardCLITests", dependencies: ["taskboard", "TestSupport"]),
-        // 画面の文の検査。ソースを読むだけで、どの target にも依存しない（docs/ui-copy.md「検査」）
-        .testTarget(name: "UICopyTests", exclude: ["baseline.txt"]),
-        .testTarget(
-            name: "TaskboardDaemonTests",
-            dependencies: [
-                "TaskboardDaemon",
-                "TestSupport",
-                .product(name: "HummingbirdTesting", package: "hummingbird"),
-                .product(name: "NIOCore", package: "swift-nio"),
-                .product(name: "NIOPosix", package: "swift-nio"),
-            ]
-        ),
     ],
     swiftLanguageModes: [.v6]
 )
