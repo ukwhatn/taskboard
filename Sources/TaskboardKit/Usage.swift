@@ -227,16 +227,19 @@ public struct UsageSnapshot: Codable, Hashable, Sendable {
     public var claudeAccounts: [ClaudeAccount]?
     /// 割り当ての無い会話を起こすアカウント（`claude-accounts.json` の `default`）。nil ならマシンのログインも起こす候補に入る
     public var claudeDefaultAccount: String?
+    /// 7 日の枠を、アカウントを切り替えながら今の速さで使い続けたときの見込み（daemon が 5 分ごとに求める）
+    public var claudeForecast: UsageForecast.Result?
     public var codex: CodexUsage?
     public var contexts: [SessionContext]
 
     public init(
-        claude: ClaudeUsage? = nil, claudeAccounts: [ClaudeAccount]? = nil, claudeDefaultAccount: String? = nil, codex: CodexUsage? = nil,
-        contexts: [SessionContext] = []
+        claude: ClaudeUsage? = nil, claudeAccounts: [ClaudeAccount]? = nil, claudeDefaultAccount: String? = nil, claudeForecast: UsageForecast.Result? = nil,
+        codex: CodexUsage? = nil, contexts: [SessionContext] = []
     ) {
         self.claude = claude
         self.claudeAccounts = claudeAccounts
         self.claudeDefaultAccount = claudeDefaultAccount
+        self.claudeForecast = claudeForecast
         self.codex = codex
         self.contexts = contexts
     }

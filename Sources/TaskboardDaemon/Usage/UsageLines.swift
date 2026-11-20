@@ -99,9 +99,10 @@ struct UsageBatch {
     var events: [Event] = []
     var sessions: [Session] = []
     var samples: [UsageHistory.Sample] = []
+    var accountSamples: [UsageAccountSample] = []
     var cursors: [String: UsageCursor] = [:]
 
-    var isEmpty: Bool { tokens.isEmpty && events.isEmpty && sessions.isEmpty && samples.isEmpty && cursors.isEmpty }
+    var isEmpty: Bool { tokens.isEmpty && events.isEmpty && sessions.isEmpty && samples.isEmpty && accountSamples.isEmpty && cursors.isEmpty }
 }
 
 /// transcript の 1 行の読み方。行を JSON に開く前にバイト列で絞る（大きな行は開かない。Claude Code の api-request-blob は 1 行が数 MB ある）

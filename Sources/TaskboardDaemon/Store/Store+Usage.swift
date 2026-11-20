@@ -70,6 +70,33 @@ extension Store {
         }
     }
 
+    /// アカウントごとの利用枠の観測（`UsageAccountSample`）。予測の消費の速さをここから求める。観測した時刻が鍵なので、同じ観測は 1 行になる
+    static func registerUsageAccountSampleMigration(_ migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v50 usage account samples") { db in
+            try db.create(table: "usageAccountSample") { t in
+                t.column("account", .text).notNull()
+                t.column("at", .integer).notNull()
+                t.column("fiveHour", .double)
+                t.column("sevenDay", .double)
+                t.column("sevenDayResetsAt", .integer)
+                t.primaryKey(["account", "at"])
+            }
+        }
+    }
+
+    /// `since` 以降の観測を、アカウントと時刻の順に返す
+    public func usageAccountSamples(since: Date) throws -> [UsageAccountSample] {
+        try database.read { db in
+            try Row.fetchAll(
+                db, sql: "SELECT * FROM usageAccountSample WHERE at >= ? ORDER BY account, at", arguments: [Int64(since.timeIntervalSince1970)]
+            ).map { row in
+                UsageAccountSample(
+                    account: row["account"], at: Date(timeIntervalSince1970: TimeInterval(row["at"] as Int64)), fiveHour: row["fiveHour"], sevenDay: row["sevenDay"],
+                    sevenDayResetsAt: (row["sevenDayResetsAt"] as Int64?).map { Date(timeIntervalSince1970: TimeInterval($0)) })
+            }
+        }
+    }
+
     /// transcript ごとの読んだ位置の全部（パスが鍵）
     func usageCursors() throws -> [String: UsageCursor] {
         try database.read { db in
@@ -137,6 +164,14 @@ extension Store {
                         sample.codexSecondaryWindow, sample.codexMonthly, sample.claudeActive, sample.codexActive,
                     ])
             }
+            for sample in batch.accountSamples {
+                try db.execute(
+                    sql: "INSERT OR IGNORE INTO usageAccountSample (account, at, fiveHour, sevenDay, sevenDayResetsAt) VALUES (?, ?, ?, ?, ?)",
+                    arguments: [
+                        sample.account, Int64(sample.at.timeIntervalSince1970), sample.fiveHour, sample.sevenDay,
+                        sample.sevenDayResetsAt.map { Int64($0.timeIntervalSince1970) },
+                    ])
+            }
             for (path, cursor) in batch.cursors {
                 try db.execute(
                     sql: """
@@ -157,6 +192,7 @@ extension Store {
         let cutoff = Int64(date.timeIntervalSince1970)
         try database.write { db in
             try db.execute(sql: "DELETE FROM usageSample WHERE at < ?", arguments: [cutoff])
+            try db.execute(sql: "DELETE FROM usageAccountSample WHERE at < ?", arguments: [cutoff])
             try db.execute(sql: "DELETE FROM usageToken WHERE hour < ?", arguments: [cutoff])
             try db.execute(sql: "DELETE FROM usageEvent WHERE at < ?", arguments: [cutoff])
             try db.execute(sql: "DELETE FROM usageSession WHERE COALESCE(lastAt, 0) < ?", arguments: [cutoff])

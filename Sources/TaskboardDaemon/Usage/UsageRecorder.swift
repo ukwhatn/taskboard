@@ -96,8 +96,12 @@ actor UsageRecorder {
                 cursors?[path] = cursor
             }
         }
-        let batch = makeBatch(observations, cursors: changed, usage: await state.usageSnapshot(), now: now)
+        let usage = await state.usageSnapshot()
+        let batch = makeBatch(observations, cursors: changed, usage: usage, now: now)
         if !batch.isEmpty { try store.recordUsage(batch) }
+        let threshold = Double(((try? store.settings()) ?? .defaults).usagePause.sevenDayPercent)
+        let samples = try store.usageAccountSamples(since: now.addingTimeInterval(-86_400))
+        await state.setClaudeForecast(UsageForecast.make(usage, samples: samples, threshold: threshold, now: now))
         if prunedAt.map({ now.timeIntervalSince($0) >= Self.pruneInterval }) ?? true {
             let missing = (cursors ?? [:]).keys.filter { !seen.contains($0) }
             try store.pruneUsage(before: now.addingTimeInterval(-UsageHistory.retention), missingPaths: missing)
@@ -192,6 +196,7 @@ actor UsageRecorder {
         Self.fill(&reading, usage: usage, now: now)
         if reading != UsageHistory.Sample(at: reading.at) || samples[current] != nil { samples[current] = reading }
         batch.samples = samples.values.sorted { $0.at < $1.at }
+        batch.accountSamples = UsageAccountSample.observations(usage, now: now)
         return batch
     }
 

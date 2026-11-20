@@ -260,6 +260,12 @@ public actor DaemonState {
         publish(next)
     }
 
+    public func setClaudeForecast(_ forecast: UsageForecast.Result?) {
+        var next = usage
+        next.claudeForecast = forecast
+        publish(next)
+    }
+
     public func setCodex(_ codex: CodexUsage?) {
         var next = usage
         next.codex = codex

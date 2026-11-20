@@ -5545,6 +5545,39 @@
         }
       }
     },
+    "agent.mcp.usage.forecast.atReset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "、戻る直前の見込み {{percent}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.usage.forecast.enough" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude の見込み（1 時間に {{rate}} ポイント、アカウントを切り替えながら使った場合）: {{horizon}} まで全アカウントが閾値（7 日 {{threshold}}%）を越えない"
+          }
+        }
+      }
+    },
+    "agent.mcp.usage.forecast.exhausts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude の見込み（1 時間に {{rate}} ポイント、アカウントを切り替えながら使った場合）: {{exhausted}} ごろに全アカウントが閾値（7 日 {{threshold}}%）を越え、{{resumes}} まで止まる"
+          }
+        }
+      }
+    },
     "agent.mcp.usage.last" : {
       "extractionState" : "manual",
       "localizations" : {

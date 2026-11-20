@@ -188,6 +188,24 @@ struct MCPInboxHealthTests {
         #expect(!health.contains("3%"))
     }
 
+    @Test("usage_get は daemon の見込みを 1 行に書き、アカウントの行に戻る直前の見込みを添える")
+    func usageForecast() {
+        let main = t0.addingTimeInterval(86_400), sub = t0.addingTimeInterval(150 * 3600)
+        let exhausted = t0.addingTimeInterval(14 * 3600)
+        let usage = UsageSnapshot(
+            claudeAccounts: [
+                ClaudeAccount(name: "main", usage: ClaudeUsage(fiveHour: nil, sevenDay: UsageWindow(usedPercent: 100, resetsAt: main, windowSeconds: 604_800), at: t0)),
+                ClaudeAccount(name: "sub", usage: ClaudeUsage(fiveHour: nil, sevenDay: UsageWindow(usedPercent: 56, resetsAt: sub, windowSeconds: 604_800), at: t0)),
+            ],
+            claudeDefaultAccount: "main",
+            claudeForecast: UsageForecast.Result(perHour: 3, threshold: 99, exhaustedAt: exhausted, resumesAt: main, horizon: sub, atReset: ["main": 100, "sub": 99.2]))
+        let lines = TaskboardTools.describe(usage: usage, now: t0).split(separator: "\n").map(String.init)
+        #expect(lines[1] == "Claude sub: 7 日 56%（\(TaskboardTools.time(sub)) に戻る）、戻る直前の見込み 99%", "\(lines)")
+        #expect(
+            lines[2]
+                == "Claude の見込み（1 時間に 3.0 ポイント、アカウントを切り替えながら使った場合）: \(TaskboardTools.time(exhausted)) ごろに全アカウントが閾値（7 日 99%）を越え、\(TaskboardTools.time(main)) まで止まる")
+    }
+
     @Test("health はオーケストレーター・うまくいかなかった定期起動・常設タスクの無い定期起動・APNs の鍵の無さを 1 画面に出す")
     func healthReport() {
         let now = t0.addingTimeInterval(3600)

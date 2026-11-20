@@ -502,15 +502,27 @@ extension TaskboardTools {
         }
     }
 
+    static func describe(forecast: UsageForecast.Result) -> String {
+        let rate = String(format: "%.1f", forecast.perHour)
+        let shown = "\(Int(forecast.threshold.rounded()))"
+        if let exhausted = forecast.exhaustedAt, let resumes = forecast.resumesAt {
+            return Copy.text("agent.mcp.usage.forecast.exhausts", ["rate": rate, "exhausted": time(exhausted), "resumes": time(resumes), "threshold": shown])
+        }
+        return Copy.text("agent.mcp.usage.forecast.enough", ["rate": rate, "horizon": time(forecast.horizon), "threshold": shown])
+    }
+
     static func describe(usage: UsageSnapshot, now: Date = Date()) -> String {
         var lines: [String] = []
         func window(_ name: String, _ value: UsageWindow?) -> String? {
             value.map { "\(name) \(percent($0.usedPercent))" + ($0.resetsAt.map { Copy.text("agent.mcp.health.window", ["time": "\(time($0))"]) } ?? "") }
         }
-        for (name, claude) in claudeInUse(usage, now: now) {
+        let forecast = usage.claudeForecast
+        for (account, (name, claude)) in zip(usage.claudeInUse(now: now), claudeInUse(usage, now: now)) {
             let windows = [window(Copy.text("agent.mcp.health.windows"), claude?.fiveHour), window(Copy.text("agent.mcp.health.windows.2"), claude?.sevenDay)].compactMap { $0 }
-            lines.append(windows.isEmpty ? Copy.text("agent.mcp.health.window.2", ["name": name]) : "\(name): " + windows.joined(separator: "、"))
+            let atReset = forecast?.atReset[account ?? ClaudeAccount.login].map { Copy.text("agent.mcp.usage.forecast.atReset", ["percent": percent(min($0, 100))]) } ?? ""
+            lines.append(windows.isEmpty ? Copy.text("agent.mcp.health.window.2", ["name": name]) : "\(name): " + windows.joined(separator: "、") + atReset)
         }
+        if let forecast { lines.append(describe(forecast: forecast)) }
         if let codex = usage.codex {
             var parts = [window(Copy.text("agent.mcp.health.parts"), codex.primary), window(Copy.text("agent.mcp.health.parts.2"), codex.secondary)].compactMap { $0 }
             if let monthly = codex.monthly { parts.append(Copy.text("agent.mcp.health.parts.3", ["percent": "\(percent(monthly.usedPercent))"])) }

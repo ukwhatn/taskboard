@@ -224,6 +224,32 @@ struct UsageRecorderTests {
         #expect(try f.history().recordingSince == Self.now)
     }
 
+    @Test("アカウントごとの利用枠は、観測した時刻ごとに 1 件だけ残す。観測が変わらない見回りは増やさず、窓の終わりを過ぎた値は残さない")
+    func accountSamples() async throws {
+        let f = try Fixture()
+        defer { f.remove() }
+        await f.state.setClaudeAccounts([ClaudeAccount(name: "sub")], defaultAccount: "sub")
+        let reset = Self.now.addingTimeInterval(5 * 86_400)
+        func report(_ percent: Double, at offset: TimeInterval) async {
+            let at = Self.now.addingTimeInterval(offset)
+            await f.state.record(
+                ClaudeUsageReport(
+                    context: SessionContext(agentSessionID: "s-1", model: nil, effort: nil, usedPercent: nil, inputTokens: nil, windowSize: nil, account: "sub", at: at),
+                    fiveHour: nil, sevenDay: UsageWindow(usedPercent: percent, resetsAt: reset, windowSeconds: 604_800)),
+                now: at)
+        }
+        await report(41, at: 0)
+        try await f.recorder.scan(now: Self.now.addingTimeInterval(10))
+        try await f.recorder.scan(now: Self.now.addingTimeInterval(310))
+        await report(44, at: 600)
+        try await f.recorder.scan(now: Self.now.addingTimeInterval(610))
+        let samples = try f.store.usageAccountSamples(since: Self.now.addingTimeInterval(-60))
+        #expect(samples.map(\.account) == ["sub", "sub"])
+        #expect(samples.map(\.sevenDay) == [41, 44])
+        #expect(samples.map(\.at) == [Self.now, Self.now.addingTimeInterval(600)])
+        #expect(samples.first?.sevenDayResetsAt == reset)
+    }
+
     @Test("90 日より古い記録と、無くなった transcript の読んだ位置を消す")
     func prunes() async throws {
         let f = try Fixture()

@@ -223,3 +223,34 @@ public struct UsageHistoryQuery: Hashable, Sendable {
 public protocol UsageHistorySource: Sendable {
     func usageHistory(_ query: UsageHistoryQuery) async throws -> UsageHistory
 }
+
+/// Claude のアカウント（マシンのログインは `ClaudeAccount.login`）の利用枠を 1 回観測した値。`at` は観測した時刻で、
+/// 同じ観測は何度記録しても 1 件になる。使用率はアカウント全体の値なので、同じアカウントを使う他のマシンの消費も含む
+public struct UsageAccountSample: Codable, Hashable, Sendable {
+    public var account: String
+    public var at: Date
+    public var fiveHour: Double?
+    public var sevenDay: Double?
+    public var sevenDayResetsAt: Date?
+
+    public init(account: String, at: Date, fiveHour: Double? = nil, sevenDay: Double? = nil, sevenDayResetsAt: Date? = nil) {
+        self.account = account
+        self.at = at
+        self.fiveHour = fiveHour
+        self.sevenDay = sevenDay
+        self.sevenDayResetsAt = sevenDayResetsAt
+    }
+
+    /// 今の枠のうち、窓の終わりを過ぎていない値の観測（ログインと taskboard のアカウントの全部）
+    public static func observations(_ usage: UsageSnapshot, now: Date) -> [UsageAccountSample] {
+        func live(_ window: UsageWindow?) -> UsageWindow? { window.flatMap { w in (w.resetsAt.map { $0 > now } ?? true) ? w : nil } }
+        let named = [(ClaudeAccount.login, usage.claude)] + (usage.claudeAccounts ?? []).map { ($0.name, $0.usage) }
+        return named.compactMap { name, claude in
+            guard let claude else { return nil }
+            let five = live(claude.fiveHour), week = live(claude.sevenDay)
+            guard five != nil || week != nil else { return nil }
+            return UsageAccountSample(account: name, at: claude.at, fiveHour: five?.usedPercent, sevenDay: week?.usedPercent, sevenDayResetsAt: week?.resetsAt)
+        }
+    }
+}
+
