@@ -187,7 +187,7 @@ extension TaskboardTools {
         for doc in docs {
             var line = "- [\(doc.docID)] \(doc.name)"
             if let title = doc.title, !title.isEmpty { line += "「\(title)」" }
-            lines.append(line + " ・ \(doc.format.rawValue) ・ rev \(doc.latestRev)")
+            lines.append(line + " ・ \(doc.format.rawValue) ・ rev \(doc.latestRev) ・ \(Self.appURL(doc.machine, task: number, doc: doc.docID))")
             var status: [String] = []
             if let open = asks.first(where: { $0.docID == doc.docID && $0.status == .open }) { status.append(Copy.text("agent.mcp.documents.status", ["questions": "\(open.questions.count)", "askID": "\(open.askID)"])) }
             if doc.openComments > 0 { status.append(Copy.text("agent.mcp.documents.status.2", ["openComments": "\(doc.openComments)"])) }
@@ -227,7 +227,7 @@ extension TaskboardTools {
 
     /// 会話の画面はこの行から文書を開く入口を作る（`DocumentToolRef`）
     private static func appURL(_ machine: MachineID, task number: Int, doc: Int64) -> String {
-        "taskboard://task/\(machine.rawValue)/\(number)/doc/\(doc)"
+        TaskboardLink.task(TaskKey(machine: machine, number: number), doc: doc).url.absoluteString
     }
 
     private static func describe(asked count: Int, askID: Int64?, document: String, app: String, task number: Int, pendingFeedback: Int) -> String {

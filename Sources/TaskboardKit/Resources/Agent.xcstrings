@@ -8092,7 +8092,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。判断を待つ質問（questions）と、人に承認してほしい送る文面（drafts）は、返答の文だけで書かず、前提（背景・判断材料・trade-off）と一緒にこの文書に書き、本文の答えてほしい位置に印を置く。印は markdown なら <!-- ask: q1 --> と <!-- draft: id -->、HTML なら <div data-ask=\"q1\"></div> と <div data-draft=\"id\"></div>。質問の id は questions の並び順の q1, q2…、文面の id は drafts の id。印の位置に回答と承認の欄が出て、印の無い質問と文面は本文の末尾に出る。無い id を指す印と、同じ印の重複は断る。回答と承認は taskboard がこのセッションに届ける（ブロックしない）"
+            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。判断を待つ質問（questions）と、人に承認してほしい送る文面（drafts）は、返答の文だけで書かず、前提（背景・判断材料・trade-off）と一緒にこの文書に書き、本文の答えてほしい位置に印を置く。印は markdown なら <!-- ask: q1 --> と <!-- draft: id -->、HTML なら <div data-ask=\"q1\"></div> と <div data-draft=\"id\"></div>。質問の id は questions の並び順の q1, q2…、文面の id は drafts の id。印の位置に回答と承認の欄が出て、印の無い質問と文面は本文の末尾に出る。無い id を指す印と、同じ印の重複は断る。回答と承認は taskboard がこのセッションに届ける（ブロックしない）。本文には taskboard:// のリンク（task_get・doc_list・board_overview・session_list の結果の各行の末尾の URL）を書ける。文書を別ウインドウで開いて押すと、メインウインドウがそのタスク・文書・会話・案件の画面に切り替わる"
           }
         }
       }

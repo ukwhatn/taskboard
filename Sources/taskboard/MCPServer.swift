@@ -329,7 +329,7 @@ struct TaskboardTools: Sendable {
         let snapshot = try await client.snapshot()
         var lines = [Copy.text("agent.mcp.core.lines", ["boards": "\(snapshot.boards.count)"])]
         for board in snapshot.boards {
-            lines.append("## \(board.name) (\(board.id))" + (board.archived ? Copy.text("agent.mcp.core.lines.2") : ""))
+            lines.append("## \(board.name) (\(board.id))" + (board.archived ? Copy.text("agent.mcp.core.lines.2") : "") + " ・ \(TaskboardLink.board(machine: board.machine, id: board.id).url.absoluteString)")
             let tasks = snapshot.tasks.filter { $0.boardID == board.id }
             for column in board.columns {
                 let inColumn = tasks.filter { $0.columnID == column.id }
@@ -371,6 +371,7 @@ struct TaskboardTools: Sendable {
         let prs = task.pullRequestLinks.map(\.shortLabel)
         if !prs.isEmpty { rest.append("PR " + prs.joined(separator: "、")) }
         if let due = task.due { rest.append(Copy.text("agent.mcp.core.prs", ["due": "\(due)"])) }
+        head.append(TaskboardLink.task(task.id).url.absoluteString)
         var rows = ["  - " + head.joined(separator: " ・ ")]
         if !rest.isEmpty { rows.append("    - " + rest.joined(separator: " ・ ")) }
         return rows
@@ -398,7 +399,7 @@ struct TaskboardTools: Sendable {
 
     /// タスクの会話・止まったセッションは、アプリのタスクの画面と同じ `MachineState` の見分けで出す
     static func describe(_ task: BoardTask, board: Board?, items: [WorkItem], state: MachineState, linkNotices: Int? = nil) -> String {
-        var lines = [Copy.text("agent.mcp.core.lines.3", ["number": "\(task.number)", "title": "\(task.title)"])]
+        var lines = [Copy.text("agent.mcp.core.lines.3", ["number": "\(task.number)", "title": "\(task.title)"]) + " ・ \(TaskboardLink.task(task.id).url.absoluteString)"]
         if let board, let column = board.columns.first(where: { $0.id == task.columnID }) {
             lines.append(Copy.text("agent.mcp.core.lines.4", ["name": "\(board.name)", "id": "\(board.id)"]))
             lines.append(Copy.text("agent.mcp.core.lines.5", ["columnLine": "\(SessionGuidance.columnLine(column))"]))
@@ -418,6 +419,7 @@ struct TaskboardTools: Sendable {
             var line = Copy.text("agent.mcp.core.line", ["id": "\(conversation.id)", "isClosed": "\(conversation.isClosed ? "closed" : conversation.phase.rawValue)"])
             if let title = conversation.title { line += " ・ 「\(title)」" }
             if state.isDelegate(conversation) { line += Copy.text("agent.mcp.core.line.2") }
+            line += " ・ \(TaskboardLink.conversation(conversation.key).url.absoluteString)"
             lines.append(line)
         }
         let stopped = state.stoppedSessions(of: task)

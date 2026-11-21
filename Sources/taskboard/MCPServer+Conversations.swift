@@ -133,7 +133,7 @@ extension TaskboardTools {
 
     func conversationLines(_ snapshot: StateSnapshot) -> [String] {
         let conversations = snapshot.conversations.filter { !$0.isClosed }.sorted { ($0.phase == .stopped ? 1 : 0, $1.updatedAt) < ($1.phase == .stopped ? 1 : 0, $0.updatedAt) }
-        return conversations.map { "- " + Self.describe(conversation: $0, tasks: snapshot.tasks, own: conversationID) }
+        return conversations.map { "- " + Self.describe(conversation: $0, tasks: snapshot.tasks, own: conversationID) + " ・ \(TaskboardLink.conversation($0.key).url.absoluteString)" }
     }
 
     func conversationPrompt(_ given: String, text: String) async throws -> String {
