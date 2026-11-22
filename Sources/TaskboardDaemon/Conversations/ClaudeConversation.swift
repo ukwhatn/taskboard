@@ -1174,10 +1174,11 @@ actor ClaudeConversation {
         return true
     }
 
-    /// `isQuiet` の、画面に出ているかを問わない分
+    /// `isQuiet` の、画面に出ているかを問わない分。daemon が起き直した直後は、控えを読み直して突き合わせるまで phase が分からない
+    /// （`attach` は読み直しの前に idle を置く）ので、静かと見ない
     var isResting: Bool {
         child.acceptsInput && phase == .idle && backgroundTasksKnown && backgroundTasks.isEmpty && answering.isEmpty && startTask == nil
-            && pending.isEmpty && record.limitResumeAt == nil && record.networkResumeAt == nil
+            && pending.isEmpty && record.limitResumeAt == nil && record.networkResumeAt == nil && !replaying && !needsReconcile
     }
 
     /// 定期起動の回の会話を、ターンを終えて静かになったら止める（`ScheduledRunCloser`。最初の発言を受けたかは呼ぶ側が見る）

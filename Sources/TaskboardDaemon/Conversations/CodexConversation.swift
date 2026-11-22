@@ -326,6 +326,9 @@ actor CodexConversation {
                 $0.lastExit = nil
             }
         }
+        // 控えの頭（ターンの終わりまで切ってある）より前に始まったコマンドは見えないので、読み終えたら一覧で突き合わせる。
+        // idle を配る前に置く（配った idle で、定期起動の回を閉じる側が静かと見て止めないように）
+        if process.alive { backgroundKnown = false }
         setPhase(process.alive ? .idle : .stopped)
         do {
             try await context.host.subscribe(key: id, after: 0)
@@ -333,8 +336,6 @@ actor CodexConversation {
             context.logger.warning("conversation attach failed", metadata: ["conversation": .string(id), "error": "\(error)"])
             return
         }
-        // 控えの頭（ターンの終わりまで切ってある）より前に始まったコマンドは見えないので、読み終えたら一覧で突き合わせる
-        if process.alive { backgroundKnown = false }
         await waitForReplay(timeout: context.timing.replay)
         if process.alive {
             refreshDiffSoon()
