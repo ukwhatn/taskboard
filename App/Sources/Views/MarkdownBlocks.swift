@@ -1,5 +1,6 @@
 import Foundation
 import Markdown
+import TaskboardKit
 
 /// Markdown のブロック。`MarkdownBlocks.parse` が作り、`MarkdownView` が描く。
 /// SwiftUI と同じファイルに置くと `Text` / `Link` / `Image` / `Table` が swift-markdown の型と衝突するので、描画とファイルを分ける
@@ -304,7 +305,13 @@ enum MarkdownBlocks {
             case let strike as Strikethrough:
                 result += inline(strike.children, html: html, intent: intent.union(.strikethrough), link: link)
             case let anchor as Markdown.Link:
-                result += inline(anchor.children, html: html, intent: intent, link: anchor.destination.flatMap(URL.init(string:)) ?? link)
+                let url = anchor.destination.flatMap(URL.init(string:))
+                // `<taskboard://…>` の形は、URL の文字の代わりに行き先の名前を出す
+                if let url, anchor.plainText == anchor.destination, let label = TaskboardLinkText.label(for: url) {
+                    result += styled(label, intent: intent, link: url)
+                } else {
+                    result += inline(anchor.children, html: html, intent: intent, link: url ?? link)
+                }
             case let image as Markdown.Image:
                 // 画像は描かず、代替文だけ残す
                 result += inline(image.children, html: html, intent: intent, link: link)
@@ -334,7 +341,7 @@ enum MarkdownBlocks {
         }
         var result = AttributedString()
         for segment in linkSegments(string) {
-            var piece = AttributedString(segment.text)
+            var piece = AttributedString(segment.url.flatMap(TaskboardLinkText.label(for:)) ?? segment.text)
             if !intent.isEmpty { piece.inlinePresentationIntent = intent }
             if let url = segment.url { piece.link = url }
             result += piece
@@ -342,14 +349,18 @@ enum MarkdownBlocks {
         return result
     }
 
-    /// 文の中の素の URL（http・https）を切り出す。swift-markdown 0.9.0 は cmark-gfm の autolink の拡張を付けないので、
+    /// 文の中の素の URL（http・https・taskboard）を切り出す。swift-markdown 0.9.0 は cmark-gfm の autolink の拡張を付けないので、
     /// `[文字](URL)` の形でない URL（Claude Code の発言に多い）はリンクにならない
     static func linkSegments(_ string: String) -> [(text: String, url: URL?)] {
         guard let detector = urlDetector, !string.isEmpty else { return [(string, nil)] }
         var segments: [(text: String, url: URL?)] = []
         var cursor = string.startIndex
-        for match in detector.matches(in: string, range: NSRange(string.startIndex..., in: string)) {
-            guard let url = match.url, ["http", "https"].contains(url.scheme?.lowercased()), let range = Range(match.range, in: string) else { continue }
+        let web: [(range: Range<String.Index>, url: URL)] = detector.matches(in: string, range: NSRange(string.startIndex..., in: string)).compactMap { match in
+            guard let url = match.url, ["http", "https"].contains(url.scheme?.lowercased()), let range = Range(match.range, in: string) else { return nil }
+            return (range, url)
+        }
+        for (range, url) in (web + TaskboardLinkText.matches(in: string)).sorted(by: { $0.range.lowerBound < $1.range.lowerBound }) {
+            guard cursor <= range.lowerBound else { continue }
             if cursor < range.lowerBound { segments.append((String(string[cursor..<range.lowerBound]), nil)) }
             segments.append((String(string[range]), url))
             cursor = range.upperBound
@@ -360,6 +371,29 @@ enum MarkdownBlocks {
 
     // NSDataDetector は Sendable でないが、作った後は読むだけで、NSRegularExpression と同じく並行に使える
     nonisolated(unsafe) private static let urlDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+}
+
+/// 本文に書かれた `taskboard://` の URL。会話の本文と文書の markdown がリンクにし、文字を行き先の名前に替える
+enum TaskboardLinkText {
+    /// 行き先の名前を引く口（`AppModel.linkTitle`）。引けない行き先は URL の文字のまま出す
+    @MainActor static var title: ((TaskboardLink) -> String?)?
+
+    /// 素の URL。scheme の後は URL に使う ASCII の記号と英数字だけを取り（日本語の句読点で切れる）、末尾の `.` `,` などは外す
+    static func matches(in string: String) -> [(range: Range<String.Index>, url: URL)] {
+        string.matches(of: /taskboard:\/\/[A-Za-z0-9\-._~\/?#%=&+:@]+/).compactMap { match in
+            var end = match.range.upperBound
+            while end > match.range.lowerBound, ".,:;?!".contains(string[string.index(before: end)]) { end = string.index(before: end) }
+            let range = match.range.lowerBound..<end
+            return URL(string: String(string[range])).map { (range, $0) }
+        }
+    }
+
+    /// 行き先の名前。本文はメインスレッドで描く（よそのスレッドから呼ばれたら URL のまま）。
+    /// shortcut: 会話の本文は解析した結果を文ごとに残すので、後から名前が変わっても描き直さない。名前の追従が要るなら名前をキャッシュの鍵に入れる
+    nonisolated static func label(for url: URL) -> String? {
+        guard Thread.isMainThread, let link = TaskboardLink(url: url) else { return nil }
+        return MainActor.assumeIsolated { title?(link) }
+    }
 }
 
 /// リンクを押したときの開き先。`MarkdownView` の `openURL` が使う

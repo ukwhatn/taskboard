@@ -276,6 +276,7 @@ final class AppModel {
     }
 
     init(options: LaunchOptions) {
+        TaskboardLinkText.title = { [weak self] in self?.linkTitle($0) }
         fleet.unreadConversations = unreadMarks.unread
         startWatchdog(force: options.watchdog)
         if let scenario = options.scenario {

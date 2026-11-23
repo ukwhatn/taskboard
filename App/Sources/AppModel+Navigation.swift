@@ -212,6 +212,18 @@ extension AppModel {
         }
     }
 
+    /// 本文の `taskboard://…` の文字に出す行き先の名前（`TaskboardLinkText`）。タスクは「#番号 題」、文書は題、会話と案件は画面に出す名前
+    func linkTitle(_ link: TaskboardLink) -> String? {
+        switch link {
+        case .task(let key, let doc):
+            if let doc, let document = fleet.document(for: DocKey(machine: key.machine, id: doc)) { return document.displayTitle }
+            return fleet.task(for: key).map(SessionGuidance.title(task:))
+        case .conversation(let key): return fleet.conversation(for: key)?.displayTitle
+        case .board(let machine, let id): return fleet.board(id: id, on: machine)?.name
+        case .pullRequest, .orchestrator, .boards, .unassigned: return nil
+        }
+    }
+
     /// `taskboard://…` の遷移（通知・DebugServer）。開いていた起票と起動のシートは閉じる
     func open(_ url: URL, from source: NavigationSource) {
         guard let link = TaskboardLink(url: url) else { return }

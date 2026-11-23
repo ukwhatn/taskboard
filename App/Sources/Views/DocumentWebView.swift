@@ -452,10 +452,26 @@ struct HTMLEscaping: MarkupRewriter {
             .replacingOccurrences(of: "\"", with: "&quot;")
     }
 
+    /// リンクと画像の中の文字（素の URL をリンクにしない。`<a>` の入れ子と、画像の代替文の中のタグになる）
+    private var inLink = false
+
     mutating func visitText(_ text: Markdown.Text) -> Markup? {
         var text = text
-        text.string = Self.escape(text.string)
+        text.string = inLink ? Self.escape(text.string) : Self.linkingTaskboardURLs(text.string)
         return text
+    }
+
+    /// 素の `taskboard://` を `<a>` にし、文字を行き先の名前にする。ほかの文字は escape する
+    private static func linkingTaskboardURLs(_ string: String) -> String {
+        var result = ""
+        var cursor = string.startIndex
+        for (range, url) in TaskboardLinkText.matches(in: string) {
+            let written = String(string[range])
+            result += escape(String(string[cursor..<range.lowerBound]))
+            result += "<a href=\"\(escape(written))\">\(escape(TaskboardLinkText.label(for: url) ?? written))</a>"
+            cursor = range.upperBound
+        }
+        return result + escape(String(string[cursor...]))
     }
 
     mutating func visitInlineCode(_ inlineCode: InlineCode) -> Markup? {
@@ -479,7 +495,13 @@ struct HTMLEscaping: MarkupRewriter {
 
     mutating func visitLink(_ link: Markdown.Link) -> Markup? {
         var link = link
+        // `<taskboard://…>` の形は、URL の文字の代わりに行き先の名前を出す
+        if let destination = link.destination, link.plainText == destination, let url = URL(string: destination), let label = TaskboardLinkText.label(for: url) {
+            return Markdown.Link(destination: Self.escape(destination), Markdown.Text(Self.escape(label)))
+        }
         link.destination = link.destination.map(Self.escape)
+        inLink = true
+        defer { inLink = false }
         return defaultVisit(link)
     }
 
@@ -487,6 +509,8 @@ struct HTMLEscaping: MarkupRewriter {
         var image = image
         image.source = image.source.map(Self.escape)
         image.title = image.title.map(Self.escape)
+        inLink = true
+        defer { inLink = false }
         return defaultVisit(image)
     }
 }
