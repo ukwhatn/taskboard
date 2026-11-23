@@ -835,12 +835,11 @@ public actor ConversationService {
         try await find(id).events(after: after)
     }
 
-    /// タスクの題が変わった：そのタスクの動いている会話の題を、hook で結んだセッションと同じ規則（`SessionGuidance.retitle`）で付け直す。人が付けた題は残す
+    /// タスクの題が変わった：そのタスクの会話の題を、hook で結んだセッションと同じ規則（`SessionGuidance.retitle`）で付け直す。人が付けた題は残す。
+    /// 止まっている会話も記録の題を書き換える（CLI には動いている子にだけ送る。`sendTitle`）
     func taskRetitled(_ task: BoardTask) async {
-        for conversation in conversations.values {
-            guard await conversation.isLive, let record = try? environment.store.conversation(id: conversation.id), record.taskNumber == task.number,
-                let title = SessionGuidance.retitle(current: record.title, task: task)
-            else { continue }
+        for record in (try? environment.store.conversations()) ?? [] where record.taskNumber == task.number && !deleting.contains(record.id) {
+            guard let title = SessionGuidance.retitle(current: record.title, task: task), let conversation = try? find(record.id) else { continue }
             try? await conversation.rename(title)
         }
     }
