@@ -23,6 +23,8 @@ enum ConversationScreenText {
     static let steerAfterReview = "レビュー中のため、レビューが終わってから送信します"
     /// 会話で使えない組み込みのコマンド。前にコマンド名を付ける（`TranscriptParser`）。端末で使えることは入力欄の上の案内が伝える
     static let commandUnavailable = "会話では使えません。"
+    /// ▷ で実行したコードの結果を会話に送った発言（`RunResultText`）
+    static let runResultSent = "コードの実行結果を送信しました"
 }
 
 extension ConversationStopCause {

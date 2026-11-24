@@ -441,7 +441,7 @@ final class ConversationFeed: ConversationListener {
             "outgoing": timeline.outgoing.map { ["id": $0.clientMessageID, "text": String($0.text.prefix(120)), "state": "\($0.state)"] },
             "historyFailure": historyFailure?.text as Any,
             "commands": commands.map(\.name),
-            "runs": runs.entries.map { ["id": $0.id, "message": $0.messageID as Any, "status": $0.status.rawValue, "exitCode": $0.exitCode as Any, "output": String($0.output.suffix(400)), "truncated": $0.truncated] },
+            "runs": runs.entries.map { ["id": $0.id, "message": $0.messageID as Any, "status": $0.status.rawValue, "exitCode": $0.exitCode as Any, "output": String($0.text.suffix(400)), "truncated": $0.truncated] },
             "diff": diff.debugDescription { ["files": $0.files.map(\.path), "branch": $0.summary.branch as Any, "scope": $0.scope.rawValue, "base": $0.base as Any] },
             "fileDiffs": fileDiffs.mapValues { $0.debugDescription { ["bytes": $0.diff.utf8.count, "truncated": $0.truncated] } },
             "connectors": connectors.debugDescription { $0.map { ["name": $0.name, "status": $0.status] } },

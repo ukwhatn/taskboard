@@ -142,7 +142,20 @@ public actor ConversationService {
     private func runEvent(_ event: ConversationRuns.Event) async {
         switch event {
         case .update(let id, let update): await conversations[id]?.emitRun(update)
-        case .finished(let id): await conversations[id]?.refreshDiffSoon()
+        case .finished(let run):
+            await conversations[run.conversationID]?.refreshDiffSoon()
+            await sendRunResult(run)
+        }
+    }
+
+    /// 終わった Run の出力を会話に送る（生成中ならそのターンの後に）。止まった会話は起動して送る
+    private func sendRunResult(_ run: ConversationRun) async {
+        guard !deleting.contains(run.conversationID) else { return }
+        let text = RunResultText.compose(run, timeout: runs.timeout)
+        do {
+            _ = try await send(run.conversationID, ConversationSendRequest(text: text, later: true))
+        } catch {
+            environment.logger.warning("conversation run result not sent", metadata: ["run": .string(run.id), "error": "\(error)"])
         }
     }
 

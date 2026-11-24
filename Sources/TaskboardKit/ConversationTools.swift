@@ -306,8 +306,10 @@ public struct ConversationRun: Codable, Hashable, Sendable, Identifiable {
     public var code: String
     public var status: Status
     public var exitCode: Int32?
-    /// 標準出力と標準エラーを合わせたもの（先頭から上限まで）
+    /// 標準出力と標準エラーを合わせたもの（先頭から上限まで）。動いている間は確定した行だけで、書き換わる途中の行は `tail`
     public var output: String
+    /// 動いている間の、まだ書き換わる最後の行（スピナー・進捗バー）。画面には `output` に続けて出す。終わると nil（`output` に畳む）。古い daemon は送らない
+    public var tail: String?
     /// 上限で切った
     public var truncated: Bool
     public var startedAt: Date
@@ -340,15 +342,21 @@ public struct ConversationRunUpdate: Codable, Hashable, Sendable {
     public var messageID: String?
     public var status: ConversationRun.Status
     public var exitCode: Int32?
+    /// 確定した出力の続き（`ConversationRun.output` に足す）
     public var chunk: String
+    /// 書き換わる途中の行の今の中身（`ConversationRun.tail`）。変わっていなければ nil
+    public var tail: String?
     public var truncated: Bool
 
-    public init(id: String, messageID: String?, status: ConversationRun.Status, exitCode: Int32? = nil, chunk: String, truncated: Bool) {
+    public init(
+        id: String, messageID: String?, status: ConversationRun.Status, exitCode: Int32? = nil, chunk: String, tail: String? = nil, truncated: Bool
+    ) {
         self.id = id
         self.messageID = messageID
         self.status = status
         self.exitCode = exitCode
         self.chunk = chunk
+        self.tail = tail
         self.truncated = truncated
     }
 }

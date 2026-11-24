@@ -95,6 +95,8 @@ public enum DaemonErrorCode: String, Codable, Sendable, Hashable, CaseIterable {
     case conversationNotSent = "conversation_not_sent"
     /// 会話で同時に動かせる Run の数が上限に達している。params: `limit`
     case runLimit = "run_limit"
+    /// 文書のコードブロックを動かす会話がタスクに無い（`POST /v1/docs/{id}/runs`）
+    case runNoConversation = "run_no_conversation"
     /// その engine の会話ではできない操作（Codex の巻き戻し・コネクタの操作など）。params: `engine`（`AgentKind`）
     case engineUnsupported = "engine_unsupported"
     /// daemon のその機能が動いていない

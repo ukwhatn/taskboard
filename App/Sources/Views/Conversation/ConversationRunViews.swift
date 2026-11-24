@@ -49,9 +49,9 @@ struct CodeRunOutput: View {
                 if entry.newShell {
                     Text("新しいシェルで実行しました。前の実行の変数と作業フォルダは引き継いでいません。").font(.caption).foregroundStyle(ChatPalette.mutedText)
                 }
-                if !entry.output.isEmpty {
+                if !entry.text.isEmpty {
                     ScrollView {
-                        Text(verbatim: entry.output)
+                        Text(verbatim: entry.text)
                             .font(font)
                             .foregroundStyle(ChatPalette.text)
                             .textSelection(.enabled)
@@ -73,13 +73,7 @@ struct CodeRunOutput: View {
     }
 
     private var statusLabel: String {
-        switch entry.status {
-        case .running: String(localized: "実行中…")
-        case .succeeded: String(localized: "完了")
-        case .failed: entry.exitCode.map { String(localized: "失敗（終了コード\($0)）") } ?? String(localized: "失敗")
-        case .cancelled: String(localized: "停止済み")
-        case .timedOut: String(localized: "10分を超えたため停止しました")
-        }
+        RunStatusText.label(entry.status, exitCode: entry.exitCode)
     }
 
     private var statusSymbol: String {

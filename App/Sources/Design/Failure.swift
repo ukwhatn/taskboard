@@ -154,6 +154,7 @@ struct UserFacingError: Error, Hashable, Sendable, Identifiable {
         case .conversationBusy: return (String(localized: "セッションが作業中です"), String(localized: "作業が終わってから、やり直してください"))
         case .conversationChanged: return (String(localized: "ほかの画面でセッションの内容が変わりました"), String(localized: "開き直してから、やり直してください"))
         case .conversationNotSent: return (String(localized: "このセッションでは、まだ送信していません"), String(localized: "1回送信してから、やり直してください"))
+        case .runNoConversation: return (String(localized: "このタスクには、コードを実行するセッションがありません"), String(localized: "タスクのセッションを開始してから、実行してください"))
         case .runLimit: return (String(localized: "このシェルでは別のコードを実行中です"), String(localized: "実行中のコードが終わってから、やり直してください"))
         case .engineUnsupported:
             return (String(localized: "\(p["engine"].flatMap(AgentKind.init(rawValue:))?.label ?? String(localized: "この種類"))のセッションでは、この操作はできません"), nil)

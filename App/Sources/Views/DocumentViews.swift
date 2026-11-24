@@ -123,6 +123,7 @@ struct DocumentScreen: View {
     private var bodyTextSize: Double { (SessionTextSize.clamp(textSize) * dynamicScale / 100).rounded() }
 
     @State var web: DocumentWebController?
+    @State private var runner = DocumentRunner()
     @State private var content: DocContent?
     @State private var contentFailure: UserFacingError?
     @State private var revisions: [DocRevision] = []
@@ -270,8 +271,14 @@ struct DocumentScreen: View {
             let controller = DocumentWebController()
             controller.openInApp = { [model] url in model.open(url, from: .link) }
             controller.onFormAction = { action in handleForm(action, doc: doc) }
+            controller.onRunAction = { [runner, model, key] action in runner.handle(action, doc: key, model: model) }
             web = controller
         }
+        .onChange(of: runner.payloadJSON) { _, json in web?.setRuns(json) }
+        .onChange(of: "\(key)/\(model.writeBlock(key.machine, "実行できません")?.text ?? "")/\(web != nil)", initial: true) {
+            runner.setBlocked(model.writeBlock(key.machine, "実行できません")?.text)
+        }
+        .onDisappear { runner.stop() }
         .modifier(FormsHandling(screen: self, doc: doc))
         .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)/\(showsDiff)") { await loadContent() }
         .onChange(of: key) { _, _ in showsDiff = false }

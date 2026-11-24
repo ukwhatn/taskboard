@@ -241,10 +241,16 @@ public struct ConversationRunStore: Hashable, Sendable {
         public var code: String?
         public var status: ConversationRun.Status
         public var exitCode: Int32?
+        /// 確定した出力
         public var output: String
         public var truncated: Bool
         /// 新しいシェルで動いた（`ConversationRun.newShell`）
         public var newShell = false
+        /// 書き換わる途中の行（`ConversationRun.tail`）
+        public var tail = ""
+
+        /// 画面に出す出力
+        public var text: String { output + tail }
     }
 
     /// 始めた順
@@ -261,7 +267,10 @@ public struct ConversationRunStore: Hashable, Sendable {
         entries[i].code = run.code
         entries[i].newShell = run.newShell == true
         entries[i].messageID = entries[i].messageID ?? run.messageID
-        if entries[i].output.isEmpty { entries[i].output = run.output }
+        if entries[i].output.isEmpty {
+            entries[i].output = run.output
+            entries[i].tail = run.tail ?? ""
+        }
     }
 
     public mutating func apply(_ update: ConversationRunUpdate) {
@@ -269,10 +278,12 @@ public struct ConversationRunStore: Hashable, Sendable {
             entries.append(
                 Entry(
                     id: update.id, messageID: update.messageID, code: nil, status: update.status, exitCode: update.exitCode, output: update.chunk,
-                    truncated: update.truncated))
+                    truncated: update.truncated, tail: update.status == .running ? update.tail ?? "" : ""))
             return
         }
         entries[i].output += update.chunk
+        if let tail = update.tail { entries[i].tail = tail }
+        if update.status != .running { entries[i].tail = "" }
         entries[i].status = update.status
         entries[i].exitCode = update.exitCode ?? entries[i].exitCode
         entries[i].truncated = entries[i].truncated || update.truncated
@@ -294,7 +305,7 @@ public struct ConversationRunStore: Hashable, Sendable {
     private static func entry(_ run: ConversationRun) -> Entry {
         Entry(
             id: run.id, messageID: run.messageID, code: run.code, status: run.status, exitCode: run.exitCode, output: run.output, truncated: run.truncated,
-            newShell: run.newShell == true)
+            newShell: run.newShell == true, tail: run.tail ?? "")
     }
 }
 

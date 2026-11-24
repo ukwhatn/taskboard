@@ -182,7 +182,11 @@ enum CodexItems {
         switch item {
         case .userMessage(let id, let clientID, let text, let images):
             var messages: [ChatMessage] = []
-            if !text.isEmpty { messages.append(ChatMessage(id: clientID?.lowercased() ?? id, role: .user, kind: .text, text: text, at: at)) }
+            if RunResultText.isResult(text) {
+                messages.append(ChatMessage(id: clientID?.lowercased() ?? id, role: .user, kind: .notice, text: ConversationScreenText.runResultSent, at: at))
+            } else if !text.isEmpty {
+                messages.append(ChatMessage(id: clientID?.lowercased() ?? id, role: .user, kind: .text, text: text, at: at))
+            }
             if images > 0 {
                 messages.append(ChatMessage(id: id + "-images", role: .user, kind: .notice, text: "画像 \(images) 枚", at: at))
             }

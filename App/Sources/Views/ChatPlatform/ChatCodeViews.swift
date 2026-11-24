@@ -110,8 +110,8 @@ final class ChatRunOutputView: ChatFlippedView, ChatFitting {
         if entry.newShell {
             body.append(ChatLabelView(String(localized: "新しいシェルで実行しました。前の実行の変数と作業フォルダは引き継いでいません。"), font: caption, color: ChatPalette.Platform.mutedText))
         }
-        if !entry.output.isEmpty {
-            let text = ChatAttributed.plain(entry.output, font: fonts.platformCode, color: ChatPalette.Platform.text, line: fonts.line, query: nil)
+        if !entry.text.isEmpty {
+            let text = ChatAttributed.plain(entry.text, font: fonts.platformCode, color: ChatPalette.Platform.text, line: fonts.line, query: nil)
             body.append(ChatCappedView(ChatTextBlock(text), maxHeight: ConversationMetrics.runOutputHeight))
         } else if entry.status != .running {
             body.append(ChatLabelView(String(localized: "（出力はありません）"), font: caption, color: ChatPalette.Platform.mutedText))
@@ -141,13 +141,7 @@ final class ChatRunOutputView: ChatFlippedView, ChatFitting {
     }
 
     private static func statusLabel(_ entry: ConversationRunStore.Entry) -> String {
-        switch entry.status {
-        case .running: String(localized: "実行中…")
-        case .succeeded: String(localized: "完了")
-        case .failed: entry.exitCode.map { String(localized: "失敗（終了コード\($0)）") } ?? String(localized: "失敗")
-        case .cancelled: String(localized: "停止済み")
-        case .timedOut: String(localized: "10分を超えたため停止しました")
-        }
+        RunStatusText.label(entry.status, exitCode: entry.exitCode)
     }
 
     private static func statusSymbol(_ entry: ConversationRunStore.Entry) -> String {

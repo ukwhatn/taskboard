@@ -34,18 +34,17 @@ actor ConversationRuns {
 
     enum Event: Sendable {
         case update(conversationID: String, ConversationRunUpdate)
-        /// 終わった（会話の差分を取り直す）
-        case finished(conversationID: String)
+        /// 終わった（会話の差分を取り直し、結果を会話に送る）
+        case finished(ConversationRun)
     }
 
     private struct Entry {
         var run: ConversationRun
         var key: String
         var file: URL
-        /// 持っている出力の量（上限まで）
+        /// 持っている確定した出力の量（上限まで）
         var bytes = 0
-        /// まだ流していない出力（文字の途中で切れたバイトを含む）
-        var pending = Data()
+        var screen = RunScreen()
         /// 状態が変わったが、まだ流していない
         var changed = false
         var flush: Task<Void, Never>?
@@ -79,6 +78,8 @@ actor ConversationRuns {
     }
 
     private let limits: Limits
+    /// 動かす時間の上限
+    nonisolated var timeout: Duration { limits.duration }
     private let shells: ConversationShells
     private let directory: URL
     private let loginShell: String?
@@ -138,12 +139,12 @@ actor ConversationRuns {
         do {
             try Self.write(request.code, to: file, in: directory)
             var env = environment
-            // 端末の色と問い合わせを減らす（fish 4 は dumb なら DA1 を待たない）
-            env["TERM"] = "dumb"
+            // スピナーと進捗バーを出させ、`RunScreen` で上書きを解釈する（色は捨てる）
+            env["TERM"] = "xterm-256color"
             // 画面から入力を送れないので、ページャ（less）が RETURN を待って止まらないようにする
             for name in ["PAGER", "GIT_PAGER", "GH_PAGER"] { env[name] = "cat" }
-            // 出力に残るスピナーと更新・アンケートの案内を止める。入力の問いは標準入力が /dev/null なので元から出ない
-            for name in ["GH_SPINNER_DISABLED", "CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK", "CLOUDSDK_SURVEY_DISABLE_PROMPTS", "CHECKPOINT_DISABLE"] {
+            // 更新とアンケートの案内を止める。入力の問いは標準入力が /dev/null なので元から出ない
+            for name in ["CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK", "CLOUDSDK_SURVEY_DISABLE_PROMPTS", "CHECKPOINT_DISABLE"] {
                 env[name] = "1"
             }
             let opened = try await ensureShell(key, conversationID: conversationID, kind: kind, argv: [resolved.executable] + kind.arguments, env: env, cwd: cwd)
@@ -367,7 +368,12 @@ actor ConversationRuns {
             ended(key, id, exitCode: nil)
         case .text(let data):
             guard shell.inside, case .busy(let id) = shell.phase, entries[id]?.stopping == nil else { return }
-            output(id, data)
+            entries[id]?.screen.write(data)
+            scheduleFlush(id)
+        case .control(let control):
+            guard shell.inside, case .busy(let id) = shell.phase, entries[id]?.stopping == nil else { return }
+            entries[id]?.screen.apply(control)
+            scheduleFlush(id)
         }
     }
 
@@ -404,20 +410,21 @@ actor ConversationRuns {
 
     // MARK: Run
 
-    private func output(_ id: String, _ data: Data) {
-        guard var entry = entries[id] else { return }
+    /// 画面で確定した出力を上限まで持つ。上限を超えた分は捨てて `truncated` にする
+    private func commit(_ text: String, to entry: inout Entry) {
+        guard !text.isEmpty else { return }
         let room = limits.outputBytes - entry.bytes
-        if room > 0 {
-            let kept = data.prefix(room)
-            entry.pending.append(kept)
-            entry.bytes += kept.count
+        guard room > 0 else {
+            if !entry.run.truncated { entry.run.truncated = true; entry.changed = true }
+            return
         }
-        if data.count > max(room, 0), !entry.run.truncated {
+        let kept = Self.utf8Prefix(text, bytes: room)
+        entry.run.output += kept
+        entry.bytes += kept.utf8.count
+        if kept.utf8.count < text.utf8.count, !entry.run.truncated {
             entry.run.truncated = true
             entry.changed = true
         }
-        entries[id] = entry
-        scheduleFlush(id)
     }
 
     private func finish(_ id: String, exitCode: Int32?) {
@@ -429,9 +436,10 @@ actor ConversationRuns {
         entry.run.exitCode = exitCode
         entry.run.status = entry.stopping ?? (exitCode == 0 ? .succeeded : .failed)
         entry.run.endedAt = now()
-        let chunk = String(decoding: entry.pending, as: UTF8.self)
-        entry.pending.removeAll()
-        entry.run.output += chunk
+        let before = entry.run.output.utf8.count
+        commit(entry.screen.take(final: true).committed, to: &entry)
+        let chunk = String(decoding: entry.run.output.utf8.dropFirst(before), as: UTF8.self)
+        entry.run.tail = nil
         entry.changed = false
         try? FileManager.default.removeItem(at: entry.file)
         if entry.discard {
@@ -439,7 +447,7 @@ actor ConversationRuns {
         } else {
             entries[id] = entry
             publish(entry.run, chunk: chunk)
-            sink.yield(.finished(conversationID: entry.run.conversationID))
+            sink.yield(.finished(entry.run))
         }
         logger.info(
             "conversation run finished",
@@ -496,10 +504,12 @@ actor ConversationRuns {
             entries[id] = entry
             return
         }
-        let (chunk, used) = Self.decodePrefix(entry.pending)
-        entry.pending.removeFirst(used)
-        entry.run.output += chunk
-        let changed = entry.changed
+        let taken = entry.screen.take()
+        let before = entry.run.output.utf8.count
+        commit(taken.committed, to: &entry)
+        let chunk = String(decoding: entry.run.output.utf8.dropFirst(before), as: UTF8.self)
+        if let tail = taken.tail { entry.run.tail = tail }
+        let changed = entry.changed || taken.tail != nil
         entry.changed = false
         entries[id] = entry
         if !chunk.isEmpty || changed { publish(entry.run, chunk: chunk) }
@@ -509,7 +519,8 @@ actor ConversationRuns {
         sink.yield(
             .update(
                 conversationID: run.conversationID,
-                ConversationRunUpdate(id: run.id, messageID: run.messageID, status: run.status, exitCode: run.exitCode, chunk: chunk, truncated: run.truncated)))
+                ConversationRunUpdate(
+                    id: run.id, messageID: run.messageID, status: run.status, exitCode: run.exitCode, chunk: chunk, tail: run.tail, truncated: run.truncated)))
     }
 
     /// 古い終わった Run から捨てて `kept` 件にする（動いているものは捨てない）
@@ -519,6 +530,14 @@ actor ConversationRuns {
             entries.removeValue(forKey: ids.remove(at: index))
         }
         order[conversationID] = ids
+    }
+
+    /// 先頭から `bytes` バイトまで（文字の途中で切らない）
+    static func utf8Prefix(_ text: String, bytes: Int) -> String {
+        guard text.utf8.count > bytes else { return text }
+        var end = text.utf8.index(text.utf8.startIndex, offsetBy: bytes)
+        while end > text.utf8.startIndex, String.Index(end, within: text) == nil { end = text.utf8.index(before: end) }
+        return String(text[..<end])
     }
 
     /// UTF-8 として読める先頭と、そのバイト数。末尾の 3 バイトまでは、文字の途中で切れたものとして残す（それより前の読めないバイトは置き換える）

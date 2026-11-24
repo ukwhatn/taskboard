@@ -7668,6 +7668,72 @@
         }
       }
     },
+    "agent.run.result" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利用者が taskboard の ▷ でコードブロックを実行した（{{status}}）。実行したコードは <bash-input>、端末の出力（標準出力と標準エラーを合わせたもの）は <bash-stdout> にある。"
+          }
+        }
+      }
+    },
+    "agent.run.status.cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利用者が途中で停止した"
+          }
+        }
+      }
+    },
+    "agent.run.status.exit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "終了コード {{code}}"
+          }
+        }
+      }
+    },
+    "agent.run.status.shellGone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "終了コードを受け取る前にシェルが終了した"
+          }
+        }
+      }
+    },
+    "agent.run.status.timedOut" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{minutes}} 分の上限で taskboard が停止した"
+          }
+        }
+      }
+    },
+    "agent.run.truncated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出力が長いので、末尾の {{kb}}KB だけを載せた。"
+          }
+        }
+      }
+    },
     "agent.tool.ask_cancel" : {
       "extractionState" : "manual",
       "localizations" : {

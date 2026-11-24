@@ -91,6 +91,8 @@ struct RunShellScanner {
         case mark(Mark)
         /// DA1（`ESC [ c`）。答えるまで進まないシェルがある（fish 4）
         case query
+        /// カーソルの移動と行の消去（`RunScreen` が解釈する）
+        case control(RunScreen.Control)
     }
 
     private enum State {
@@ -120,7 +122,7 @@ struct RunShellScanner {
                 switch byte {
                 case Self.separator: state = .mark([])
                 case 0x1b: state = .escape
-                case 0x0a, 0x09: text.append(byte)
+                case 0x0a, 0x09, 0x0d, 0x08: text.append(byte)
                 case ..<0x20, 0x7f: break
                 default: text.append(byte)
                 }
@@ -138,7 +140,11 @@ struct RunShellScanner {
                     parameters.append(byte)
                     state = .csi(parameters)
                 case 0x40...0x7e:
-                    if byte == UInt8(ascii: "c"), parameters.isEmpty || parameters == [UInt8(ascii: "0")] { emit(.query) }
+                    if byte == UInt8(ascii: "c"), parameters.isEmpty || parameters == [UInt8(ascii: "0")] {
+                        emit(.query)
+                    } else if let control = Self.control(final: byte, parameters) {
+                        emit(.control(control))
+                    }
                     state = .text
                 default: break
                 }
@@ -162,6 +168,24 @@ struct RunShellScanner {
         }
         if !text.isEmpty { pieces.append(.text(text)) }
         return pieces
+    }
+
+    /// 引数が数字と `;` だけの CSI のうち、`RunScreen` が解釈するもの。`?` 付き（カーソルの表示・別画面）や色（`m`）は nil
+    private static func control(final: UInt8, _ parameters: [UInt8]) -> RunScreen.Control? {
+        guard parameters.allSatisfy({ (0x30...0x39).contains($0) || $0 == UInt8(ascii: ";") }) else { return nil }
+        let n = Int(String(decoding: parameters.prefix { $0 != UInt8(ascii: ";") }, as: UTF8.self)) ?? 0
+        switch final {
+        case UInt8(ascii: "A"): return .up(n)
+        case UInt8(ascii: "B"): return .down(n)
+        case UInt8(ascii: "C"): return .forward(n)
+        case UInt8(ascii: "D"): return .back(n)
+        case UInt8(ascii: "E"): return .nextLine(n)
+        case UInt8(ascii: "F"): return .previousLine(n)
+        case UInt8(ascii: "G"): return .column(n)
+        case UInt8(ascii: "K"): return .eraseLine(n)
+        case UInt8(ascii: "J"): return n == 0 ? .eraseBelow : nil
+        default: return nil
+        }
     }
 
     private static func parse(_ bytes: [UInt8]) -> Mark? {

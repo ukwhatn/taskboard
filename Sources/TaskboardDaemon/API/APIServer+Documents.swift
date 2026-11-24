@@ -35,6 +35,17 @@ extension APIServer {
             guard let doc = try store.document(id: id) else { throw APIError.notFound(.document, "文書 \(id) が無い") }
             return try json(doc, encoder)
         }
+        // 文書のコードブロックを、タスクの lead の会話のシェルで動かす（結果はその会話に送る。`ConversationService.sendRunResult`）
+        v1.post("docs/{id}/runs") { request, context in
+            let id = try context.parameters.require("id", as: Int64.self)
+            let body = try await request.decode(as: ConversationRunRequest.self, context: context)
+            guard let doc = try dependencies.requireStore().document(id: id) else { throw APIError.notFound(.document, "文書 \(id) が無い") }
+            guard let service = dependencies.conversations else { throw APIError.unavailable("会話の host が無い") }
+            guard case .conversation(let conversation) = await dependencies.feedback?.lead(task: doc.taskNumber) else {
+                throw APIError(.conflict, .runNoConversation, "タスク #\(doc.taskNumber) に会話が無い")
+            }
+            return try await mapConversationError { try json(try await service.startRun(conversation, body), encoder) }
+        }
         v1.get("docs/{id}") { _, context in
             let id = try context.parameters.require("id", as: Int64.self)
             guard let doc = try dependencies.requireStore().document(id: id) else { throw APIError.notFound(.document, "文書 \(id) が無い") }

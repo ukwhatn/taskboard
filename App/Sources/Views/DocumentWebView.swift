@@ -44,6 +44,10 @@ final class DocumentWebController: NSObject {
     private(set) var formsPendingInput = false
     /// 欄で答えた・承認した・閉じた（`DocumentScreen` が daemon に送る）
     var onFormAction: (@MainActor (DocumentFormAction) -> Void)?
+    /// コードブロックの［実行］［停止］（`DocumentRunner` が daemon に送る）
+    var onRunAction: (@MainActor (DocumentRunAction) -> Void)?
+    /// コードブロックの欄の中身（`DocumentRuns.Payload` の JSON）。読み込み直したら入れ直す
+    private var runsJSON: String?
 
     /// 文書の中の `taskboard://` を押したときの開き先（`AppModel.open(_:)`）。チャットと PR の本文と同じくアプリの中で開く
     var openInApp: (@MainActor (URL) -> Void)?
@@ -151,6 +155,17 @@ final class DocumentWebController: NSObject {
         applyForms()
     }
 
+    /// コードブロックの欄を描き直す
+    func setRuns(_ json: String) {
+        runsJSON = json
+        applyRuns()
+    }
+
+    private func applyRuns() {
+        guard let runsJSON, !runsJSON.isEmpty else { return }
+        webView.evaluateJavaScript("window.__tbRuns && __tbRuns.set(\(runsJSON))") { _, _ in }
+    }
+
     private func applyForms() {
         guard let formsJSON else { return }
         webView.evaluateJavaScript("window.__tbForms && __tbForms.set(\(formsJSON))") { [weak self] _, _ in
@@ -255,7 +270,10 @@ final class DocumentWebController: NSObject {
             let body = forms ? DocumentForms.placeSlots(in: rendered) : rendered
             // 図と色付けは引用のハイライト（bridgeScript の後の didFinish）より先に描く
             let scripts = DocumentScripts.injection(for: rendered)
-            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)\(scripts.style)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(scripts.script)\(formsTail)<script>\(bridgeScript)</script></body></html>"
+            // シェルのコードブロックの［実行］は markdown の文書だけに置く（html の文書は見た目を変えない）
+            let runsStyle = forms ? DocumentRuns.style : ""
+            let runsTail = forms ? "<script>\(DocumentRuns.script)</script>" : ""
+            return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)\(runsStyle)\(scripts.style)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(scripts.script)\(formsTail)\(runsTail)<script>\(bridgeScript)</script></body></html>"
         case .html:
             // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡し、欄の置き場だけ足す。viewport が無ければ足す（iPhone で縮んで出る）
             var html = forms ? DocumentForms.placeSlots(in: content.content) : content.content
@@ -362,6 +380,10 @@ final class DocumentWebController: NSObject {
                 Task { @MainActor in self.owner?.onFormAction?(action) }
                 return
             }
+            if let action = DocumentRunAction(message: body) {
+                Task { @MainActor in self.owner?.onRunAction?(action) }
+                return
+            }
             guard body["type"] as? String == "selection" else { return }
             let rect = (body["has"] as? Bool ?? false) ? (body["rect"] as? [String: Double]).map {
                 CGRect(x: $0["x"] ?? 0, y: $0["y"] ?? 0, width: $0["width"] ?? 0, height: $0["height"] ?? 0)
@@ -393,6 +415,7 @@ extension DocumentWebController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         applyHighlights()
         applyForms()
+        applyRuns()
         webView.evaluateJavaScript("document.documentElement.scrollHeight") { [weak self] value, _ in
             guard let height = value as? Double else { return }
             MainActor.assumeIsolated { self?.contentHeight = CGFloat(height) }

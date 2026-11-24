@@ -836,6 +836,11 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         try await send("POST", "/v1/conversations/\(id)/runs", body)
     }
 
+    /// 文書のコードブロックを、タスクの lead の会話のシェルで動かす。返った Run の `conversationID` で取得と停止をする
+    public func startDocRun(doc: Int64, _ body: ConversationRunRequest) async throws -> ConversationRun {
+        try await send("POST", "/v1/docs/\(doc)/runs", body)
+    }
+
     public func conversationRun(_ id: String, run: String) async throws -> ConversationRun {
         try await get("/v1/conversations/\(id)/runs/\(run)")
     }

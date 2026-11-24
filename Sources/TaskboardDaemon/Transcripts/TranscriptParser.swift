@@ -265,6 +265,9 @@ enum TranscriptParser {
             let args = tagContent("command-args", in: text) ?? ""
             return ChatMessage(id: id, role: .user, kind: .text, text: args.isEmpty ? name : "\(name) \(args)", at: at)
         }
+        if RunResultText.isResult(text) {
+            return ChatMessage(id: id, role: .user, kind: .notice, text: ConversationScreenText.runResultSent, at: at)
+        }
         if text.hasPrefix("<task-notification>") {
             return ChatMessage(id: id, role: .user, kind: .notice, text: tagContent("summary", in: text) ?? "バックグラウンドタスクが終わりました", at: at)
         }
