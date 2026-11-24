@@ -138,6 +138,8 @@ actor ConversationRuns {
             var env = environment
             // 端末の色と問い合わせを減らす（fish 4 は dumb なら DA1 を待たない）
             env["TERM"] = "dumb"
+            // 画面から入力を送れないので、ページャ（less）が RETURN を待って止まらないようにする
+            for name in ["PAGER", "GIT_PAGER", "GH_PAGER"] { env[name] = "cat" }
             try await ensureShell(key, conversationID: conversationID, kind: kind, argv: [resolved.executable] + kind.arguments, env: env, cwd: cwd)
         } catch {
             entries.removeValue(forKey: id)
