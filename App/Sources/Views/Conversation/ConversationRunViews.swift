@@ -46,6 +46,9 @@ struct CodeRunOutput: View {
                 }
             }
             VStack(alignment: .leading, spacing: Space.inline) {
+                if entry.newShell {
+                    Text("新しいシェルで実行しました。前の実行の変数と作業フォルダは引き継いでいません。").font(.caption).foregroundStyle(ChatPalette.mutedText)
+                }
                 if !entry.output.isEmpty {
                     ScrollView {
                         Text(verbatim: entry.output)

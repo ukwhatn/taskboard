@@ -243,6 +243,8 @@ public struct ConversationRunStore: Hashable, Sendable {
         public var exitCode: Int32?
         public var output: String
         public var truncated: Bool
+        /// 新しいシェルで動いた（`ConversationRun.newShell`）
+        public var newShell = false
     }
 
     /// 始めた順
@@ -257,6 +259,7 @@ public struct ConversationRunStore: Hashable, Sendable {
             return
         }
         entries[i].code = run.code
+        entries[i].newShell = run.newShell == true
         entries[i].messageID = entries[i].messageID ?? run.messageID
         if entries[i].output.isEmpty { entries[i].output = run.output }
     }
@@ -289,7 +292,9 @@ public struct ConversationRunStore: Hashable, Sendable {
     private func index(_ id: String) -> Int? { entries.firstIndex { $0.id == id } }
 
     private static func entry(_ run: ConversationRun) -> Entry {
-        Entry(id: run.id, messageID: run.messageID, code: run.code, status: run.status, exitCode: run.exitCode, output: run.output, truncated: run.truncated)
+        Entry(
+            id: run.id, messageID: run.messageID, code: run.code, status: run.status, exitCode: run.exitCode, output: run.output, truncated: run.truncated,
+            newShell: run.newShell == true)
     }
 }
 

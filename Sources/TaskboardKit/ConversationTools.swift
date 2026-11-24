@@ -312,10 +312,12 @@ public struct ConversationRun: Codable, Hashable, Sendable, Identifiable {
     public var truncated: Bool
     public var startedAt: Date
     public var endedAt: Date?
+    /// 前の Run のシェルが無くなっていて、新しく起こしたシェルで動いた（変数と cd を引き継いでいない）。古い daemon は送らない
+    public var newShell: Bool?
 
     public init(
         id: String, conversationID: String, messageID: String?, language: String, code: String, status: Status, exitCode: Int32? = nil,
-        output: String = "", truncated: Bool = false, startedAt: Date, endedAt: Date? = nil
+        output: String = "", truncated: Bool = false, startedAt: Date, endedAt: Date? = nil, newShell: Bool? = nil
     ) {
         self.id = id
         self.conversationID = conversationID
@@ -328,6 +330,7 @@ public struct ConversationRun: Codable, Hashable, Sendable, Identifiable {
         self.truncated = truncated
         self.startedAt = startedAt
         self.endedAt = endedAt
+        self.newShell = newShell
     }
 }
 

@@ -88,7 +88,9 @@ actor ConversationRuns {
     /// 会話の id → Run の id（始めた順）
     private var order: [String: [String]] = [:]
     private var hostShells: [String: Shell] = [:]
-    private var opening: [String: Task<Void, Error>] = [:]
+    /// この daemon で Run を動かしたシェル（key）。無くなった後に起こし直したら、その Run に `newShell` を付ける。［シェルを再起動］で外す
+    private var usedShells: Set<String> = []
+    private var opening: [String: Task<Bool, Error>] = [:]
     /// シェルごとの書き込みの列（書いた順に届ける）
     private var writes: [String: Task<Void, Never>] = [:]
     private let sink: AsyncStream<Event>.Continuation
@@ -140,7 +142,9 @@ actor ConversationRuns {
             env["TERM"] = "dumb"
             // 画面から入力を送れないので、ページャ（less）が RETURN を待って止まらないようにする
             for name in ["PAGER", "GIT_PAGER", "GH_PAGER"] { env[name] = "cat" }
-            try await ensureShell(key, conversationID: conversationID, kind: kind, argv: [resolved.executable] + kind.arguments, env: env, cwd: cwd)
+            let opened = try await ensureShell(key, conversationID: conversationID, kind: kind, argv: [resolved.executable] + kind.arguments, env: env, cwd: cwd)
+            if opened, usedShells.contains(key) { entries[id]?.run.newShell = true }
+            usedShells.insert(key)
         } catch {
             entries.removeValue(forKey: id)
             order[conversationID]?.removeAll { $0 == id }
@@ -164,7 +168,7 @@ actor ConversationRuns {
             await self?.stop(id, as: .timedOut)
         }
         logger.info("conversation run started", metadata: ["conversation": .string(conversationID), "run": .string(id), "shell": .string(kind.rawValue)])
-        return run
+        return entries[id]?.run ?? run
     }
 
     func get(conversationID: String, _ id: String) -> ConversationRun? {
@@ -185,7 +189,11 @@ actor ConversationRuns {
             entries[id]?.stopping = .cancelled
         }
         // daemon を入れ替える前から残るシェルもあるので、覚えていない種類も閉じる
-        for kind in RunShell.allCases { await shells.close(Self.key(conversation: conversationID, kind)) }
+        for kind in RunShell.allCases {
+            let key = Self.key(conversation: conversationID, kind)
+            usedShells.remove(key)
+            await shells.close(key)
+        }
         logger.info("conversation run shells reset", metadata: ["conversation": .string(conversationID)])
     }
 
@@ -229,23 +237,24 @@ actor ConversationRuns {
 
     // MARK: シェル
 
-    private func ensureShell(_ key: String, conversationID: String, kind: RunShell, argv: [String], env: [String: String], cwd: String) async throws {
-        if hostShells[key]?.phase == .idle { return }
+    /// 新しくシェルを起こしたら true（残っていたシェルを使ったら false）
+    private func ensureShell(_ key: String, conversationID: String, kind: RunShell, argv: [String], env: [String: String], cwd: String) async throws -> Bool {
+        if hostShells[key]?.phase == .idle { return false }
         if let task = opening[key] { return try await task.value }
         let task = Task { try await self.openShell(key, conversationID: conversationID, kind: kind, argv: argv, env: env, cwd: cwd) }
         opening[key] = task
         defer { opening[key] = nil }
-        try await task.value
+        return try await task.value
     }
 
-    /// 残っているシェルが空いていれば使い、無いか様子が分からなければ起こし直す
-    private func openShell(_ key: String, conversationID: String, kind: RunShell, argv: [String], env: [String: String], cwd: String) async throws {
+    /// 残っているシェルが空いていれば使い（false）、無いか様子が分からなければ起こし直す（true）
+    private func openShell(_ key: String, conversationID: String, kind: RunShell, argv: [String], env: [String: String], cwd: String) async throws -> Bool {
         if try await shells.isLive(key) {
             hostShells[key] = Shell(conversationID: conversationID, kind: kind, phase: .idle)
             switch try await subscribe(key) {
             case .ready, .end, .stop:
                 logger.info("conversation run shell resumed", metadata: ["key": .string(key)])
-                return
+                return false
             case .start, nil:
                 // 前の daemon が始めた Run の途中か、準備の前：記録が無いので閉じて起こし直す
                 hostShells.removeValue(forKey: key)
@@ -281,6 +290,7 @@ actor ConversationRuns {
             throw error
         }
         logger.info("conversation run shell opened", metadata: ["key": .string(key), "shell": .string(argv[0])])
+        return true
     }
 
     private func startupTimedOut(_ key: String) {

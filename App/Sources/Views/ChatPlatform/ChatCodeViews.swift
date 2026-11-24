@@ -107,6 +107,9 @@ final class ChatRunOutputView: ChatFlippedView, ChatFitting {
                     action: reset))
         }
         var body: [ChatPart] = []
+        if entry.newShell {
+            body.append(ChatLabelView(String(localized: "新しいシェルで実行しました。前の実行の変数と作業フォルダは引き継いでいません。"), font: caption, color: ChatPalette.Platform.mutedText))
+        }
         if !entry.output.isEmpty {
             let text = ChatAttributed.plain(entry.output, font: fonts.platformCode, color: ChatPalette.Platform.text, line: fonts.line, query: nil)
             body.append(ChatCappedView(ChatTextBlock(text), maxHeight: ConversationMetrics.runOutputHeight))
