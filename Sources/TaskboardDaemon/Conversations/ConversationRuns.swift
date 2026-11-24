@@ -142,6 +142,10 @@ actor ConversationRuns {
             env["TERM"] = "dumb"
             // 画面から入力を送れないので、ページャ（less）が RETURN を待って止まらないようにする
             for name in ["PAGER", "GIT_PAGER", "GH_PAGER"] { env[name] = "cat" }
+            // 出力に残るスピナーと更新・アンケートの案内を止める。入力の問いは標準入力が /dev/null なので元から出ない
+            for name in ["GH_SPINNER_DISABLED", "CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK", "CLOUDSDK_SURVEY_DISABLE_PROMPTS", "CHECKPOINT_DISABLE"] {
+                env[name] = "1"
+            }
             let opened = try await ensureShell(key, conversationID: conversationID, kind: kind, argv: [resolved.executable] + kind.arguments, env: env, cwd: cwd)
             if opened, usedShells.contains(key) { entries[id]?.run.newShell = true }
             usedShells.insert(key)
