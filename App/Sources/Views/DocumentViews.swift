@@ -278,6 +278,7 @@ struct DocumentScreen: View {
         .onChange(of: "\(key)/\(model.writeBlock(key.machine, "実行できません")?.text ?? "")/\(web != nil)", initial: true) {
             runner.setBlocked(model.writeBlock(key.machine, "実行できません")?.text)
         }
+        .onAppear { runner.resume(machine: key.machine, model: model) }
         .onDisappear { runner.stop() }
         .modifier(FormsHandling(screen: self, doc: doc))
         .task(id: "\(key)/\(doc.latestRev)/\(selectedRev ?? -1)/\(web != nil)/\(showsDiff)") { await loadContent() }

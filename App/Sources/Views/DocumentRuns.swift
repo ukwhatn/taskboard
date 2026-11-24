@@ -185,7 +185,15 @@ final class DocumentRunner {
 
     /// 画面を閉じた：取り直しをやめる（Run は daemon で動き続け、結果は会話に送られる）
     func stop() {
-        for key in entries.keys { entries[key]?.poll?.cancel() }
+        for key in entries.keys {
+            entries[key]?.poll?.cancel()
+            entries[key]?.poll = nil
+        }
+    }
+
+    /// 画面に戻った：動いていた Run の取り直しを始め直す
+    func resume(machine: MachineID, model: AppModel) {
+        for (code, entry) in entries where entry.run?.status == .running && entry.poll == nil { poll(code, machine: machine, model: model) }
     }
 
     private func poll(_ code: String, machine: MachineID, model: AppModel) {
