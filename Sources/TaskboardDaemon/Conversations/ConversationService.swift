@@ -60,6 +60,8 @@ public actor ConversationService {
     var loginCapture: Task<[String: String], Never>?
     /// 入力待ち（idle）に入った会話を受ける（回答の配送・起こした側への知らせ・オーケストレーターの返事・定期起動の回を止める）
     private var idleHandlers: [@Sendable (String) async -> Void] = []
+    /// 終了した会話を受ける（PR の一覧の取り直し）
+    private var closeHandlers: [@Sendable (String) async -> Void] = []
     /// 起こした側への知らせが残った会話を受ける（`ConversationNotices`）
     private var noticeHandler: (@Sendable (String) async -> Void)?
     /// 記録を消している途中の会話（起こす・送る・答える・購読を断る）
@@ -165,6 +167,8 @@ public actor ConversationService {
     }
 
     func onIdle(_ handler: @escaping @Sendable (String) async -> Void) { idleHandlers.append(handler) }
+
+    func onClose(_ handler: @escaping @Sendable (String) async -> Void) { closeHandlers.append(handler) }
 
     func onNotice(_ handler: @escaping @Sendable (String) async -> Void) { noticeHandler = handler }
 
@@ -744,6 +748,7 @@ public actor ConversationService {
         for record in (try? environment.store.conversations()) ?? [] where record.parentConversationId == id {
             await conversations[record.id]?.stopIfResting()
         }
+        for handler in closeHandlers { await handler(id) }
     }
 
     /// 会話が自分を終了する（`session_exit`）。静かな会話・止まった会話はすぐ終了し、ターンの途中なら入力待ちに入ってから終了する。

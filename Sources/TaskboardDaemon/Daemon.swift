@@ -114,6 +114,8 @@ public enum Daemon {
         await conversations.onIdle { [linkNotices] id in await linkNotices.conversationIdle(id) }
         await conversations.onIdle { [wakes] id in await wakes.conversationIdle(id) }
         await conversations.onIdle { [watchNotices] id in await watchNotices.conversationIdle(id) }
+        await conversations.onIdle { [prs] id in await prs.conversationSettled(id) }
+        await conversations.onClose { [prs] id in await prs.conversationSettled(id) }
         let search = ConversationSearchIndex(
             store: store,
             sources: .init(

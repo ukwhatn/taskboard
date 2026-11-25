@@ -61,11 +61,13 @@ extension AppModel {
         let state = fleet.machineState(for: task.machine)
         let urls = Set(task.links.map(\.url))
         let column = fleet.board(id: task.boardID, on: task.machine)?.columns.first { $0.id == task.columnID }
+        let linked = state?.prs?.pullRequests.filter { urls.contains($0.url) } ?? []
         return CardSignals(
             workItems: fleet.workItems(for: task.id),
             links: task.links.compactMap { state?.links[$0.url] },
-            reviewRequested: state?.prs?.pullRequests.contains { $0.category == .reviewRequested && urls.contains($0.url) } ?? false,
-            reviewed: state?.prs?.pullRequests.contains { $0.category == .reviewed && urls.contains($0.url) } ?? false,
+            reviewRequested: linked.contains { $0.category == .reviewRequested },
+            reviewed: linked.contains { $0.category == .reviewed },
+            reviewerPullRequests: Set(linked.filter { [.reviewRequested, .reviewed].contains($0.category) }.map(\.url)),
             terminal: column?.kind == .terminal, conversations: state?.conversations(of: task).filter { !$0.isClosed } ?? [])
     }
 

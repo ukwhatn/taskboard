@@ -9,6 +9,8 @@ public struct CardSignals: Hashable, Sendable {
     public var reviewRequested: Bool
     /// このタスクの PR のどれかに、自分がレビューを出した（頼まれ直していれば `reviewRequested` が先に立つ）
     public var reviewed: Bool
+    /// このタスクの PR のうち、自分がレビューする側のもの（頼まれた・レビューした他人の PR）の URL。CI・承認・修正依頼は作者の番なので、カードの待ちにしない
+    public var reviewerPullRequests: Set<String>
     /// 完了・見送りの列にある
     public var terminal: Bool
     /// タスクに結ばれた host の会話（止まっているものも）
@@ -16,8 +18,9 @@ public struct CardSignals: Hashable, Sendable {
 
     public init(
         workItems: [WorkItem] = [], links: [LinkStatus] = [], reviewRequested: Bool = false, reviewed: Bool = false,
-        terminal: Bool = false, conversations: [Conversation] = []
+        reviewerPullRequests: Set<String> = [], terminal: Bool = false, conversations: [Conversation] = []
     ) {
+        self.reviewerPullRequests = reviewerPullRequests
         self.conversations = conversations
         self.workItems = workItems
         self.links = links
@@ -42,7 +45,7 @@ extension BoardTask {
         if let wait = TaskProgress.derive(signals.workItems)?.primaryWait {
             candidates.append(wait)
         }
-        candidates += signals.links.compactMap(\.pullRequest).compactMap(Self.pullRequestWait)
+        candidates += signals.links.filter { !signals.reviewerPullRequests.contains($0.url) }.compactMap(\.pullRequest).compactMap(Self.pullRequestWait)
         if let due = dueWait(today: today, calendar: calendar) {
             candidates.append(due)
         }

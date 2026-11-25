@@ -6,13 +6,15 @@ import TaskboardKit
 
 /// このマシンの gh にログインしているアカウントごとに、PR を 4 区分で取って state に載せる。
 ///
-/// - 間隔は 5 分。アプリの「更新」（`refresh`）で即時に。rate limit の待ちは `GitHubCLI` がリンク（`GitHubSync`）と共有して持ち、
+/// - 間隔は 5 分。アプリの「更新」（`refresh`）と、レビューを頼まれている PR のタスクの会話がターンを終えた・終了したとき（`conversationSettled`）は即時に。rate limit の待ちは `GitHubCLI` がリンク（`GitHubSync`）と共有して持ち、
 ///   どちらで当たっても、明けるまで手動の更新でも取らない（明けるのが 5 分より早くても 5 分は空ける）
 /// - 前回との差（CI・レビューの変化、新しいレビュー依頼）を `PRNotice` にして 24 時間持つ
 /// - 最後に取れた一覧は SQLite に残し、起動直後や VPN が切れている間もそれを見せる
 public actor PullRequestSync {
     public static let interval: TimeInterval = 300
     static let detailTTL: TimeInterval = 60
+    /// 会話がターンを終えてから取り直すまで。GitHub の検索は出したレビューをすぐには反映しないので、間を置いて 2 回取る
+    static let settledRefreshDelays: [Duration] = [.seconds(5), .seconds(30)]
 
     private let store: Store
     private let state: DaemonState
@@ -32,6 +34,7 @@ public actor PullRequestSync {
     private var notices: [PRNotice] = []
     private var details: [String: PullRequestDetail] = [:]
     private var refreshing = false
+    private var settledRefresh: Task<Void, Never>?
     private var lastLogins: Set<String> = []
 
     public init(store: Store, state: DaemonState, cli: GitHubCLI, machine: MachineID, now: @escaping @Sendable () -> Date = Date.init) {
@@ -65,6 +68,21 @@ public actor PullRequestSync {
         while !Task.isCancelled {
             await refresh(force: false)
             try? await Task.sleep(for: .seconds(20))
+        }
+    }
+
+    /// 会話が入力待ちに入った・終了した（`ConversationService.onIdle`・`onClose`）。その会話のタスクに、レビューを頼まれている PR がリンクされていれば取り直す
+    /// （レビューを出した後も、次に取り直すまで依頼が受信箱の対応待ちに残る）
+    public func conversationSettled(_ id: String) async {
+        guard let number = try? store.conversation(id: id)?.taskNumber, let task = try? store.task(number: number) else { return }
+        let requested = Set(snapshot().pullRequests.filter { $0.category == .reviewRequested }.map(\.url))
+        guard task.pullRequestLinks.contains(where: { requested.contains($0.url) }) else { return }
+        settledRefresh?.cancel()
+        settledRefresh = Task {
+            for delay in Self.settledRefreshDelays {
+                guard (try? await Task.sleep(for: delay)) != nil else { return }
+                await refresh(force: true)
+            }
         }
     }
 
