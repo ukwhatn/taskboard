@@ -158,7 +158,7 @@ public struct DocContent: Codable, Hashable, Sendable {
         changes = try c.decodeIfPresent([DocChange].self, forKey: .changes) ?? []
     }
 
-    /// `externalHosts` は 1 件以上のときだけ書く（外部の資源の無い文書の応答の形を変えない）
+    /// `externalHosts` と `changes` は 1 件以上のときだけ書く（無い文書の応答の形を変えない）
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(docID, forKey: .docID)
@@ -166,6 +166,7 @@ public struct DocContent: Codable, Hashable, Sendable {
         try c.encode(format, forKey: .format)
         try c.encode(content, forKey: .content)
         if !externalHosts.isEmpty { try c.encode(externalHosts, forKey: .externalHosts) }
+        if !changes.isEmpty { try c.encode(changes, forKey: .changes) }
     }
 }
 
