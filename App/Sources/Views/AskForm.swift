@@ -42,6 +42,17 @@ struct AskForm: View {
         }
     }
 
+    /// 見本を持つ選択肢の見本を全部重ね、選んでいる 1 つだけを見せる。欄の高さをいちばん高い見本に揃え、
+    /// 選択肢にポインタを載せて見本が替わっても欄が伸び縮みしない（入力欄の上の欄は下端が揃うので、伸び縮みで選択肢がポインタの下から動いた）
+    private func previews(_ question: AskQuestion, showing shown: AskOption) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(question.options.filter { $0.preview != nil }, id: \.label) { option in
+                let visible = option.label == shown.label
+                AskOptionPreview(option: option).opacity(visible ? 1 : 0).accessibilityHidden(!visible).allowsHitTesting(visible)
+            }
+        }
+    }
+
     var body: some View {
         let unanswered = questions.filter { q in answers.first { $0.questionID == q.id }?.isAnswered != true }
         let blocked = model.writeBlock(machine, "送信できません")
@@ -57,11 +68,11 @@ struct AskForm: View {
                         if width >= AskFormMetrics.sideBySideWidth {
                             HStack(alignment: .top, spacing: Space.block) {
                                 options(question).frame(maxWidth: .infinity, alignment: .leading)
-                                AskOptionPreview(option: preview).frame(maxWidth: .infinity)
+                                previews(question, showing: preview).frame(maxWidth: .infinity)
                             }
                         } else {
                             options(question)
-                            AskOptionPreview(option: preview)
+                            previews(question, showing: preview)
                         }
                     } else if !question.options.isEmpty {
                         options(question)
