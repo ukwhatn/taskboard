@@ -443,19 +443,80 @@ enum DocumentForms {
         """
 }
 
-/// 修正前と修正後の、共通の頭と尻を除いた部分（変わった部分）に `<mark>` を付けた HTML。全体が違うときは印を付けない
+/// 修正前と修正後の、変わった部分に `<mark>` を付けた HTML。文字（英数字は語）の単位で最長の共通部分を取り、残りに印を付ける。
+/// 共通部分が無いとき（全体を書き換えた）は印を付けない
 enum DocChangeSpan {
+    /// 表の大きさの上限（語の数の積）。超えたら共通の頭と尻だけを除く
+    static let maxCells = 2_000_000
+
     static func marked(_ before: String, _ after: String) -> (String, String) {
-        let a = Array(before), b = Array(after)
+        let a = tokens(before), b = tokens(after)
+        let (keepA, keepB) = a.count * b.count <= maxCells ? common(a, b) : ends(a, b)
+        guard keepA.contains(true) else { return (DocumentForms.escape(before), DocumentForms.escape(after)) }
+        return (html(a, keep: keepA), html(b, keep: keepB))
+    }
+
+    /// 英数字の続きは 1 語、ほかは 1 文字
+    static func tokens(_ text: String) -> [String] {
+        var result: [String] = []
+        var word = ""
+        for ch in text {
+            if ch.isASCII, ch.isLetter || ch.isNumber || ch == "_" {
+                word.append(ch)
+            } else {
+                if !word.isEmpty { result.append(word); word = "" }
+                result.append(String(ch))
+            }
+        }
+        if !word.isEmpty { result.append(word) }
+        return result
+    }
+
+    /// 最長の共通部分（LCS）に入る語
+    static func common(_ a: [String], _ b: [String]) -> ([Bool], [Bool]) {
+        let n = a.count, m = b.count
+        var table = [Int32](repeating: 0, count: (n + 1) * (m + 1))
+        for i in stride(from: n - 1, through: 0, by: -1) {
+            for j in stride(from: m - 1, through: 0, by: -1) {
+                table[i * (m + 1) + j] = a[i] == b[j] ? table[(i + 1) * (m + 1) + j + 1] + 1 : max(table[(i + 1) * (m + 1) + j], table[i * (m + 1) + j + 1])
+            }
+        }
+        var keepA = [Bool](repeating: false, count: n), keepB = [Bool](repeating: false, count: m)
+        var i = 0, j = 0
+        while i < n, j < m {
+            if a[i] == b[j] {
+                keepA[i] = true; keepB[j] = true; i += 1; j += 1
+            } else if table[(i + 1) * (m + 1) + j] >= table[i * (m + 1) + j + 1] {
+                i += 1
+            } else {
+                j += 1
+            }
+        }
+        return (keepA, keepB)
+    }
+
+    /// 共通の頭と尻
+    static func ends(_ a: [String], _ b: [String]) -> ([Bool], [Bool]) {
         var head = 0
         while head < a.count, head < b.count, a[head] == b[head] { head += 1 }
         var tail = 0
         while tail < a.count - head, tail < b.count - head, a[a.count - 1 - tail] == b[b.count - 1 - tail] { tail += 1 }
-        guard head + tail > 0 else { return (DocumentForms.escape(before), DocumentForms.escape(after)) }
-        func wrap(_ chars: [Character]) -> String {
-            let prefix = String(chars[..<head]), middle = String(chars[head..<(chars.count - tail)]), suffix = String(chars[(chars.count - tail)...])
-            return DocumentForms.escape(prefix) + (middle.isEmpty ? "" : "<mark>\(DocumentForms.escape(middle))</mark>") + DocumentForms.escape(suffix)
+        func keep(_ count: Int) -> [Bool] { (0..<count).map { $0 < head || $0 >= count - tail } }
+        return (keep(a.count), keep(b.count))
+    }
+
+    /// 印の付く語の続きを 1 つの `<mark>` にまとめる（空白と改行だけの続きには付けない）
+    static func html(_ tokens: [String], keep: [Bool]) -> String {
+        var result = "", run = ""
+        func flush() {
+            guard !run.isEmpty else { return }
+            result += run.allSatisfy(\.isWhitespace) ? DocumentForms.escape(run) : "<mark>\(DocumentForms.escape(run))</mark>"
+            run = ""
         }
-        return (wrap(a), wrap(b))
+        for (token, kept) in zip(tokens, keep) {
+            if kept { flush(); result += DocumentForms.escape(token) } else { run += token }
+        }
+        flush()
+        return result
     }
 }
