@@ -134,16 +134,19 @@ public struct DocContent: Codable, Hashable, Sendable {
     public var content: String
     /// 本文が読み込む外部の資源のホスト（`DocExternalHosts`。publish のときに集めた値）
     public var externalHosts: [String]
+    /// 本文の印 `<!-- change: id -->` の位置に描く修正前と修正後（その版と一緒に publish した値）
+    public var changes: [DocChange]
 
-    public init(docID: Int64, rev: Int, format: DocFormat, content: String, externalHosts: [String] = []) {
+    public init(docID: Int64, rev: Int, format: DocFormat, content: String, externalHosts: [String] = [], changes: [DocChange] = []) {
         self.docID = docID
         self.rev = rev
         self.format = format
         self.content = content
         self.externalHosts = externalHosts
+        self.changes = changes
     }
 
-    private enum CodingKeys: String, CodingKey { case docID, rev, format, content, externalHosts }
+    private enum CodingKeys: String, CodingKey { case docID, rev, format, content, externalHosts, changes }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -152,6 +155,7 @@ public struct DocContent: Codable, Hashable, Sendable {
         format = try c.decode(DocFormat.self, forKey: .format)
         content = try c.decode(String.self, forKey: .content)
         externalHosts = try c.decodeIfPresent([String].self, forKey: .externalHosts) ?? []
+        changes = try c.decodeIfPresent([DocChange].self, forKey: .changes) ?? []
     }
 
     /// `externalHosts` は 1 件以上のときだけ書く（外部の資源の無い文書の応答の形を変えない）
@@ -171,6 +175,48 @@ public struct DocSourceFile: Codable, Hashable, Sendable {
 
     public init(path: String?) {
         self.path = path
+    }
+}
+
+// MARK: - 修正の対比
+
+/// `doc_publish` の `changes` の 1 件。本文の印 `<!-- change: id -->` の位置に、修正前と修正後を並べて描く（答えは返さない）
+public struct DocChange: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    /// 項目の題（「3 節の結び」）
+    public var title: String?
+    /// その箇所が何の話か（節の話題・前後の段落の要約）。読み手が元の文書を開き直さずに判断できるように添える
+    public var context: String?
+    public var before: String
+    public var after: String
+
+    public init(id: String, title: String? = nil, context: String? = nil, before: String, after: String) {
+        self.id = id
+        self.title = title
+        self.context = context
+        self.before = before
+        self.after = after
+    }
+
+    public static let maxCount = 20
+    public static let titleChars = 60
+    public static let contextChars = 600
+    public static let textChars = 4_000
+
+    public static func validate(_ changes: [DocChange]) -> String? {
+        if changes.count > maxCount { return Copy.text("agent.doc.changes.count", ["limit": "\(maxCount)"]) }
+        var seen = Set<String>()
+        for change in changes {
+            guard PanelValidation.isValidID(change.id) else { return Copy.text("agent.panel.invalid.id", ["id": change.id, "limit": "\(PanelBudget.idChars)"]) }
+            guard seen.insert(change.id).inserted else { return Copy.text("agent.panel.invalid.duplicate", ["id": change.id]) }
+            if (change.title?.count ?? 0) > titleChars || (change.context?.count ?? 0) > contextChars
+                || change.before.count > textChars || change.after.count > textChars
+            {
+                return Copy.text(
+                    "agent.doc.changes.length", ["id": change.id, "title": "\(titleChars)", "context": "\(contextChars)", "text": "\(textChars)"])
+            }
+        }
+        return nil
     }
 }
 
@@ -700,10 +746,12 @@ public struct DocPublishRequest: Codable, Hashable, Sendable {
     public var workItem: Int64?
     /// 本文に置く送る文面。省略は「今ある文面に触らない」、空配列は全部外す
     public var drafts: [DocDraftSpec]?
+    /// 本文の印の位置に描く修正前と修正後。版の一部なので、省略はこの版に無いこと
+    public var changes: [DocChange]?
 
     public init(
         name: String, format: DocFormat, content: String, title: String? = nil, sourcePath: String? = nil, questions: [AskQuestion]? = nil,
-        requester: FeedbackRequester? = nil, workItem: Int64? = nil, drafts: [DocDraftSpec]? = nil
+        requester: FeedbackRequester? = nil, workItem: Int64? = nil, drafts: [DocDraftSpec]? = nil, changes: [DocChange]? = nil
     ) {
         self.name = name
         self.format = format
@@ -714,6 +762,7 @@ public struct DocPublishRequest: Codable, Hashable, Sendable {
         self.requester = requester
         self.workItem = workItem
         self.drafts = drafts
+        self.changes = changes
     }
 
     /// 名前の制約。パス区切りと `.` `..` を弾く

@@ -40,6 +40,15 @@ extension Store {
         }
     }
 
+    static let docChangesMigration = "v51 document changes"
+
+    /// 版ごとの修正の対比（JSON の配列）。今ある版には無い
+    static func registerDocChangesMigration(_ migrator: inout DatabaseMigrator) {
+        migrator.registerMigration(docChangesMigration) { db in
+            try db.alter(table: "docRevision") { t in t.add(column: "changes", .text).notNull().defaults(to: "[]") }
+        }
+    }
+
     static func registerDocumentMigrations(_ migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v4 documents, asks, reviews") { db in
             try db.create(table: "doc") { t in
@@ -138,6 +147,8 @@ extension Store {
         if let title = request.title, title.count > 500 { throw StoreError.invalid("title は 500 文字まで") }
         if let path = request.sourcePath, !path.hasPrefix("/") { throw StoreError.invalid("sourcePath は絶対パス") }
         if let drafts = request.drafts, let problem = DocDraftSpec.validate(drafts) { throw StoreError.invalid(problem) }
+        let changes = request.changes ?? []
+        if let problem = DocChange.validate(changes) { throw StoreError.invalid(problem) }
         let markers = DocMarkers.markers(in: request.content, format: request.format)
         var touchedAsks: [Int64] = []
         var workChanged = false
@@ -168,9 +179,12 @@ extension Store {
             // 印は、渡した質問・文面か、省いたなら今ある質問（本文と一緒に出した束）・文面を指す
             let questionIDs = try request.questions.map { Set($0.map(\.id)) } ?? Set(Self.latestInBodyAsk(db, doc: docID)?.questions.map(\.id) ?? [])
             let draftIDs = try request.drafts.map { Set($0.map(\.id)) } ?? Self.docDraftIDs(db, doc: docID)
-            if let problem = DocMarkers.problem(markers, questions: questionIDs, drafts: draftIDs) { throw StoreError.invalid(problem) }
+            if let problem = DocMarkers.problem(markers, questions: questionIDs, drafts: draftIDs, changes: Set(changes.map(\.id))) {
+                throw StoreError.invalid(problem)
+            }
             let hosts = Self.encodeJSON(DocExternalHosts.hosts(in: request.content, format: request.format))
-            var revisionRow = RevisionRow(id: nil, docId: docID, rev: revision, content: request.content, externalHosts: hosts, createdAt: now)
+            var revisionRow = RevisionRow(
+                id: nil, docId: docID, rev: revision, content: request.content, externalHosts: hosts, changes: Self.encodeJSON(changes), createdAt: now)
             try revisionRow.insert(db)
             try Self.touchTask(db, number: number, at: now)
             var askID: Int64?
@@ -239,7 +253,7 @@ extension Store {
             guard let row = try request.fetchOne(db) else { throw StoreError.revisionNotFound(rev ?? 0) }
             return DocContent(
                 docID: id, rev: row.rev, format: DocFormat(rawValue: doc.format) ?? .markdown, content: row.content,
-                externalHosts: Self.decodeJSON([String].self, row.externalHosts) ?? [])
+                externalHosts: Self.decodeJSON([String].self, row.externalHosts) ?? [], changes: Self.decodeJSON([DocChange].self, row.changes) ?? [])
         }
     }
 
@@ -882,6 +896,7 @@ private struct RevisionRow: Codable, FetchableRecord, MutablePersistableRecord {
     var rev: Int
     var content: String
     var externalHosts: String
+    var changes: String
     var createdAt: Date
 
     mutating func didInsert(_ inserted: InsertionSuccess) {

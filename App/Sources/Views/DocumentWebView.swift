@@ -267,7 +267,7 @@ final class DocumentWebController: NSObject {
             var escaping = HTMLEscaping()
             let document = Markdown.Document(parsing: content.content, options: [.parseBlockDirectives, .parseSymbolLinks])
             let rendered = DiffCode.html(escaping.visit(document).map { HTMLFormatter.format($0) } ?? "")
-            let body = forms ? DocumentForms.placeSlots(in: rendered) : rendered
+            let body = forms ? DocumentForms.placeSlots(in: rendered, changes: content.changes) : rendered
             // 図と色付けは引用のハイライト（bridgeScript の後の didFinish）より先に描く
             let scripts = DocumentScripts.injection(for: rendered)
             // シェルのコードブロックの［実行］は markdown の文書だけに置く（html の文書は見た目を変えない）
@@ -276,7 +276,7 @@ final class DocumentWebController: NSObject {
             return "<!doctype html><html style=\"--tb-size:\(textSize)px\"><head><meta charset=\"utf-8\">\(viewport)<meta name=\"color-scheme\" content=\"light dark\"><style>\(markdownStyle)\(highlightStyle)\(formsStyle)\(runsStyle)\(scripts.style)</style></head><body class=\"tb-markdown\"><main>\(body)</main>\(scripts.script)\(formsTail)\(runsTail)<script>\(bridgeScript)</script></body></html>"
         case .html:
             // 文書の見た目は変えない。ハイライトの見た目と選択の橋渡し、欄の置き場だけ足す。viewport が無ければ足す（iPhone で縮んで出る）
-            var html = forms ? DocumentForms.placeSlots(in: content.content) : content.content
+            var html = forms ? DocumentForms.placeSlots(in: content.content, changes: content.changes) : content.content
             if html.range(of: "name=\"viewport\"", options: .caseInsensitive) == nil && html.range(of: "name=viewport", options: .caseInsensitive) == nil {
                 if let head = html.range(of: "<head>", options: .caseInsensitive) {
                     html.replaceSubrange(head, with: "<head>" + viewport)

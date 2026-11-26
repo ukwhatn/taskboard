@@ -5,9 +5,35 @@ import TaskboardKit
 /// 印の無いものは本文の末尾にまとめる。答えと承認は `MessageProxy` でアプリに返し、daemon の回答・承認の API は今のものを使う
 @MainActor
 enum DocumentForms {
-    /// 本文の印を欄の置き場に替え、末尾の置き場を足す。印の規則は daemon の照合と同じ `DocMarkers`
-    static func placeSlots(in html: String) -> String {
-        DocMarkers.replace(in: html) { "<div class=\"tb-slot\" data-tb-slot=\"\($0.slot)\"></div>" }
+    /// 本文の印を欄の置き場に替え、末尾の置き場を足す。印の規則は daemon の照合と同じ `DocMarkers`。
+    /// 修正の対比（`change`）は答えを返さないので、置き場にせずその場で描く
+    static func placeSlots(in html: String, changes: [DocChange]) -> String {
+        let byID = Dictionary(changes.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        return DocMarkers.replace(in: html) { marker in
+            guard marker.kind == .change else { return "<div class=\"tb-slot\" data-tb-slot=\"\(marker.slot)\"></div>" }
+            return byID[marker.id].map(changeHTML)
+        }
+    }
+
+    /// 修正前と修正後。幅があれば左右、狭ければ上下（`.tb-change-sides`）。共通の頭と尻を除いた部分に印を付ける
+    static func changeHTML(_ change: DocChange) -> String {
+        let (before, after) = DocChangeSpan.marked(change.before, change.after)
+        var head = ""
+        if let title = change.title, !title.isEmpty { head += "<div class=\"tb-change-title\">\(escape(title))</div>" }
+        if let context = change.context, !context.isEmpty { head += "<div class=\"tb-change-context\">\(escape(context))</div>" }
+        let beforeLabel = escape(String(localized: "修正前"))
+        let afterLabel = escape(String(localized: "修正後"))
+        return """
+            <div class="tb-change" data-tb-change="\(escape(change.id))">\(head)<div class="tb-change-sides">\
+            <div class="tb-change-side tb-change-before"><div class="tb-change-label">\(beforeLabel)</div><div class="tb-change-text">\(before)</div></div>\
+            <div class="tb-change-side tb-change-after"><div class="tb-change-label">\(afterLabel)</div><div class="tb-change-text">\(after)</div></div>\
+            </div></div>
+            """
+    }
+
+    nonisolated static func escape(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
     }
 
     static let endSlot = "<div id=\"tb-forms-end\" class=\"tb-forms-end\"></div><div id=\"tb-forms-bar\" class=\"tb-forms-bar\" hidden></div>"
@@ -155,6 +181,17 @@ enum DocumentForms {
     static var style: String {
         """
         .tb-slot:empty{display:none}
+        .tb-change{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:CanvasText;margin:\(Int(Space.block))px 0;text-align:left}
+        .tb-markdown .tb-change{font-size:var(--tb-size,14px)}
+        .tb-change-title{font-weight:600;margin-bottom:2px}
+        .tb-change-context{font-size:.86em;color:GrayText;margin-bottom:\(Int(Space.row))px;white-space:pre-wrap}
+        .tb-change-sides{display:flex;gap:\(Int(Space.row))px;align-items:stretch}
+        .tb-change-side{flex:1 1 0;min-width:0;padding:\(Int(Space.row))px \(Int(Space.inline))px;border-radius:\(Int(Radius.box))px;background:rgba(127,127,127,.08)}
+        @media (max-width:640px){.tb-change-sides{flex-direction:column}}
+        .tb-change-label{font-size:.86em;color:GrayText;margin-bottom:2px}
+        .tb-change-text{white-space:pre-wrap;overflow-wrap:anywhere}
+        .tb-change-before mark{background:rgba(255,59,48,.18);color:inherit;text-decoration:line-through;text-decoration-color:rgba(255,59,48,.6)}
+        .tb-change-after mark{background:rgba(52,199,89,.22);color:inherit}
         .tb-markdown .tb-forms-end{max-width:760px;margin:0 auto}
         .tb-form{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;color:CanvasText;margin:\(Int(Space.block))px 0;padding:\(Int(Space.card))px;border-radius:\(Int(Radius.card))px;background:rgba(127,127,127,.08);text-align:left}
         .tb-markdown .tb-form{font-size:var(--tb-size,14px)}
@@ -404,4 +441,21 @@ enum DocumentForms {
         });
         })();
         """
+}
+
+/// 修正前と修正後の、共通の頭と尻を除いた部分（変わった部分）に `<mark>` を付けた HTML。全体が違うときは印を付けない
+enum DocChangeSpan {
+    static func marked(_ before: String, _ after: String) -> (String, String) {
+        let a = Array(before), b = Array(after)
+        var head = 0
+        while head < a.count, head < b.count, a[head] == b[head] { head += 1 }
+        var tail = 0
+        while tail < a.count - head, tail < b.count - head, a[a.count - 1 - tail] == b[b.count - 1 - tail] { tail += 1 }
+        guard head + tail > 0 else { return (DocumentForms.escape(before), DocumentForms.escape(after)) }
+        func wrap(_ chars: [Character]) -> String {
+            let prefix = String(chars[..<head]), middle = String(chars[head..<(chars.count - tail)]), suffix = String(chars[(chars.count - tail)...])
+            return DocumentForms.escape(prefix) + (middle.isEmpty ? "" : "<mark>\(DocumentForms.escape(middle))</mark>") + DocumentForms.escape(suffix)
+        }
+        return (wrap(a), wrap(b))
+    }
 }

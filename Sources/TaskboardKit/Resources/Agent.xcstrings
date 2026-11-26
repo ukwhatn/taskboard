@@ -210,6 +210,28 @@
         }
       }
     },
+    "agent.doc.changes.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正の対比は 1 つの文書に {{limit}} 件まで"
+          }
+        }
+      }
+    },
+    "agent.doc.changes.length" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "changes の {{id}} が長い。title は {{title}} 字、context は {{context}} 字、before と after は {{text}} 字まで"
+          }
+        }
+      }
+    },
     "agent.doc.drafts.count" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -250,6 +272,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本文の印 ask: {{id}} が指す質問が無い。質問の id は questions の並び順の q1, q2…（questions を省いた publish では、今の質問の id）"
+          }
+        }
+      }
+    },
+    "agent.doc.marker.unknownChange" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 change: {{id}} が指す対比が無い。changes の id を指す（changes は版ごとなので、印を置く publish では毎回渡す）"
           }
         }
       }
@@ -2494,6 +2527,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新しいフィードバックは無い"
+          }
+        }
+      }
+    },
+    "agent.mcp.documents.changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "changes の各項目は id・before・after（文字列）と、任意の title・context（文字列）を持つ"
           }
         }
       }
@@ -8169,7 +8213,73 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。判断を待つ質問（questions）と、人に承認してほしい送る文面（drafts）は、返答の文だけで書かず、前提（背景・判断材料・trade-off）と一緒にこの文書に書き、本文の答えてほしい位置に印を置く。印は markdown なら <!-- ask: q1 --> と <!-- draft: id -->、HTML なら <div data-ask=\"q1\"></div> と <div data-draft=\"id\"></div>。質問の id は questions の並び順の q1, q2…、文面の id は drafts の id。印の位置に回答と承認の欄が出て、印の無い質問と文面は本文の末尾に出る。無い id を指す印と、同じ印の重複は断る。回答と承認は taskboard がこのセッションに届ける（ブロックしない）。本文には taskboard:// のリンク（task_get・doc_list・board_overview・session_list の結果の各行の末尾の URL）を書ける。文書を別ウインドウで開いて押すと、メインウインドウがそのタスク・文書・会話・案件の画面に切り替わる"
+            "value" : "文書（markdown / html）をタスクに publish し、アプリで読めるようにする。同じ name で再 publish すると新しいリビジョンになる。判断を待つ質問（questions）と、人に承認してほしい送る文面（drafts）は、返答の文だけで書かず、前提（背景・判断材料・trade-off）と一緒にこの文書に書き、本文の答えてほしい位置に印を置く。印は markdown なら <!-- ask: q1 --> と <!-- draft: id -->、HTML なら <div data-ask=\"q1\"></div> と <div data-draft=\"id\"></div>。修正前と修正後を見せるときは changes に項目を渡し、同じく印 <!-- change: id --> を置く（答えは返らない）。質問の id は questions の並び順の q1, q2…、文面の id は drafts の id。印の位置に回答と承認の欄が出て、印の無い質問と文面は本文の末尾に出る。無い id を指す印と、同じ印の重複は断る。回答と承認は taskboard がこのセッションに届ける（ブロックしない）。本文には taskboard:// のリンク（task_get・doc_list・board_overview・session_list の結果の各行の末尾の URL）を書ける。文書を別ウインドウで開いて押すと、メインウインドウがそのタスク・文書・会話・案件の画面に切り替わる"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正前と修正後を並べて見せる項目（文章・設定・コードの書き換えの提示）。本文の印 <!-- change: id -->（HTML は <div data-change=\"id\"></div>）の位置に、幅があれば左右、狭ければ上下に並べ、変わった部分に印を付ける。答えは返らない（採否は questions で問う）。この版だけの値で、省略はこの版に対比が無いこと。変えた 1 文だけでなく、読み手がその場で判断できる範囲（前後の文）を before と after に入れ、その箇所が何の話かを context に書く"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes.after" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正後（4,000 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes.before" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正前（4,000 字まで。改行はそのまま描く）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes.context" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その箇所が何の話か（節の話題・前後の段落の要約。600 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes.id" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文の印 <!-- change: id --> が指す id（英数字と ._- で 40 字まで）"
+          }
+        }
+      }
+    },
+    "agent.tool.doc_publish.changes.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "項目の題（60 字まで。「3 節の結び」など）"
           }
         }
       }

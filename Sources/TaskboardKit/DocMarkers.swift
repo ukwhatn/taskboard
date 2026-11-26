@@ -1,9 +1,10 @@
 import Foundation
 
-/// 文書の本文に置く、質問か送る文面の欄の印。markdown は `<!-- ask: q1 -->`・`<!-- draft: slack-1 -->`、HTML は `<div data-ask="q1"></div>`・`<div data-draft="slack-1"></div>`
+/// 文書の本文に置く、質問・送る文面・修正の対比の欄の印。markdown は `<!-- ask: q1 -->`・`<!-- draft: slack-1 -->`・`<!-- change: c1 -->`、
+/// HTML は `<div data-ask="q1"></div>` のように同じ種類の名前を `data-` に付ける
 public struct DocMarker: Hashable, Sendable {
     public enum Kind: String, Hashable, Sendable {
-        case ask, draft
+        case ask, draft, change
     }
 
     public var kind: Kind
@@ -21,10 +22,10 @@ public struct DocMarker: Hashable, Sendable {
 /// 本文の印を読む。daemon は publish の照合に、アプリは HTML にした本文の置き換えに同じ規則を使う
 public enum DocMarkers {
     private static let idPattern = "[A-Za-z0-9._-]+"
-    private static let comment = try! NSRegularExpression(pattern: "<!--\\s*(ask|draft)\\s*:\\s*(\(idPattern))\\s*-->")
+    private static let comment = try! NSRegularExpression(pattern: "<!--\\s*(ask|draft|change)\\s*:\\s*(\(idPattern))\\s*-->")
     /// 中身の無い要素（`<div data-ask="q1"></div>`）は閉じタグまでを印にする
     private static let attribute = try! NSRegularExpression(
-        pattern: "<([A-Za-z][A-Za-z0-9]*)\\b[^>]*?\\sdata-(ask|draft)\\s*=\\s*[\"'](\(idPattern))[\"'][^>]*>(?:\\s*</\\1\\s*>)?")
+        pattern: "<([A-Za-z][A-Za-z0-9]*)\\b[^>]*?\\sdata-(ask|draft|change)\\s*=\\s*[\"'](\(idPattern))[\"'][^>]*>(?:\\s*</\\1\\s*>)?")
 
     /// 本文の順の印。markdown はコード（fenced code・backtick）の中を読まない。swift-markdown の HTML でもそこは escape されて印にならない
     public static func markers(in content: String, format: DocFormat) -> [DocMarker] {
@@ -42,14 +43,15 @@ public enum DocMarkers {
         return result
     }
 
-    /// 印が質問・文面の id を指しているか。外れていれば会話へ返す理由
-    public static func problem(_ markers: [DocMarker], questions: Set<String>, drafts: Set<String>) -> String? {
+    /// 印が質問・文面・対比の id を指しているか。外れていれば会話へ返す理由
+    public static func problem(_ markers: [DocMarker], questions: Set<String>, drafts: Set<String>, changes: Set<String>) -> String? {
         var seen = Set<DocMarker>()
         for marker in markers {
             guard seen.insert(marker).inserted else { return Copy.text("agent.doc.marker.duplicate", ["slot": marker.slot]) }
             switch marker.kind {
             case .ask where !questions.contains(marker.id): return Copy.text("agent.doc.marker.unknownAsk", ["id": marker.id])
             case .draft where !drafts.contains(marker.id): return Copy.text("agent.doc.marker.unknownDraft", ["id": marker.id])
+            case .change where !changes.contains(marker.id): return Copy.text("agent.doc.marker.unknownChange", ["id": marker.id])
             default: continue
             }
         }

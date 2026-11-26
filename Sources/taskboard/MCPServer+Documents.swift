@@ -43,6 +43,19 @@ extension TaskboardTools {
         ], required: ["id", "to", "body"]),
     ])
 
+    /// `doc_publish` の changes。本文の印の位置に修正前と修正後を並べる
+    static let changesSchema: Value = .object([
+        "type": .string("array"), "maxItems": .int(DocChange.maxCount),
+        "description": .string(Copy.text("agent.tool.doc_publish.changes")),
+        "items": schema([
+            "id": property("string", Copy.text("agent.tool.doc_publish.changes.id")),
+            "title": property("string", Copy.text("agent.tool.doc_publish.changes.title")),
+            "context": property("string", Copy.text("agent.tool.doc_publish.changes.context")),
+            "before": property("string", Copy.text("agent.tool.doc_publish.changes.before")),
+            "after": property("string", Copy.text("agent.tool.doc_publish.changes.after")),
+        ], required: ["id", "before", "after"]),
+    ])
+
     static let workItemForAskProperty = property(
         "integer",
         Copy.text("agent.mcp.documents.workItemForAskProperty"))
@@ -60,6 +73,7 @@ extension TaskboardTools {
                 "title": property("string", Copy.text("agent.tool.doc_publish.title")),
                 "questions": questionsSchema,
                 "drafts": draftsSchema,
+                "changes": changesSchema,
                 "work_item": workItemForAskProperty,
             ])) { tools, args in try await tools.docPublish(args) },
         ToolEntry(
@@ -124,6 +138,15 @@ extension TaskboardTools {
         }
     }
 
+    static func changes(from value: Value?) throws -> [DocChange]? {
+        guard let value, value.arrayValue != nil else { return nil }
+        do {
+            return try JSONDecoder().decode([DocChange].self, from: JSONEncoder().encode(value))
+        } catch {
+            throw ToolError.invalid(Copy.text("agent.mcp.documents.changes"))
+        }
+    }
+
     private func docPublish(_ args: [String: Value]) async throws -> String {
         let number = try await resolveTaskNumber(args)
         let path = args.string("path")
@@ -154,9 +177,11 @@ extension TaskboardTools {
         if let questions, let problem = AskQuestion.validate(questions) { throw ToolError.invalid(problem) }
         let drafts = try Self.drafts(from: args["drafts"])
         if let drafts, let problem = DocDraftSpec.validate(drafts) { throw ToolError.invalid(problem) }
+        let changes = try Self.changes(from: args["changes"])
+        if let changes, let problem = DocChange.validate(changes) { throw ToolError.invalid(problem) }
         let request = DocPublishRequest(
             name: name, format: format, content: body, title: args.string("title"), sourcePath: sourcePath, questions: questions, requester: requester,
-            workItem: args.int64("work_item"), drafts: drafts)
+            workItem: args.int64("work_item"), drafts: drafts, changes: changes)
         let result = try await client.publishDocument(task: number, request)
         return Self.describe(publish: result, task: number)
     }
