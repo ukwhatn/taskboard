@@ -1251,7 +1251,8 @@ public actor ConversationService {
                     return try await hooks.stopConversation(
                         HookStopRequest(
                             paneID: nil, agent: "claude", agentSessionID: call.sessionID ?? record.agentSessionId, cwd: call.cwd ?? record.cwd,
-                            turnStartedAt: turn?.startedAt, turnUsedTools: turn?.usedTools))
+                            turnStartedAt: turn?.startedAt, turnUsedTools: turn?.usedTools, turnLastReply: call.lastAssistantMessage,
+                            turnPresented: turn?.presented))
                 } catch {
                     logger.warning("conversation stop hook failed", metadata: ["conversation": .string(conversationID), "error": "\(error)"])
                     return nil

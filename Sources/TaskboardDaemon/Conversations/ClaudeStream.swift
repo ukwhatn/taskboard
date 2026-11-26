@@ -197,6 +197,8 @@ struct ClaudeHookCall: Equatable, Sendable {
     var cwd: String? = nil
     /// サブエージェントの中から来た hook だけ
     var agentID: String? = nil
+    /// Stop だけ：ターンの最後の応答の文（transcript はこの時点でまだ書けていないことがある）
+    var lastAssistantMessage: String? = nil
 }
 
 struct ClaudeControlResponse: Equatable, Sendable {
@@ -420,7 +422,8 @@ enum ClaudeStreamParser {
                             callbackID: request["callback_id"] as? String ?? "", event: input["hook_event_name"] as? String,
                             sessionID: input["session_id"] as? String, toolName: input["tool_name"] as? String,
                             toolUseID: input["tool_use_id"] as? String ?? request["tool_use_id"] as? String, toolInputJSON: json(input["tool_input"]),
-                            transcriptPath: input["transcript_path"] as? String, cwd: input["cwd"] as? String, agentID: input["agent_id"] as? String))))
+                            transcriptPath: input["transcript_path"] as? String, cwd: input["cwd"] as? String, agentID: input["agent_id"] as? String,
+                            lastAssistantMessage: input["last_assistant_message"] as? String))))
         case "elicitation":
             return .request(
                 ClaudeControlRequest(

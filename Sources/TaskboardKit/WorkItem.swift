@@ -417,14 +417,23 @@ public struct HookStopRequest: Codable, Hashable, Sendable {
     /// 読めなければ nil で、待ちの見直し（`HookStopResponse.reminder`）をしない
     public var turnStartedAt: Date?
     public var turnUsedTools: Bool?
+    /// 終わったターンの最後の応答の文（hook の入力の `last_assistant_message`）と、そのターンで文書・質問を出したか（transcript）。
+    /// どちらかが無ければ、問いの差し戻しをしない
+    public var turnLastReply: String?
+    public var turnPresented: Bool?
 
-    public init(paneID: PaneID? = nil, agent: String, agentSessionID: String, cwd: String, turnStartedAt: Date? = nil, turnUsedTools: Bool? = nil) {
+    public init(
+        paneID: PaneID? = nil, agent: String, agentSessionID: String, cwd: String, turnStartedAt: Date? = nil, turnUsedTools: Bool? = nil,
+        turnLastReply: String? = nil, turnPresented: Bool? = nil
+    ) {
         self.paneID = paneID
         self.agent = agent
         self.agentSessionID = agentSessionID
         self.cwd = cwd
         self.turnStartedAt = turnStartedAt
         self.turnUsedTools = turnUsedTools
+        self.turnLastReply = turnLastReply
+        self.turnPresented = turnPresented
     }
 }
 

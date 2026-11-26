@@ -111,8 +111,40 @@ public struct HookService: Sendable {
         guard let task = try store.task(linkedToSession: request.agentSessionID) else { return nil }
         // 概況の部品の古さはこのターン数で数える
         try store.notePanelTurn(task: task.number)
-        return try await waitReminder(task: task.number, request)
+        let reminders = [try await waitReminder(task: task.number, request), await askReminder(task: task.number, request)].compactMap { $0 }
+        return reminders.isEmpty ? nil : reminders.joined(separator: "\n")
     }
+
+    /// lead の会話が、文書も質問も出さずに人への問いの文でターンを終えたら、文書に移すよう 1 回だけ頼む。
+    /// 文の問いは会話が進むと流れ、受信箱の依頼にもならない（`docs/ux-principles.md`「依頼の決まり」）。委譲先の問いは lead が読むので頼まない
+    func askReminder(task number: Int, _ request: HookStopRequest) async -> String? {
+        guard let started = request.turnStartedAt, request.turnPresented == false, let reply = request.turnLastReply,
+            Self.endsWithQuestion(reply), await isLead(task: number, request),
+            await remindedWaits.claim(key: "ask:\(request.agentSessionID)@\(started.timeIntervalSince1970)")
+        else { return nil }
+        return Copy.text("agent.hook.hookService.ask", ["task": "\(number)"])
+    }
+
+    /// 応答の最後の 3 行（コードの塊と引用を除く）に、人に判断を求める問いがあるか
+    static func endsWithQuestion(_ reply: String) -> Bool {
+        var inFence = false
+        var lines: [String] = []
+        for raw in reply.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.hasPrefix("```") || line.hasPrefix("~~~") { inFence.toggle(); continue }
+            if inFence || line.isEmpty || line.hasPrefix(">") { continue }
+            lines.append(line)
+        }
+        return lines.suffix(3).contains { line in
+            let bare = line.trimmingCharacters(in: CharacterSet(charactersIn: "*_`）) 　"))
+            return bare.hasSuffix("？") || bare.hasSuffix("?") || questionPhrases.contains { line.contains($0) }
+        }
+    }
+
+    static let questionPhrases = [
+        "よろしいでしょうか", "よいでしょうか", "いいでしょうか", "よいですか", "いいですか", "どうしますか", "どちらにしますか",
+        "ご判断ください", "判断してください", "選んでください", "教えてください", "指示をください",
+    ]
 
     private func syncPullRequests(_ request: HookStopRequest) async throws -> HookStopResponse {
         var messages: [String] = []
@@ -204,6 +236,9 @@ public struct HookService: Sendable {
 /// 見直しを頼んだ待ち（作業項目と、待ちにした時刻）。daemon を起こし直すと忘れ、同じ待ちをもう 1 回だけ頼むことがある
 actor RemindedWaits {
     private var seen: Set<String> = []
+
+    /// まだ頼んでいない鍵なら頼んだことにして true（問いの差し戻しは、会話とターンの始まりを鍵にする）
+    func claim(key: String) -> Bool { seen.insert(key).inserted }
 
     /// まだ頼んでいない待ちを返し、頼んだことにする。待ちを付け直す（updatedAt が変わる）と別の待ちとして数える
     func claim(_ items: [WorkItem]) -> [WorkItem] {

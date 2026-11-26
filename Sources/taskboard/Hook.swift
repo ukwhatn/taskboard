@@ -27,6 +27,8 @@ struct Hook: AsyncParsableCommand {
         /// 付いている会話の題（/rename か前の hook）
         var sessionTitle: String?
         var transcriptPath: String?
+        /// Stop だけ：ターンの最後の応答の文
+        var lastAssistantMessage: String?
 
         enum CodingKeys: String, CodingKey {
             case cwd, source
@@ -35,6 +37,7 @@ struct Hook: AsyncParsableCommand {
             case agentID = "agent_id"
             case sessionTitle = "session_title"
             case transcriptPath = "transcript_path"
+            case lastAssistantMessage = "last_assistant_message"
         }
 
         static func read() -> Payload? {
@@ -97,7 +100,7 @@ struct Hook: AsyncParsableCommand {
             if let response = try? await client.hookStop(
                 HookStopRequest(
                     agent: "claude", agentSessionID: sessionID, cwd: payload.cwd ?? FileManager.default.currentDirectoryPath,
-                    turnStartedAt: turn?.startedAt, turnUsedTools: turn?.usedTools))
+                    turnStartedAt: turn?.startedAt, turnUsedTools: turn?.usedTools, turnLastReply: payload.lastAssistantMessage, turnPresented: turn?.presented))
             {
                 for message in response.messages { print(message) }
                 fflush(stdout)

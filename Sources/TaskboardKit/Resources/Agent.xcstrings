@@ -408,6 +408,17 @@
         }
       }
     },
+    "agent.hook.hookService.ask" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[taskboard] タスク #{{task}} のこのターンは、人への問いの文で終わり、文書も質問も出していない。文の問いは会話が進むと流れ、受信箱の依頼にもならない。\n判断を求めるなら、前提と推奨を書いた文書を doc_publish の questions で載せ、本文の答えてほしい位置に印を置く（短い問いは ask_user）。会話の流れの中で決める判断なら AskUserQuestion を使う。人に答えを求める問いでなければ、そのまま終える\n"
+          }
+        }
+      }
+    },
     "agent.hook.hookService.blocker" : {
       "extractionState" : "manual",
       "localizations" : {
