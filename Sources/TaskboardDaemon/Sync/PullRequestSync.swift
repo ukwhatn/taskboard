@@ -34,6 +34,7 @@ public actor PullRequestSync {
     private var notices: [PRNotice] = []
     private var details: [String: PullRequestDetail] = [:]
     private var refreshing = false
+    private var forceQueued = false
     private var settledRefresh: Task<Void, Never>?
     private var lastLogins: Set<String> = []
 
@@ -77,23 +78,39 @@ public actor PullRequestSync {
         guard let number = try? store.conversation(id: id)?.taskNumber, let task = try? store.task(number: number) else { return }
         let requested = Set(snapshot().pullRequests.filter { $0.category == .reviewRequested }.map(\.url))
         guard task.pullRequestLinks.contains(where: { requested.contains($0.url) }) else { return }
+        logger.info("pr refresh after conversation settled", metadata: ["conversation": .string(id), "task": .stringConvertible(number)])
         settledRefresh?.cancel()
         settledRefresh = Task {
             for delay in Self.settledRefreshDelays {
                 guard (try? await Task.sleep(for: delay)) != nil else { return }
-                await refresh(force: true)
+                let refreshed = await refresh(force: true)
+                logger.info("pr refreshed after conversation settled", metadata: ["fetchedAt": .string(refreshed.accounts.compactMap(\.fetchedAt).map { "\($0)" }.joined(separator: ","))])
             }
         }
     }
 
-    /// 期限が来たアカウントを取り直す。`force` は rate limit 以外の待ちを無視する（アプリの「更新」）
+    /// 期限が来たアカウントを取り直す。`force` は rate limit 以外の待ちを無視する（アプリの「更新」）。
+    /// 取り直している間に来た `force` は、今の分が終わってからもう一度回す（アカウントの確認に 10 秒ほどかかり、見回りと重なった更新が捨てられていた）
     @discardableResult
     public func refresh(force: Bool) async -> PRSnapshot {
-        guard !refreshing else { return snapshot() }
+        guard !refreshing else {
+            if force { forceQueued = true }
+            return snapshot()
+        }
         refreshing = true
-        defer { refreshing = false }
+        var force = force
+        repeat {
+            forceQueued = false
+            await refreshOnce(force: force)
+            force = true
+        } while forceQueued
+        refreshing = false
+        return snapshot()
+    }
+
+    private func refreshOnce(force: Bool) async {
         // 読めない・確かめが時間切れのアカウントは外さず、前の一覧と控えを残す（外すと、負荷の高い間に一覧が出たり消えたりした）
-        guard let listing = await cli.accountListing() else { return snapshot() }
+        guard let listing = await cli.accountListing() else { return }
         let logins = listing.usable
         let live = Set((listing.usable + listing.unconfirmed).map { "\($0.host)|\($0.login)" })
         if live != lastLogins {
@@ -118,7 +135,6 @@ public actor PullRequestSync {
             changed = true
         }
         if changed { await publish() }
-        return snapshot()
     }
 
     private func fetch(_ account: GitHubCLI.Account, into entry: inout AccountState) async {
