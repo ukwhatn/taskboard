@@ -192,6 +192,9 @@ private struct PhoneTaskRow: View {
                 if let status {
                     Text(status.label).foregroundStyle(status.isMine ? Color.orange : Color.secondary)
                 }
+                if let note = model.statusNote(of: task) {
+                    Text(verbatim: note).foregroundStyle(.secondary)
+                }
                 if let progress {
                     Text(progress).foregroundStyle(.secondary)
                 }

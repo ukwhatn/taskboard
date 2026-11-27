@@ -364,7 +364,8 @@ struct TaskTreeRow: View {
     var body: some View {
         let progress = model.delegateProgress(of: task)
         let selected = model.selectedTask == task.id
-        let badge = [status?.label, progress?.label].compactMap { $0 }.joined(separator: " ")
+        let note = model.statusNote(of: task)
+        let badge = [[status?.label, note].compactMap { $0 }.joined(separator: " · "), progress?.label ?? ""].filter { !$0.isEmpty }.joined(separator: " ")
         let progressText = progress.map { String(localized: "委譲先\($0.total)件中\($0.done)件済み") }
         let background = model.runningBackgroundTasks(of: task)
         let backgroundText = background > 0 ? StatusAppearance.backgroundTasks(background).label : nil
@@ -414,8 +415,8 @@ struct TaskTreeRow: View {
         .onHover { hovering = $0 }
         #endif
         .contextMenu { TaskRowMenuItems(task: task, status: status) }
-        .help((["#\(task.number) \(task.title)", status?.label, progressText, backgroundText]).compactMap { $0 }.joined(separator: "\n"))
-        .accessibilityLabel((["#\(task.number) \(task.title)", status?.label, progressText, backgroundText]).compactMap { $0 }.joined(separator: "、"))
+        .help((["#\(task.number) \(task.title)", status?.label, note, progressText, backgroundText]).compactMap { $0 }.joined(separator: "\n"))
+        .accessibilityLabel((["#\(task.number) \(task.title)", status?.label, note, progressText, backgroundText]).compactMap { $0 }.joined(separator: "、"))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -514,7 +515,7 @@ struct TaskRowMenuItems: View {
     }
 }
 
-/// タスクの行頭の印。自分の番は橙、未読は青、実行中は緑、PR はチップと同じ色（CI成功は緑、マージ済みは紫）、どれでもなければ空の丸
+/// タスクの行頭の印。自分の番は橙、未読は青、実行中は緑、どれでもなければ空の丸
 struct TaskRowGlyph: View {
     let status: TaskRowStatus?
 
@@ -523,10 +524,6 @@ struct TaskRowGlyph: View {
         case nil: StatusGlyph(appearance: StatusAppearance(label: String(localized: "待機"), color: .secondary, symbol: "circle"))
         case .unread: StatusGlyph(appearance: .of(.unread))
         case .running: StatusGlyph(appearance: .of(.running))
-        case .ciPassed:
-            StatusGlyph(appearance: StatusAppearance(label: TaskRowStatus.ciPassed.label, color: CheckState.success.color, symbol: CheckState.success.symbol))
-        case .merged:
-            StatusGlyph(appearance: StatusAppearance(label: TaskRowStatus.merged.label, color: PullRequestLinkState.State.merged.color, symbol: PullRequestLinkState.State.merged.symbol))
         case let status?: StatusGlyph(appearance: StatusAppearance(label: status.label, color: .orange, symbol: "exclamationmark.circle.fill"))
         }
     }

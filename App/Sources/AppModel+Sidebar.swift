@@ -1,10 +1,11 @@
 import Foundation
 import TaskboardKit
 
-/// サイドバーのタスクの行の札。対応待ち（無視していない受信箱の項目）が先、次にこの端末で見ていないターンの終わり、
-/// 動いているセッション、リンクの PR の順。並びは case の順（強いものが先）
+/// サイドバーのタスクの行の札。taskboard が出すのは、会話と文書が明示した依頼（無視していない受信箱の項目）と、
+/// この端末で見ていないターンの終わり、動いているセッションだけ。PR やリンクから組み立てる札は、GitHub を取り直すまで
+/// 古い状態が残るので出さず、それ以外の状態は会話が書く文（`BoardTask.statusNote`）で出す。並びは case の順（強いものが先）
 enum TaskRowStatus: CaseIterable, Comparable {
-    case blocked, question, planApproval, manualWork, reviewRequested, changesRequested, ciFailed, unread, running, ciPassed, merged
+    case blocked, question, planApproval, manualWork, reviewRequested, unread, running
 
     var label: String {
         switch self {
@@ -13,19 +14,15 @@ enum TaskRowStatus: CaseIterable, Comparable {
         case .planApproval: String(localized: "計画の承認待ち")
         case .manualWork: String(localized: "手作業待ち")
         case .reviewRequested: String(localized: "レビュー依頼あり")
-        case .changesRequested: String(localized: "修正依頼あり")
-        case .ciFailed: String(localized: "CI失敗")
         case .unread: String(localized: "未読")
         case .running: String(localized: "実行中")
-        case .ciPassed: String(localized: "CI成功")
-        case .merged: PullRequestLinkState.State.merged.label
         }
     }
 
-    /// 自分の番か（橙にする）。未読・実行中・PR の札は知らせで、未読と PR はそれぞれの色を持つ
+    /// 自分の番か（橙にする）。未読・実行中の札は知らせで、それぞれの色を持つ
     var isMine: Bool { self < .unread }
 
-    /// 対応待ちの項目の札。お知らせと、タスクの行に出さない種類は nil
+    /// 対応待ちの項目の札。お知らせと、タスクの行に出さない種類（PR の番。受信箱には残す）は nil
     init?(_ item: InboxItem) {
         guard item.group == .waiting else { return nil }
         switch item.kind {
@@ -34,18 +31,8 @@ enum TaskRowStatus: CaseIterable, Comparable {
         case .question, .panelDraft, .docDraft: self = .question
         case .reviewRequest: self = .reviewRequested
         case .manualWork: self = .manualWork
-        case .pullRequestTurn(_, .reviewRequested): self = .reviewRequested
-        case .pullRequestTurn(_, .changesRequested): self = .changesRequested
-        case .pullRequestTurn(_, .ciFailed): self = .ciFailed
         default: return nil
         }
-    }
-
-    /// リンクの PR の札。開いている PR が全部 CI 成功なら CI成功、開いている PR が無く、マージ済みがあればマージ済み
-    static func pullRequest(_ pullRequests: [PullRequestLinkState]) -> TaskRowStatus? {
-        let open = pullRequests.filter { $0.state == .open }
-        if !open.isEmpty { return open.allSatisfy { $0.checks == .success } ? .ciPassed : nil }
-        return pullRequests.contains { $0.state == .merged } ? .merged : nil
     }
 }
 
@@ -75,14 +62,23 @@ extension AppModel {
     }
 
     /// タスクの行の札。無視していない対応待ち（`waiting`）の強いもの、無ければこの端末で見ていないターンの終わり、
-    /// 動いている lead・委譲先、リンクの PR の順
+    /// 動いている lead・委譲先の順
     func rowStatus(of task: BoardTask, waiting: [InboxItem]) -> TaskRowStatus? {
         if let waiting = waiting.compactMap(TaskRowStatus.init).min() { return waiting }
         let conversations = taskSessions(for: task).conversations
         if conversations.contains(where: unreadMarks.isUnread) { return .unread }
         if conversations.contains(where: { [.running, .starting].contains($0.phase) }) { return .running }
-        let links = fleet.machineState(for: task.machine)?.links ?? [:]
-        return TaskRowStatus.pullRequest(task.links.compactMap { links[$0.url]?.pullRequest })
+        return nil
+    }
+
+    /// 会話が書いた状態の文。完了・見送りの列のタスクと、書いた会話が終了しているものは出さない
+    /// （daemon が外すが、外す前の版の daemon と、外した知らせが届く前の分をここでも落とす）
+    func statusNote(of task: BoardTask) -> String? {
+        guard let note = task.statusNote else { return nil }
+        let state = fleet.machineState(for: task.machine)
+        if let board = state?.boards[task.boardID], board.columns.first(where: { $0.id == task.columnID })?.kind == .terminal { return nil }
+        if let id = note.conversationID, state?.conversations[ConversationKey(machine: task.machine, id: id)]?.isClosed == true { return nil }
+        return note.text
     }
 
     /// タスクの行の［既読にする］を出すか

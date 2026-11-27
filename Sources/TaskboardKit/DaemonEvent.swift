@@ -219,10 +219,12 @@ public struct TaskUpdateRequest: Codable, Hashable, Sendable {
     public var clearDue: Bool
     public var addLinks: [String]
     public var removeLinkIDs: [Int64]
+    /// 状態の文を書く（空の文で外す）
+    public var status: TaskStatusUpdate?
 
     public init(
         title: String? = nil, note: String? = nil, columnID: String? = nil, boardID: String? = nil, due: String? = nil, clearDue: Bool = false,
-        addLinks: [String] = [], removeLinkIDs: [Int64] = []
+        addLinks: [String] = [], removeLinkIDs: [Int64] = [], status: TaskStatusUpdate? = nil
     ) {
         self.title = title
         self.note = note
@@ -232,6 +234,7 @@ public struct TaskUpdateRequest: Codable, Hashable, Sendable {
         self.clearDue = clearDue
         self.addLinks = addLinks
         self.removeLinkIDs = removeLinkIDs
+        self.status = status
     }
 }
 

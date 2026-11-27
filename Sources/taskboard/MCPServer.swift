@@ -226,6 +226,12 @@ struct TaskboardTools: Sendable {
                 "unlink_sessions": property("array", Copy.text("agent.tool.task_update.unlink_sessions"), items: property("string")),
             ])) { tools, args in try await tools.taskUpdate(args) },
         ToolEntry(
+            name: "task_status", description: Copy.text("agent.tool.task_status"),
+            inputSchema: schema([
+                "task_id": currentTaskIDProperty,
+                "text": property("string", Copy.text("agent.tool.task_status.text")),
+            ], required: ["text"])) { tools, args in try await tools.taskStatus(args) },
+        ToolEntry(
             name: "work_list", description: Copy.text("agent.tool.work_list"),
             inputSchema: currentTaskOnlySchema) { tools, args in try await tools.workList(args) },
         ToolEntry(
@@ -409,6 +415,7 @@ struct TaskboardTools: Sendable {
             lines.append(Copy.text("agent.mcp.core.lines.7", ["columnID": "\(task.columnID)"]))
         }
         if let due = task.due { lines.append(Copy.text("agent.mcp.core.lines.8", ["due": "\(due)"])) }
+        if let note = task.statusNote { lines.append(Copy.text("agent.mcp.status.line", ["text": note.text])) }
         if !task.note.isEmpty { lines.append(Copy.text("agent.mcp.core.lines.9", ["note": "\(task.note)"])) }
         for link in task.links {
             let kind = DevinSession.id(fromURL: link.url) != nil ? Copy.text("agent.mcp.core.kind") : link.kind.rawValue
@@ -544,6 +551,19 @@ struct TaskboardTools: Sendable {
             lines.append(Copy.text("agent.mcp.core.lines.13") + (try await linkCurrentSession(to: number).note))
         }
         return lines.joined(separator: "\n")
+    }
+
+    private func taskStatus(_ args: [String: Value]) async throws -> String {
+        let number = try await resolveTaskNumber(args)
+        guard let text = args.string("text") else { throw ToolError.missing("text") }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count <= TaskStatusNote.limit, !trimmed.contains("\n") else {
+            throw ToolError.invalid(Copy.text("agent.store.status.limit", ["limit": "\(TaskStatusNote.limit)"]))
+        }
+        let snapshot = try await client.snapshot()
+        let task = try await client.updateTask(number: number, TaskUpdateRequest(status: TaskStatusUpdate(text: trimmed, conversationID: ownConversation(in: snapshot)?.id)))
+        guard let note = task.statusNote else { return Copy.text("agent.mcp.status.cleared", ["number": "\(task.number)"]) }
+        return Copy.text("agent.mcp.status.set", ["number": "\(task.number)", "text": note.text])
     }
 
     private func workList(_ args: [String: Value]) async throws -> String {

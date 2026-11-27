@@ -111,12 +111,23 @@ public struct HookService: Sendable {
         guard let task = try store.task(linkedToSession: request.agentSessionID) else { return nil }
         // 概況の部品の古さはこのターン数で数える
         try store.notePanelTurn(task: task.number)
-        let reminders = [try await waitReminder(task: task.number, request), await askReminder(task: task.number, request)].compactMap { $0 }
+        let reminders = [
+            try await waitReminder(task: task.number, request), await askReminder(task: task.number, request), await statusReminder(task: task, request),
+        ].compactMap { $0 }
         return reminders.isEmpty ? nil : reminders.joined(separator: "\n")
     }
 
     /// lead の会話が、文書も質問も出さずに人への問いの文でターンを終えたら、文書に移すよう 1 回だけ頼む。
     /// 文の問いは会話が進むと流れ、受信箱の依頼にもならない（`docs/ux-principles.md`「依頼の決まり」）。委譲先の問いは lead が読むので頼まない
+    /// 状態の文（`task_status`）を書いてから、このターンで書き直さずに作業した lead に、まだ正しいかを 1 回確かめさせる
+    func statusReminder(task: BoardTask, _ request: HookStopRequest) async -> String? {
+        guard let note = task.statusNote, let started = request.turnStartedAt, request.turnUsedTools == true, note.setAt < started,
+            await isLead(task: task.number, request),
+            await remindedWaits.claim(key: "status:\(request.agentSessionID)@\(started.timeIntervalSince1970)")
+        else { return nil }
+        return Copy.text("agent.hook.hookService.status", ["task": "\(task.number)", "text": note.text])
+    }
+
     func askReminder(task number: Int, _ request: HookStopRequest) async -> String? {
         guard let started = request.turnStartedAt, request.turnPresented == false, let reply = request.turnLastReply,
             Self.endsWithQuestion(reply), await isLead(task: number, request),

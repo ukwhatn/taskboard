@@ -116,6 +116,8 @@ public enum Daemon {
         await conversations.onIdle { [watchNotices] id in await watchNotices.conversationIdle(id) }
         await conversations.onIdle { [prs] id in await prs.conversationSettled(id) }
         await conversations.onClose { [prs] id in await prs.conversationSettled(id) }
+        // 書いた会話が終われば、その会話が出していた状態は誰も更新しない
+        await conversations.onClose { [store] id in _ = try? store.clearStatuses(writtenBy: id) }
         let search = ConversationSearchIndex(
             store: store,
             sources: .init(

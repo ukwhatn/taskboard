@@ -118,6 +118,7 @@ public final class Store: Sendable {
         registerUsageAccountSampleMigration(&migrator)  // v50（Store+Usage）
         registerDocChangesMigration(&migrator)  // v51（Store+Documents）
         registerClientPrefsMigration(&migrator)  // v52（Store+ClientPrefs）
+        registerTaskStatusMigration(&migrator)  // v53（Store+TaskStatus）
         return migrator
     }
 
@@ -336,6 +337,7 @@ public final class Store: Sendable {
             if let title = request.title { row.title = title }
             if let note = request.note { row.note = note }
             if request.clearDue { row.due = nil } else if let due = request.due { row.due = due }
+            if let status = request.status { try Self.apply(status, to: &row) }
             row.updatedAt = Date()
             try row.update(db)
             for url in request.addLinks where !url.isEmpty {
@@ -349,6 +351,11 @@ public final class Store: Sendable {
                 try ColumnRow.filter(Column("boardId") == row.boardId && Column("id") == row.columnId).fetchOne(db)?.kind == BoardColumn.Kind.terminal.rawValue
             {
                 cancelled = try Self.cancelOpenAsks(db, task: number, machine: machineID)
+                // 終わったタスクの状態は古い記録なので外す（`ux-principles.md`「自動で閉じる条件」）
+                if row.statusText != nil {
+                    Self.clearStatus(&row)
+                    try row.update(db)
+                }
             }
             return (try Self.fetchTasks(db, machine: machineID, numbers: [number]).first!, cancelled)
         }
@@ -677,7 +684,9 @@ public final class Store: Sendable {
                         id: $0.id!, agent: $0.agent, sessionID: $0.sessionId, cwd: $0.cwd, label: $0.label, linkedAt: $0.linkedAt,
                         launchArgs: decodeStrings($0.launchArgs))
                 },
-                importedID: row.importedId, createdAt: row.createdAt, updatedAt: row.updatedAt)
+                importedID: row.importedId,
+                statusNote: row.statusText.flatMap { text in row.statusSetAt.map { TaskStatusNote(text: text, conversationID: row.statusConversationId, setAt: $0) } },
+                createdAt: row.createdAt, updatedAt: row.updatedAt)
         }
     }
 
@@ -782,6 +791,10 @@ struct TaskRow: Codable, FetchableRecord, MutablePersistableRecord {
     var importedId: Int?
     var createdAt: Date
     var updatedAt: Date
+    /// 会話が書いた状態の文（`TaskStatusNote`）。3 つとも揃うか、どれも NULL
+    var statusText: String? = nil
+    var statusConversationId: String? = nil
+    var statusSetAt: Date? = nil
 
     mutating func didInsert(_ inserted: InsertionSuccess) {
         number = inserted.rowID

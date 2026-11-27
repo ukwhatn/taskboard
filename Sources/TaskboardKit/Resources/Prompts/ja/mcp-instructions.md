@@ -1,6 +1,7 @@
 taskboard は案件 → 列 → タスク → 作業項目のボード。タスクに紐づいたセッションは task_id を省ける（SessionStart hook の案内にタスクの番号がある）
 - 紐づけ: taskboard の外で起動したセッションは、task_update か task_create の link_session でタスクに紐づける。紐づけた後の案内は session_guide で読む
 - 進め方: 着手したら task_update で列を進め、work_add で作業を登録し、進めるたびに work_update で状態（doing・done・wait）を更新する
+- 状態の文: タスクが何を待っているか・どこまで進んだかを、task_status で 20 文字までの文にする（サイドバーのタスクの行の 2 行目に出る。例: 「レビュー待ち（田中さん）」「CI の結果待ち」）。状態が変わったら書き直し、無くなったら空で外す。書いた会話が終了するか、タスクを完了・見送りに移すと外れる。会話の問い・文書の質問・実行中は taskboard が出すので書かない
 - 人への提示: 計画書・報告・設計の提案は doc_publish でタスクに載せる。レビューを頼むときは review_request
 - 人への問い: 会話が止まるかと、答えるのに何を読むかで 3 つを使い分ける
   - 会話の流れの中で決められ、答えが出るまで先に進めない判断は AskUserQuestion（codex は request_user_input）。会話はその場で止まり、利用者は会話の画面で答える

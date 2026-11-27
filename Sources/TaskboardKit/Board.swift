@@ -297,12 +297,14 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
     public var sessions: [TaskSessionRef]
     /// taskherd から取り込んだときの元 id。再取り込みの重複防止に使う。
     public var importedID: Int?
+    /// 会話が書いた状態の文（`task_status`）
+    public var statusNote: TaskStatusNote?
     public var createdAt: Date
     public var updatedAt: Date
 
     public init(
         machine: MachineID, number: Int, boardID: String, columnID: String, title: String, note: String = "", due: String? = nil,
-        links: [TaskLink] = [], sessions: [TaskSessionRef] = [], importedID: Int? = nil,
+        links: [TaskLink] = [], sessions: [TaskSessionRef] = [], importedID: Int? = nil, statusNote: TaskStatusNote? = nil,
         createdAt: Date, updatedAt: Date
     ) {
         self.machine = machine
@@ -315,11 +317,12 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
         self.links = links
         self.sessions = sessions
         self.importedID = importedID
+        self.statusNote = statusNote
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
-    private enum CodingKeys: String, CodingKey { case machine, number, boardID, columnID, title, note, due, links, sessions, importedID, createdAt, updatedAt }
+    private enum CodingKeys: String, CodingKey { case machine, number, boardID, columnID, title, note, due, links, sessions, importedID, statusNote, createdAt, updatedAt }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -333,6 +336,7 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
         links = try c.decode([TaskLink].self, forKey: .links)
         sessions = try c.decode([TaskSessionRef].self, forKey: .sessions)
         importedID = try c.decodeIfPresent(Int.self, forKey: .importedID)
+        statusNote = try c.decodeIfPresent(TaskStatusNote.self, forKey: .statusNote)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
     }
