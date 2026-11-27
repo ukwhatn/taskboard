@@ -417,6 +417,10 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         try await delete("/v1/docs/\(id)")
     }
 
+    public func setDocumentHidden(id: Int64, hidden: Bool) async throws -> Document {
+        try await send("PATCH", "/v1/docs/\(id)", DocUpdateRequest(hidden: hidden))
+    }
+
     public func documentRevisions(id: Int64) async throws -> [DocRevision] {
         try await get("/v1/docs/\(id)/revisions")
     }

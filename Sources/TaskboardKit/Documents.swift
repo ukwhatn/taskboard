@@ -48,12 +48,14 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
     public var draftComments: Int
     /// 本文に置いた送る文面（`doc_publish` の `drafts`）。承認を待つものと承認済みのもの
     public var drafts: [DocDraft]
+    /// 利用者が一覧で畳んだ文書。新しい版を載せても外さない（毎日書き直す報告が一覧に戻らないように）
+    public var hidden: Bool
     public var createdAt: Date
     public var updatedAt: Date
 
     public init(
         machine: MachineID, docID: Int64, taskNumber: Int, name: String, format: DocFormat, title: String? = nil, latestRev: Int,
-        hasSourceFile: Bool = false, openComments: Int = 0, draftComments: Int = 0, drafts: [DocDraft] = [], createdAt: Date, updatedAt: Date
+        hasSourceFile: Bool = false, openComments: Int = 0, draftComments: Int = 0, drafts: [DocDraft] = [], hidden: Bool = false, createdAt: Date, updatedAt: Date
     ) {
         self.machine = machine
         self.docID = docID
@@ -66,12 +68,13 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
         self.openComments = openComments
         self.draftComments = draftComments
         self.drafts = drafts
+        self.hidden = hidden
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
     private enum CodingKeys: String, CodingKey {
-        case machine, docID, taskNumber, name, format, title, latestRev, hasSourceFile, openComments, draftComments, drafts, createdAt, updatedAt
+        case machine, docID, taskNumber, name, format, title, latestRev, hasSourceFile, openComments, draftComments, drafts, hidden, createdAt, updatedAt
     }
 
     public init(from decoder: any Decoder) throws {
@@ -87,11 +90,12 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
         openComments = try c.decode(Int.self, forKey: .openComments)
         draftComments = try c.decode(Int.self, forKey: .draftComments)
         drafts = try c.decodeIfPresent([DocDraft].self, forKey: .drafts) ?? []
+        hidden = try c.decodeIfPresent(Bool.self, forKey: .hidden) ?? false
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
     }
 
-    /// `drafts` は 1 件以上のときだけ書く（送る文面の無い文書の state の形を変えない）
+    /// `drafts` は 1 件以上、`hidden` は true のときだけ書く（使わない文書の state の形を変えない）
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(machine, forKey: .machine)
@@ -105,6 +109,7 @@ public struct Document: Codable, Hashable, Identifiable, Sendable {
         try c.encode(openComments, forKey: .openComments)
         try c.encode(draftComments, forKey: .draftComments)
         if !drafts.isEmpty { try c.encode(drafts, forKey: .drafts) }
+        if hidden { try c.encode(hidden, forKey: .hidden) }
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(updatedAt, forKey: .updatedAt)
     }
@@ -870,6 +875,15 @@ public struct CommentCreateRequest: Codable, Hashable, Sendable {
 }
 
 /// `PATCH /v1/comments/{id}`（draft の本文だけ変えられる）。
+/// `PATCH /v1/docs/{id}`。一覧での表示・非表示
+public struct DocUpdateRequest: Codable, Hashable, Sendable {
+    public var hidden: Bool
+
+    public init(hidden: Bool) {
+        self.hidden = hidden
+    }
+}
+
 public struct CommentUpdateRequest: Codable, Hashable, Sendable {
     public var body: String
 

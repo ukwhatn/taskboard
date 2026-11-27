@@ -214,6 +214,7 @@ extension TaskboardTools {
             if let title = doc.title, !title.isEmpty { line += "「\(title)」" }
             lines.append(line + " ・ \(doc.format.rawValue) ・ rev \(doc.latestRev) ・ \(Self.appURL(doc.machine, task: number, doc: doc.docID))")
             var status: [String] = []
+            if doc.hidden { status.append(Copy.text("agent.mcp.documents.hidden")) }
             if let open = asks.first(where: { $0.docID == doc.docID && $0.status == .open }) { status.append(Copy.text("agent.mcp.documents.status", ["questions": "\(open.questions.count)", "askID": "\(open.askID)"])) }
             if doc.openComments > 0 { status.append(Copy.text("agent.mcp.documents.status.2", ["openComments": "\(doc.openComments)"])) }
             if doc.draftComments > 0 { status.append(Copy.text("agent.mcp.documents.status.3", ["draftComments": "\(doc.draftComments)"])) }

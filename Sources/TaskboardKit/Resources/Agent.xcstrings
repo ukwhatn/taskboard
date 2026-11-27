@@ -2432,6 +2432,17 @@
         }
       }
     },
+    "agent.mcp.documents.hidden" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利用者が一覧で非表示にした"
+          }
+        }
+      }
+    },
     "agent.mcp.documents.lines" : {
       "extractionState" : "manual",
       "localizations" : {

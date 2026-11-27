@@ -49,6 +49,12 @@ extension Store {
         }
     }
 
+    static func registerDocHiddenMigration(_ migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v54 doc hidden") { db in
+            try db.alter(table: "doc") { t in t.add(column: "hiddenAt", .datetime) }
+        }
+    }
+
     static func registerDocumentMigrations(_ migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v4 documents, asks, reviews") { db in
             try db.create(table: "doc") { t in
@@ -171,7 +177,7 @@ extension Store {
             } else {
                 var row = DocRow(
                     id: nil, taskNumber: number, name: request.name, format: request.format.rawValue, title: request.title,
-                    sourcePath: request.sourcePath, createdAt: now, updatedAt: now)
+                    sourcePath: request.sourcePath, hiddenAt: nil, createdAt: now, updatedAt: now)
                 try row.insert(db)
                 docID = row.id!
                 revision = 1
@@ -235,6 +241,21 @@ extension Store {
         }
         changed(.document(id), .task(number))
         return number
+    }
+
+    /// 一覧で畳む・戻す。publish は `hiddenAt` を書かないので、新しい版を載せても畳んだまま
+    public func setDocumentHidden(id: Int64, hidden: Bool, now: Date = Date()) throws -> Document {
+        let document = try database.write { db in
+            guard var row = try DocRow.fetchOne(db, key: id) else { throw StoreError.docNotFound(id) }
+            if hidden == (row.hiddenAt == nil) {
+                row.hiddenAt = hidden ? now : nil
+                try row.update(db)
+            }
+            guard let document = try Self.fetchDocuments(db, machine: machineID, ids: [id]).first else { throw StoreError.docNotFound(id) }
+            return document
+        }
+        changed(.document(id))
+        return document
     }
 
     public func revisions(doc id: Int64) throws -> [DocRevision] {
@@ -822,7 +843,7 @@ extension Store {
             return Document(
                 machine: machine, docID: id, taskNumber: row.taskNumber, name: row.name, format: DocFormat(rawValue: row.format) ?? .markdown,
                 title: row.title, latestRev: latest, hasSourceFile: row.sourcePath != nil, openComments: open, draftComments: drafts,
-                drafts: try fetchDocDrafts(db, doc: id), createdAt: row.createdAt, updatedAt: row.updatedAt)
+                drafts: try fetchDocDrafts(db, doc: id), hidden: row.hiddenAt != nil, createdAt: row.createdAt, updatedAt: row.updatedAt)
         }
     }
 
@@ -881,6 +902,7 @@ private struct DocRow: Codable, FetchableRecord, MutablePersistableRecord {
     var format: String
     var title: String?
     var sourcePath: String?
+    var hiddenAt: Date?
     var createdAt: Date
     var updatedAt: Date
 

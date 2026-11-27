@@ -122,6 +122,10 @@ extension AppModel {
         DocMarker(kind: .ask, id: ask.inBody ? id : "\(ask.askID).\(id)").slot
     }
 
+    func setDocumentHidden(_ key: DocKey, hidden: Bool) async throws {
+        _ = try await requireSource(key.machine).setDocumentHidden(id: key.id, hidden: hidden)
+    }
+
     func deleteDocument(_ key: DocKey) async throws {
         try await requireSource(key.machine).deleteDocument(id: key.id)
         if openDoc == key { openDoc = nil }

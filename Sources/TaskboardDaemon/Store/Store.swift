@@ -119,6 +119,7 @@ public final class Store: Sendable {
         registerDocChangesMigration(&migrator)  // v51（Store+Documents）
         registerClientPrefsMigration(&migrator)  // v52（Store+ClientPrefs）
         registerTaskStatusMigration(&migrator)  // v53（Store+TaskStatus）
+        registerDocHiddenMigration(&migrator)  // v54（Store+Documents）
         return migrator
     }
 

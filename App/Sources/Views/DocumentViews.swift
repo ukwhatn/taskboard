@@ -17,21 +17,25 @@ enum DocumentMetrics {
 }
 
 /// タスクの文書の一覧（詳細の欄の「文書」の節）。押すとパネルの帯の下を文書の画面にする（iPhone はシート）。
-/// レビューを頼まれていれば、上に依頼の帯を出す
+/// レビューを頼まれていれば、上に依頼の帯を出す。利用者が非表示にした文書は、末尾の畳んだ組に入れる
 struct DocumentList: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.window) private var window
     @Environment(\.openWindow) private var openWindow
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    @State private var showsHidden = false
     let task: BoardTask
     let documents: [Document]
 
     var body: some View {
         let state = model.fleet.machineState(for: task.machine)
+        let shown = documents.filter { !$0.hidden }
+        let hidden = documents.filter(\.hidden)
         VStack(alignment: .leading, spacing: Space.row) {
             DocumentJudgments(task: task, documents: documents)
             if let request = state?.reviewRequests[task.id] {
                 Banner(kind: .waiting, message: String(localized: "レビューを頼まれています"), detail: request.note.isEmpty ? nil : request.note) {
-                    if let first = documents.first {
+                    if let first = shown.first ?? documents.first {
                         Button("読む") { model.navigate(to: .doc(first.id), from: .link) }.controlSize(.small)
                     }
                 }
@@ -39,26 +43,97 @@ struct DocumentList: View {
             if documents.isEmpty {
                 Text("文書はありません").textRole(.secondary)
             } else {
-                ForEach(documents) { doc in
-                    DocumentRow(doc: doc, openAsk: state?.openAsk(forDoc: doc.docID), selected: model.openDoc == doc.id) {
-                        model.navigate(to: .doc(doc.id), from: .link)
-                    }
-                    .contextMenu {
-                        Button("開く") { model.navigate(to: .doc(doc.id), from: .link) }
-                        if supportsMultipleWindows {
-                            Button("別ウインドウで開く", systemImage: "macwindow.on.rectangle") { openWindow(value: doc.id) }
+                ForEach(shown) { row($0, state: state) }
+                if !hidden.isEmpty {
+                    DisclosureGroup(isExpanded: $showsHidden) {
+                        VStack(alignment: .leading, spacing: Space.row) {
+                            ForEach(hidden) { row($0, state: state) }
                         }
+                    } label: {
+                        Text("非表示（\(hidden.count)件）").textRole(.secondary)
                     }
                 }
             }
         }
     }
+
+    private func row(_ doc: Document, state: MachineState?) -> some View {
+        let canWrite = model.canWrite(task.machine)
+        return DocumentListRow(doc: doc, openAsk: state?.openAsk(forDoc: doc.docID), selected: model.openDoc == doc.id, toggleHidden: canWrite ? { toggleHidden(doc) } : nil) {
+            model.navigate(to: .doc(doc.id), from: .link)
+        }
+        .contextMenu {
+            Button("開く") { model.navigate(to: .doc(doc.id), from: .link) }
+            if supportsMultipleWindows {
+                Button("別ウインドウで開く", systemImage: "macwindow.on.rectangle") { openWindow(value: doc.id) }
+            }
+            if canWrite {
+                if doc.hidden {
+                    Button("表示する", systemImage: "eye") { toggleHidden(doc) }
+                } else {
+                    Button("非表示にする", systemImage: "eye.slash") { toggleHidden(doc) }
+                }
+            }
+        }
+    }
+
+    private func toggleHidden(_ doc: Document) {
+        Task {
+            do {
+                try await model.setDocumentHidden(doc.id, hidden: !doc.hidden)
+            } catch {
+                model.fail(doc.hidden ? "文書を表示できませんでした" : "文書を非表示にできませんでした", error, in: window)
+            }
+        }
+    }
+}
+
+/// 一覧の 1 行。Mac はマウスを載せた間だけ右端に目の印のボタンを出す。押せる範囲は行の高さいっぱいに広く取り、確認を挟まない。
+/// iPhone・iPad はマウスが無いので、長押しのメニューの［非表示にする］［表示する］だけ
+private struct DocumentListRow: View {
+    let doc: Document
+    let openAsk: Ask?
+    let selected: Bool
+    let toggleHidden: (() -> Void)?
+    let open: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        #if os(macOS)
+        if let toggleHidden {
+            DocumentRow(doc: doc, openAsk: openAsk, selected: selected, trailingInset: Self.buttonWidth, open: open)
+                .overlay(alignment: .trailing) {
+                    Button(action: toggleHidden) {
+                        Image(systemName: doc.hidden ? "eye" : "eye.slash")
+                            .foregroundStyle(.secondary)
+                            .frame(width: Self.buttonWidth)
+                            .frame(maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(hovering ? 1 : 0)
+                    .help(doc.hidden ? "表示する" : "非表示にする")
+                    .accessibilityLabel(doc.hidden ? "表示する" : "非表示にする")
+                }
+                .onHover { hovering = $0 }
+        } else {
+            DocumentRow(doc: doc, openAsk: openAsk, selected: selected, open: open)
+        }
+        #else
+        DocumentRow(doc: doc, openAsk: openAsk, selected: selected, open: open)
+        #endif
+    }
+
+    /// 目の印の押せる幅。押せる範囲の最小より広く取り、行を上から順になぞって押していける幅にする
+    private static let buttonWidth = HitTarget.size + Space.block
 }
 
 struct DocumentRow: View {
     let doc: Document
     let openAsk: Ask?
     let selected: Bool
+    /// 右端に重ねる操作の分だけ文字を詰める幅
+    var trailingInset: CGFloat = 0
     let open: () -> Void
 
     var body: some View {
@@ -74,6 +149,7 @@ struct DocumentRow: View {
                     MetaLine(items: Self.marks(doc), date: doc.updatedAt)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, trailingInset)
             }
             // 選んだ印の背景は欄の余白まで広げ、文字の左端は他の節と揃える
             .padding(.vertical, Space.inline)

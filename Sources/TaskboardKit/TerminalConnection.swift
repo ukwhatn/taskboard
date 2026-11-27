@@ -50,6 +50,7 @@ public protocol DaemonWriter: Sendable {
     func documents(task: Int) async throws -> [Document]
     func publishDocument(task: Int, _ request: DocPublishRequest) async throws -> DocPublishResponse
     func deleteDocument(id: Int64) async throws
+    func setDocumentHidden(id: Int64, hidden: Bool) async throws -> Document
     func documentRevisions(id: Int64) async throws -> [DocRevision]
     func documentContent(id: Int64, rev: Int?) async throws -> DocContent
     /// publish 元のファイルのパス。同じ Mac の daemon にだけ聞ける（端末の token は 403）

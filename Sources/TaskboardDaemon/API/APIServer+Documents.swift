@@ -51,6 +51,11 @@ extension APIServer {
             guard let doc = try dependencies.requireStore().document(id: id) else { throw APIError.notFound(.document, "文書 \(id) が無い") }
             return try json(doc, encoder)
         }
+        v1.patch("docs/{id}") { request, context in
+            let id = try context.parameters.require("id", as: Int64.self)
+            let body = try await request.decode(as: DocUpdateRequest.self, context: context)
+            return try json(try mapStoreError { try dependencies.requireStore().setDocumentHidden(id: id, hidden: body.hidden) }, encoder)
+        }
         v1.delete("docs/{id}") { _, context in
             let id = try context.parameters.require("id", as: Int64.self)
             _ = try mapStoreError { try dependencies.requireStore().deleteDocument(id: id) }
