@@ -5204,6 +5204,160 @@
         }
       }
     },
+    "agent.mcp.settings.codex.callback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戻り先のアドレスをこのマシンで開いた"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインをやめた"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codex のコネクタ:"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{name}} ・ 認証 {{auth}} ・ ツール {{tools}} 件"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.loggedOut" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codex のコネクタ「{{name}}」からログアウトした"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コネクタ「{{name}}」のログインを始めた。利用者にこの URL をブラウザで開いてもらう: {{url}}（login_id: {{id}}）。このマシン以外のブラウザで認証したときは、戻り先のアドレスを callback_url で渡す"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.loginLine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログイン {{name}}（{{id}}）: {{state}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.codex.logoutTarget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codex のコネクタ「{{name}}」の認証"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続できる端末:"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{name}}（{{id}}）・ {{platform}} ・ 最後の接続 {{seen}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末 {{id}} は無い。devices で一覧を確認する"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.paired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ペアリングのコード: {{code}}（{{expires}} まで有効）。新しい端末のアプリの［接続先を追加］>［コードで追加］で入力する"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.revokeTarget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末「{{name}}」（{{id}}）。この端末のアプリはこのマシンに接続できなくなる"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.device.revoked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末「{{name}}」（{{id}}）を失効させた"
+          }
+        }
+      }
+    },
     "agent.mcp.settings.launch" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5237,6 +5391,39 @@
         }
       }
     },
+    "agent.mcp.settings.secret.unreadable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{field}} のファイルを読めないか、中身が空"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.removeTarget" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "案件「{{name}}」の Slack 連携（{{slack}}）と token"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.removed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "案件「{{name}}」の Slack 連携を外した"
+          }
+        }
+      }
+    },
     "agent.mcp.settings.slack.route" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5265,7 +5452,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "案件「{{name}}」には Slack の連携が無い。token はアプリの案件の設定で設定する"
+            "value" : "案件「{{name}}」には Slack の連携が無い。連携を作るときは bot_token_file と app_token_file の両方を渡す"
           }
         }
       }
@@ -7861,7 +8048,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "案件の Slack 連携の、依頼を受け付ける人とチャンネル → タスクの対応を変える。token はアプリの設定画面で設定する（この tool では扱わない）。今の値は health に出る"
+            "value" : "案件の Slack 連携を設定する。受け付ける人、チャンネル → タスクの対応、token（値ではなく、token だけを書いたファイルのパスで渡す）を変え、remove で連携を外す。今の値は health に出る"
           }
         }
       }
@@ -7873,6 +8060,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "受け付ける人の Slack のメンバー ID（U…）の全体。省くと今のまま"
+          }
+        }
+      }
+    },
+    "agent.tool.board_slack_update.app_token_file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app-level token（xapp-…）だけを書いたファイルのパス。token の値は引数に書かない"
+          }
+        }
+      }
+    },
+    "agent.tool.board_slack_update.bot_token_file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bot token（xoxb-…）だけを書いたファイルのパス。token の値は引数に書かない"
+          }
+        }
+      }
+    },
+    "agent.tool.board_slack_update.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "true で連携を外す（token も消える）。confirm: true を付けるまで実行しない"
           }
         }
       }
@@ -8031,6 +8251,83 @@
         }
       }
     },
+    "agent.tool.codex_connectors" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このマシンの Codex のコネクタ（MCP サーバー）と認証の様子を一覧し、ログイン・ログアウトする。ログインは返した URL を利用者がブラウザで開いて認証する"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.callback_url" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの端末のブラウザで認証した後の戻り先のアドレス。login_id と一緒に渡すと、このマシンで開いてログインを終える"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.cancel_login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やめるログインの id"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.login" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインを始めるコネクタの名前"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.login_id" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "callback_url を渡すログインの id"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.logout" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログアウトするコネクタの名前。confirm: true を付けるまで実行しない"
+          }
+        }
+      }
+    },
+    "agent.tool.codex_connectors.refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "true でコネクタを読み直す"
+          }
+        }
+      }
+    },
     "agent.tool.columnAddSchema.after" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8126,6 +8423,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解決にする（人は再オープンできる）"
+          }
+        }
+      }
+    },
+    "agent.tool.devices" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このマシンの daemon に接続できる端末（アプリ）を一覧する。pair で新しい端末のペアリングのコードを発行し、revoke で端末を失効させる"
+          }
+        }
+      }
+    },
+    "agent.tool.devices.pair" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "true でペアリングのコードを発行する。利用者が新しい端末のアプリに入力する"
+          }
+        }
+      }
+    },
+    "agent.tool.devices.revoke" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "失効させる端末の id。その端末のアプリは接続できなくなる。confirm: true を付けるまで実行しない"
           }
         }
       }

@@ -2,7 +2,7 @@ import Foundation
 import MCP
 import TaskboardKit
 
-/// アプリの設定画面で変えられる daemon の設定のうち、案件・タスク・マシンの tool に収まらないもの（Slack の連携・作業ディレクトリの星）と、
+/// アプリの設定画面で変えられる daemon の設定のうち、案件・タスク・マシンの tool に収まらないもの（Slack の連携・作業ディレクトリの星・端末・Codex のコネクタ）と、
 /// board_update の起動の既定の読み方
 extension TaskboardTools {
     static let launchDefaultsProperties: [String: Value] = [
@@ -24,7 +24,29 @@ extension TaskboardTools {
                 "routes": property("array", Copy.text("agent.tool.board_slack_update.routes"), items: schema([
                     "channel_id": property("string"), "task_id": property("integer"),
                 ], required: ["channel_id", "task_id"])),
+                "bot_token_file": property("string", Copy.text("agent.tool.board_slack_update.bot_token_file")),
+                "app_token_file": property("string", Copy.text("agent.tool.board_slack_update.app_token_file")),
+                "remove": property("boolean", Copy.text("agent.tool.board_slack_update.remove")),
+                "confirm": confirmProperty,
             ], required: ["board"])) { tools, args in try await tools.boardSlackUpdate(args) },
+        ToolEntry(
+            name: "devices", description: Copy.text("agent.tool.devices"),
+            inputSchema: schema([
+                "pair": property("boolean", Copy.text("agent.tool.devices.pair")),
+                "revoke": property("string", Copy.text("agent.tool.devices.revoke")),
+                "confirm": confirmProperty,
+            ])) { tools, args in try await tools.devices(args) },
+        ToolEntry(
+            name: "codex_connectors", description: Copy.text("agent.tool.codex_connectors"),
+            inputSchema: schema([
+                "refresh": property("boolean", Copy.text("agent.tool.codex_connectors.refresh")),
+                "login": property("string", Copy.text("agent.tool.codex_connectors.login")),
+                "callback_url": property("string", Copy.text("agent.tool.codex_connectors.callback_url")),
+                "cancel_login": property("string", Copy.text("agent.tool.codex_connectors.cancel_login")),
+                "login_id": property("string", Copy.text("agent.tool.codex_connectors.login_id")),
+                "logout": property("string", Copy.text("agent.tool.codex_connectors.logout")),
+                "confirm": confirmProperty,
+            ])) { tools, args in try await tools.codexConnectors(args) },
         ToolEntry(
             name: "workdir_bookmarks", description: Copy.text("agent.tool.workdir_bookmarks"),
             inputSchema: schema([
@@ -89,8 +111,18 @@ extension TaskboardTools {
         let snapshot = try await client.snapshot()
         let board = try Self.board(args.string("board"), in: snapshot.boards)
         let current = try await client.boardSlack(id: board.id)
-        guard current.configured else { throw ToolError.invalid(Copy.text("agent.mcp.settings.slack.unconfigured", ["name": board.name])) }
-        guard args["allowed_users"] != nil || args["routes"] != nil else { throw ToolError.invalid(Copy.text("agent.mcp.manage.remove")) }
+        if args.bool("remove") == true {
+            guard current.configured else { throw ToolError.invalid(Copy.text("agent.mcp.settings.slack.unconfigured", ["name": board.name])) }
+            guard Self.isConfirmed(args) else { return Self.confirmation([Copy.text("agent.mcp.settings.slack.removeTarget", ["name": board.name, "slack": Self.describe(slack: current)])]) }
+            try await client.deleteBoardSlack(id: board.id)
+            return Copy.text("agent.mcp.settings.slack.removed", ["name": board.name])
+        }
+        let botToken = try Self.secret(fromFile: args.string("bot_token_file"), field: "bot_token_file")
+        let appToken = try Self.secret(fromFile: args.string("app_token_file"), field: "app_token_file")
+        guard current.configured || (botToken != nil && appToken != nil) else {
+            throw ToolError.invalid(Copy.text("agent.mcp.settings.slack.unconfigured", ["name": board.name]))
+        }
+        guard args["allowed_users"] != nil || args["routes"] != nil || botToken != nil || appToken != nil else { throw ToolError.invalid(Copy.text("agent.mcp.manage.remove")) }
         let users = args.strings("allowed_users") ?? current.allowedUsers.map(\.id)
         var routes = current.routes.map { SlackRouteUpdate(channelID: $0.channelID, taskNumber: $0.taskNumber) }
         if let raw = args.array("routes") {
@@ -102,10 +134,89 @@ extension TaskboardTools {
                 return SlackRouteUpdate(channelID: channel, taskNumber: number)
             }
         }
-        let updated = try await client.updateBoardSlack(id: board.id, BoardSlackUpdate(allowedUsers: users, routes: routes))
+        let updated = try await client.updateBoardSlack(id: board.id, BoardSlackUpdate(botToken: botToken, appToken: appToken, allowedUsers: users, routes: routes))
         var lines = [Copy.text("agent.mcp.settings.slack.updated", ["name": board.name]), "- " + Self.describe(slack: updated)]
         lines += updated.allowedUsers.map { "  - " + Copy.text("agent.mcp.settings.slack.user", ["id": $0.id, "name": $0.name ?? "-"]) }
         lines += updated.routes.map { "  - " + Copy.text("agent.mcp.settings.slack.routeLine", ["channel": $0.channelName.map { "#" + $0 } ?? $0.channelID, "number": "\($0.taskNumber)"]) }
+        return lines.joined(separator: "\n")
+    }
+
+    /// token はファイルから読み、値を tool の引数と応答に載せない（会話の記録に残さないため）
+    static func secret(fromFile path: String?, field: String) throws -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { throw ToolError.invalid(Copy.text("agent.mcp.settings.secret.unreadable", ["field": field])) }
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { throw ToolError.invalid(Copy.text("agent.mcp.settings.secret.unreadable", ["field": field])) }
+        return value
+    }
+
+    // MARK: 端末
+
+    private func devices(_ args: [String: Value]) async throws -> String {
+        if let id = args.string("revoke"), !id.isEmpty {
+            guard let device = try await client.devices().first(where: { $0.id == id }) else { throw ToolError.invalid(Copy.text("agent.mcp.settings.device.missing", ["id": id])) }
+            guard Self.isConfirmed(args) else { return Self.confirmation([Copy.text("agent.mcp.settings.device.revokeTarget", ["name": device.name, "id": device.id])]) }
+            try await client.revokeDevice(id)
+            return Copy.text("agent.mcp.settings.device.revoked", ["name": device.name, "id": device.id])
+        }
+        var lines: [String] = []
+        if args.bool("pair") == true {
+            let code = try await client.createPairing()
+            lines.append(Copy.text("agent.mcp.settings.device.paired", ["code": code.display, "expires": Self.formatted(code.expiresAt)]))
+        }
+        let devices = try await client.devices()
+        lines.append(Copy.text("agent.mcp.settings.device.header"))
+        lines += devices.isEmpty ? [Copy.text("agent.mcp.settings.bookmark.none")] : devices.map { device in
+            "- " + Copy.text("agent.mcp.settings.device.line", [
+                "name": device.name, "id": device.id, "platform": device.platform.rawValue,
+                "seen": device.lastSeenAt.map(Self.formatted) ?? "-",
+            ])
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    static func formatted(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter.string(from: date)
+    }
+
+    // MARK: Codex のコネクタ
+
+    private func codexConnectors(_ args: [String: Value]) async throws -> String {
+        var lines: [String] = []
+        var info: CodexMachineInfo?
+        if let name = args.string("logout"), !name.isEmpty {
+            guard Self.isConfirmed(args) else { return Self.confirmation([Copy.text("agent.mcp.settings.codex.logoutTarget", ["name": name])]) }
+            info = try await client.logoutCodexConnector(name: name)
+            lines.append(Copy.text("agent.mcp.settings.codex.loggedOut", ["name": name]))
+        } else if let name = args.string("login"), !name.isEmpty {
+            let login = try await client.startCodexLogin(name: name)
+            lines.append(Copy.text("agent.mcp.settings.codex.login", ["name": name, "url": login.authorizationURL, "id": login.loginId]))
+        } else if let url = args.string("callback_url"), !url.isEmpty {
+            guard let id = args.string("login_id"), !id.isEmpty else { throw ToolError.missing("login_id") }
+            try await client.sendCodexCallback(CodexConnectorCallbackRequest(loginId: id, callbackURL: url))
+            lines.append(Copy.text("agent.mcp.settings.codex.callback"))
+        } else if let id = args.string("cancel_login"), !id.isEmpty {
+            try await client.cancelCodexLogin(loginId: id)
+            lines.append(Copy.text("agent.mcp.settings.codex.cancelled"))
+        } else if args.bool("refresh") == true {
+            info = try await client.refreshCodexConnectors()
+        }
+        let machine: CodexMachineInfo
+        if let info { machine = info } else { machine = try await client.codexMachine() }
+        lines.append(Copy.text("agent.mcp.settings.codex.header"))
+        let connectors = machine.connectors ?? []
+        lines += connectors.isEmpty ? [Copy.text("agent.mcp.settings.bookmark.none")] : connectors.map { connector in
+            "- " + Copy.text("agent.mcp.settings.codex.line", [
+                "name": connector.name, "auth": connector.authStatus ?? "-", "tools": "\(connector.toolCount)",
+            ])
+        }
+        for login in machine.logins ?? [] {
+            lines.append("- " + Copy.text("agent.mcp.settings.codex.loginLine", ["name": login.name, "id": login.id, "state": login.state.rawValue]))
+        }
         return lines.joined(separator: "\n")
     }
 
