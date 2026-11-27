@@ -382,8 +382,9 @@ struct TaskTreeRow: View {
                         BackgroundTasksGlyph(count: background)
                         #if os(macOS)
                         Spacer(minLength: 0)
-                        // マウスを載せたときの操作の置き場を題の右に取っておく（題の幅と行の高さを、載せても動かさない）
+                        // マウスを載せたときの操作の置き場。載せている間だけ幅を取り、ほかのときは題に全幅を使わせる（高さは常に取り、行の高さは動かさない）
                         TaskRowHoverActions.placeholder
+                            .frame(width: hovering ? nil : 0)
                             .anchorPreference(key: TaskRowActionSlot.self, value: .bounds) { $0 }
                         #endif
                     }
