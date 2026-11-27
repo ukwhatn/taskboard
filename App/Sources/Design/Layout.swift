@@ -468,37 +468,6 @@ struct CappedWidth: Layout {
     }
 }
 
-/// 題と札を並べる入れ物。子は題・札の順。1 行に入れば札を右端に置き、入らなければ札を題の下の行に置く（題も札も省略せずに読める）。
-/// List の `.badge` は札に要るだけの幅を先に取るので、iPad の縦のサイドバーで「レビュー依頼あり」の行の題が「#…」まで切れていた
-struct TitleAndTrailing: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let sizes = subviews.prefix(2).map { $0.sizeThatFits(.unspecified) }
-        let width = proposal.width ?? sizes.map(\.width).reduce(0, +) + Space.inline * CGFloat(max(sizes.count - 1, 0))
-        let height = fitsOnOneLine(sizes, width: width) ? sizes.map(\.height).max() ?? 0 : sizes.map(\.height).reduce(0, +)
-        return CGSize(width: width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let sizes = subviews.prefix(2).map { $0.sizeThatFits(.unspecified) }
-        guard let title = subviews.first else { return }
-        guard subviews.count > 1 else {
-            title.place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(width: bounds.width, height: sizes[0].height))
-            return
-        }
-        if fitsOnOneLine(sizes, width: bounds.width) {
-            title.place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(sizes[0]))
-            subviews[1].place(at: CGPoint(x: bounds.maxX, y: bounds.midY), anchor: .trailing, proposal: ProposedViewSize(sizes[1]))
-        } else {
-            title.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: sizes[0].height))
-            subviews[1].place(at: CGPoint(x: bounds.minX, y: bounds.minY + sizes[0].height), proposal: ProposedViewSize(width: bounds.width, height: sizes[1].height))
-        }
-    }
-
-    private func fitsOnOneLine(_ sizes: [CGSize], width: CGFloat) -> Bool {
-        sizes.count < 2 || sizes[0].width + Space.inline + sizes[1].width <= width
-    }
-}
-
 /// 中身の高さに縮み、上限か提案より高い中身にはその低い方の高さを渡す入れ物。中身を縦の ScrollView にすると、収まらない分だけ送れる。
 /// `.frame(maxHeight:)` だと ScrollView が上限まで伸び、短い中身の下に空きができる
 struct CappedHeight: Layout {

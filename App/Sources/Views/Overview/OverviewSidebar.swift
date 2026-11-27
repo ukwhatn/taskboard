@@ -347,7 +347,7 @@ private struct TaskGroupTreeRow: View {
     }
 }
 
-/// タスクの行。番号と題、右に札（応答待ち・回答待ち・CI失敗・未読・実行中など。呼び手が `AppModel.rowStatus` で引いて渡す）と委譲先の進み。押すとタスク画面を開く
+/// タスクの行。1 行目に番号と題、2 行目に札（応答待ち・回答待ち・CI失敗・未読・実行中など。呼び手が `AppModel.rowStatus` で引いて渡す）と委譲先の進み。押すとタスク画面を開く
 struct TaskTreeRow: View {
     @Environment(AppModel.self) private var model
     let task: BoardTask
@@ -372,32 +372,25 @@ struct TaskTreeRow: View {
             model.navigate(to: .task(task.id, revealBoard: false), from: .sidebar)
         } label: {
             Label {
-                TitleAndTrailing {
+                // タイトル行と状態の行。状態（札と委譲先の進み）は幅によらず題の下に置く
+                VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: Space.inline) {
                         Text(verbatim: "#\(task.number) \(task.title)")
                             .lineLimit(1)
                             .fontWeight(selected ? .semibold : nil)
                         BackgroundTasksGlyph(count: background)
-                    }
-                    #if os(macOS)
-                    // マウスを載せたときの操作の置き場を札の位置に取っておく（題の幅と行の高さを、載せても動かさない）
-                    ZStack(alignment: .trailing) {
-                        if !badge.isEmpty {
-                            Text(verbatim: badge)
-                                .lineLimit(1)
-                                .foregroundStyle(.secondary)
-                                .opacity(hovering ? 0 : 1)
-                        }
+                        #if os(macOS)
+                        Spacer(minLength: 0)
+                        // マウスを載せたときの操作の置き場を題の右に取っておく（題の幅と行の高さを、載せても動かさない）
                         TaskRowHoverActions.placeholder
                             .anchorPreference(key: TaskRowActionSlot.self, value: .bounds) { $0 }
+                        #endif
                     }
-                    #else
                     if !badge.isEmpty {
                         Text(verbatim: badge)
                             .lineLimit(1)
                             .foregroundStyle(.secondary)
                     }
-                    #endif
                 }
             } icon: {
                 TaskRowGlyph(status: status)
@@ -410,7 +403,7 @@ struct TaskTreeRow: View {
         .overlayPreferenceValue(TaskRowActionSlot.self) { slot in
             if hovering, let slot {
                 GeometryReader { proxy in
-                    // 縦は札の行に合わせ、横は行の右端に置く（札が 2 行目に回ると、札は左に寄る）
+                    // 縦は題の行に合わせ、横は行の右端に置く
                     let rect = proxy[slot]
                     TaskRowHoverActions(task: task, status: status)
                         .frame(width: proxy.size.width, height: rect.height, alignment: .trailing)
