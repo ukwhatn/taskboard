@@ -5325,6 +5325,171 @@
         }
       }
     },
+    "agent.mcp.settings.bookmark.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星を付けた作業ディレクトリ:"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.bookmark.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{path}} には星が付いていない"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.bookmark.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- なし"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.bookmark.recent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近使ったもの: "
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.delegation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 委任範囲の案件の初期値:"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.delegation.shape" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "delegation は、項目の id → 段階の名前の object で渡す"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.delegation.widen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{area}} は今 {{current}} なので、{{next}} には変えられない。確認を減らす変更は、利用者がアプリの設定で行う"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.launch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 起動の既定: {{kind}} ・ 引数 {{args}} ・ 作業ディレクトリ {{cwd}} ・ worktree {{worktree}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.launch.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "- 起動の既定: なし（Opus 5.5 / medium で起動する）"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.launchArgs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "launch_agent_args は launch_model・launch_effort と同時に送らない"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.route" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "routes の各項目は channel_id と task_id を持つ"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.routeLine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{channel}} → #{{number}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.unconfigured" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "案件「{{name}}」には Slack の連携が無い。token はアプリの案件の設定で設定する"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.updated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "案件「{{name}}」の Slack 連携を変えた"
+          }
+        }
+      }
+    },
+    "agent.mcp.settings.slack.user" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受け付ける人: {{id}}（{{name}}）"
+          }
+        }
+      }
+    },
     "agent.mcp.slack.lines" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7888,13 +8053,46 @@
         }
       }
     },
+    "agent.tool.board_slack_update" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "案件の Slack 連携の、依頼を受け付ける人とチャンネル → タスクの対応を変える。token はアプリの設定画面で設定する（この tool では扱わない）。今の値は health に出る"
+          }
+        }
+      }
+    },
+    "agent.tool.board_slack_update.allowed_users" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受け付ける人の Slack のメンバー ID（U…）の全体。省くと今のまま"
+          }
+        }
+      }
+    },
+    "agent.tool.board_slack_update.routes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チャンネル ID → タスク番号の対応の全体。表に無いチャンネルの依頼はオーケストレーターに届く。省くと今のまま"
+          }
+        }
+      }
+    },
     "agent.tool.board_update" : {
       "extractionState" : "manual",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "案件の名前・起動プロンプト・マージ後に進める列・アーカイブと、列（追加・削除・名前・説明・折りたたむ・列の起動プロンプト）を変える。タスクが残る列を削除するときは reassign で移す先を渡す。「完了」の列は削除できない"
+            "value" : "案件の名前・起動プロンプト・マージ後に進める列・アーカイブ・起動の既定（launch_*）・委任範囲の初期値（delegation）と、列（追加・削除・名前・説明・折りたたむ・列の起動プロンプト）を変える。タスクが残る列を削除するときは reassign で移す先を渡す。「完了」の列は削除できない"
           }
         }
       }
@@ -7917,6 +8115,83 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "案件の id か名前"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.clear_launch_defaults" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "true で起動の既定を外す（launch_* と同時に送らない）"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_agent_args" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動の既定の引数の全体（launch_model・launch_effort と同時に送らない）"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_cwd" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動の既定の作業ディレクトリ（空で、最後に使ったもの）"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動の既定の effort。ほかの項目は今の値のまま"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_kind" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動の既定のエージェント。変えるとモデルと effort は組み込みの既定に戻る"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_model" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動の既定のモデル（Claude Code は一覧の名前、Codex は model の id、空で既定）。ほかの項目は今の値のまま"
+          }
+        }
+      }
+    },
+    "agent.tool.board_update.launch_worktree" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "true なら起動のときに worktree を切る"
           }
         }
       }
@@ -8049,6 +8324,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解決にする（人は再オープンできる）"
+          }
+        }
+      }
+    },
+    "agent.tool.delegation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "委任範囲の項目 → 段階（delegate・report・ask）か inherit（指定を外して上の段階に従う）。指定した項目だけ変える。確認を減らす向き（今より緩い段階）には変えられず、それは利用者がアプリの設定で行う"
           }
         }
       }
@@ -10172,6 +10458,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "まとまりの名前。空の文字列で外す"
+          }
+        }
+      }
+    },
+    "agent.tool.workdir_bookmarks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動のシートで星を付けた作業ディレクトリを追加・削除し、今の星と最近使ったものを返す。引数を省くと一覧だけ返す"
+          }
+        }
+      }
+    },
+    "agent.tool.workdir_bookmarks.add" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星を付けるパス"
+          }
+        }
+      }
+    },
+    "agent.tool.workdir_bookmarks.remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星を外すパス"
           }
         }
       }

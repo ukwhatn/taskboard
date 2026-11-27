@@ -174,7 +174,7 @@ struct TaskboardTools: Sendable {
     }
 
     /// 一覧に出す順。名前の重なりは `MCPToolTableTests` が見る
-    private static let entries: [ToolEntry] = coreTools + manageTools + healthTools + conversationTools + wakeTools + watchTools + devinTools + slackTools + panelTools
+    private static let entries: [ToolEntry] = coreTools + manageTools + healthTools + conversationTools + wakeTools + watchTools + devinTools + slackTools + panelTools + settingTools
     static let definitions: [Tool] = entries.map(\.definition)
     private static let entriesByName = Dictionary(entries.map { ($0.definition.name, $0) }, uniquingKeysWith: { first, _ in first })
 
@@ -224,6 +224,7 @@ struct TaskboardTools: Sendable {
                 "link_session": property("boolean", Copy.text("agent.tool.task_update.link_session")),
                 "unlink_session": property("boolean", Copy.text("agent.tool.task_update.unlink_session")),
                 "unlink_sessions": property("array", Copy.text("agent.tool.task_update.unlink_sessions"), items: property("string")),
+                "delegation": delegationProperty,
             ])) { tools, args in try await tools.taskUpdate(args) },
         ToolEntry(
             name: "work_list", description: Copy.text("agent.tool.work_list"),
@@ -330,6 +331,7 @@ struct TaskboardTools: Sendable {
         var lines = [Copy.text("agent.mcp.core.lines", ["boards": "\(snapshot.boards.count)"])]
         for board in snapshot.boards {
             lines.append("## \(board.name) (\(board.id))" + (board.archived ? Copy.text("agent.mcp.core.lines.2") : "") + " ・ \(TaskboardLink.board(machine: board.machine, id: board.id).url.absoluteString)")
+            lines.append(Self.describe(launchDefaults: board.launchDefaults))
             let tasks = snapshot.tasks.filter { $0.boardID == board.id }
             for column in board.columns {
                 let inColumn = tasks.filter { $0.columnID == column.id }
@@ -510,9 +512,13 @@ struct TaskboardTools: Sendable {
         let unlinkIDs = args.strings("unlink_sessions") ?? []
         let unlinkSelf = args.bool("unlink_session") == true
         var unlinks: [String] = []
-        if args["board"] != nil || args["remove_links"] != nil || !unlinkIDs.isEmpty || unlinkSelf {
+        if args["board"] != nil || args["remove_links"] != nil || args["delegation"] != nil || !unlinkIDs.isEmpty || unlinkSelf {
             let snapshot = try await client.snapshot()
             guard let task = snapshot.tasks.first(where: { $0.number == number }) else { throw ToolError.invalid(Copy.text("agent.mcp.core.snapshot", ["number": "\(number)"])) }
+            let board = snapshot.boards.first { $0.id == task.boardID }
+            request.delegation = try Self.delegationEdit(
+                args["delegation"], current: task.delegation, effective: { task.delegationLevel($0, board: board) },
+                fallback: { board?.delegationLevel($0) ?? $0.builtinLevel })
             if let value = args.string("board") {
                 let board = try Self.board(value, in: snapshot.boards)
                 if board.id != task.boardID { request.boardID = board.id }
@@ -536,6 +542,9 @@ struct TaskboardTools: Sendable {
             if request.boardID != nil { lines.append(Copy.text("agent.mcp.core.lines.15", ["name": "\(board.name)", "id": "\(board.id)"])) }
             if let column = board.columns.first(where: { $0.id == task.columnID }) { lines.append(Copy.text("agent.mcp.core.lines.16") + SessionGuidance.columnLine(column)) }
             if request.boardID != nil { lines.append(Copy.text("agent.mcp.core.lines.17")) }
+        }
+        if request.delegation != nil {
+            lines += SessionGuidance.delegationLines(task: task, board: try await client.snapshot().boards.first { $0.id == task.boardID })
         }
         if !request.removeLinkIDs.isEmpty { lines.append(Copy.text("agent.mcp.core.lines.18", ["removeLinkIDs": "\(request.removeLinkIDs.count)"])) }
         for sessionID in Self.unique(unlinks) { lines.append(Copy.text("agent.mcp.core.lines.19", ["sessionID": "\(sessionID.prefix(8))"])) }
