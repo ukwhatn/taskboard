@@ -583,7 +583,6 @@ private struct PanelDraftView: View {
     let draft: PanelDraft
     @State private var text = ""
     @State private var loaded = false
-    @State private var confirming = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.block) {
@@ -614,7 +613,7 @@ private struct PanelDraftView: View {
                     }
                 }
                 HStack(spacing: Space.row) {
-                    Button("承認") { confirming = true }
+                    Button("承認") { model.approvePanelDraft(task: task, part: part.id, body: text) }
                         .buttonStyle(.borderedProminent)
                         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !model.canWrite(task.machine))
                     if text != draft.body {
@@ -630,12 +629,6 @@ private struct PanelDraftView: View {
             guard !loaded else { return }
             loaded = true
             text = draft.body
-        }
-        .confirmationDialog("送る文面の承認", isPresented: $confirming, titleVisibility: .visible) {
-            Button("承認") { model.approvePanelDraft(task: task, part: part.id, body: text) }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("「\(draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
         }
     }
 }

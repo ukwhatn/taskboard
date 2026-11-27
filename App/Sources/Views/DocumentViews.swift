@@ -224,15 +224,8 @@ struct DocumentScreen: View {
     @State private var width: CGFloat = 0
     /// 返信・質問の回答の書きかけがあるか（中の部品が `DocumentPendingInputKey` で知らせる）
     @State private var pendingInput = false
-    /// 承認を含む送信（確認のダイアログを出す）
-    @State var approving: Approving?
     /// 今の本文のリモートコンテンツを許したか（許した値は `DocumentRemoteContent` が覚える。ここは描き直しのため）
     @State private var remoteAllowed = false
-
-    struct Approving: Identifiable {
-        var request: DocSubmitRequest
-        var id: String { request.approvals.map(\.draftID).joined(separator: ",") }
-    }
 
     struct Composer: Identifiable {
         var id = UUID()
@@ -537,11 +530,7 @@ struct DocumentScreen: View {
     private func handleForm(_ action: DocumentFormAction, doc: Document) {
         switch action {
         case .submit(let request):
-            if request.approvals.isEmpty {
-                submit(request, doc: doc)
-            } else {
-                approving = Approving(request: request)
-            }
+            submit(request, doc: doc)
         case .cancel(let id):
             guard let ask = formAsks.first(where: { $0.askID == id }) else { return }
             Task {
@@ -556,7 +545,7 @@ struct DocumentScreen: View {
         }
     }
 
-    /// 回答と承認を 1 回で送る。承認を含む送信は、確認のダイアログの［承認］から呼ぶ
+    /// 回答と承認を 1 回で送る（承認は確認を挟まない。本文の欄で印を付けた時点で選んでいる）
     func submit(_ request: DocSubmitRequest, doc: Document) {
         Task {
             do {
@@ -842,7 +831,7 @@ struct DocumentScreen: View {
     }
 }
 
-/// 本文の欄の受け渡し（中身の描き直し・送る先・送る文面の承認の確認）。`DocumentScreen.screen` の modifier の連なりを短くする（長いと型検査が時間切れになる）
+/// 本文の欄の受け渡し（中身の描き直し・送る先）。`DocumentScreen.screen` の modifier の連なりを短くする（長いと型検査が時間切れになる）
 private struct FormsHandling: ViewModifier {
     let screen: DocumentScreen
     let doc: Document
@@ -855,25 +844,6 @@ private struct FormsHandling: ViewModifier {
                 screen.takeFormFocus()
             }
             .onChange(of: screen.model.docFormFocus, initial: true) { screen.takeFormFocus() }
-            .confirmationDialog(
-                "送る文面の承認", isPresented: Binding(get: { screen.approving != nil }, set: { if !$0 { screen.approving = nil } }), titleVisibility: .visible,
-                presenting: screen.approving
-            ) { item in
-                Button("承認") { screen.submit(item.request, doc: doc) }
-                Button("キャンセル", role: .cancel) { screen.web?.formResult(kind: "forms", id: "", error: nil) }
-            } message: { item in
-                Text(Self.approvalMessage(item.request, drafts: doc.drafts))
-            }
-    }
-}
-
-extension FormsHandling {
-    /// 1 件なら宛先を名前で示し、複数なら件数で示す
-    static func approvalMessage(_ request: DocSubmitRequest, drafts: [DocDraft]) -> String {
-        if request.approvals.count == 1, let draft = drafts.first(where: { $0.id == request.approvals[0].draftID }) {
-            return String(localized: "「\(draft.draft.to)」に送る文面を承認しますか？　承認すると、会話がこの本文で送信します。")
-        }
-        return String(localized: "送る文面\(request.approvals.count)件を承認しますか？　承認すると、会話がそれぞれの本文で送信します。")
     }
 }
 
