@@ -422,7 +422,7 @@ struct TaskTreeRow: View {
 }
 
 #if os(macOS)
-/// タスクの行にマウスを載せたときの操作。会話が 1 つなら［終了］、残りは［⋯］（右クリックと同じメニュー）
+/// タスクの行にマウスを載せたときの操作。［ピン留め］、会話が 1 つなら［終了］、残りは［⋯］（右クリックと同じメニュー）
 struct TaskRowHoverActions: View {
     @Environment(AppModel.self) private var model
     let task: BoardTask
@@ -430,17 +430,26 @@ struct TaskRowHoverActions: View {
 
     var body: some View {
         let targets = model.endTargets(of: task).conversations
-        HStack(spacing: Space.inline) {
+        let pinned = model.pinnedTasks.contains(task.id)
+        HStack(spacing: 0) {
+            Button { model.setPinned(task, !pinned) } label: {
+                Self.target(Self.icon(pinned ? "pin.slash" : "pin"))
+            }
+            .buttonStyle(.plain)
+            .help(pinned ? "ピン留めを外す" : "ピン留め")
+            .accessibilityLabel(pinned ? "ピン留めを外す" : "ピン留め")
             if targets.count == 1, let conversation = targets.first, model.canWrite(task.machine) {
                 Button { model.close(conversation: conversation.key) } label: {
-                    Self.icon("xmark.circle")
+                    Self.target(Self.icon("xmark.circle"))
                 }
                 .buttonStyle(.plain)
                 .help("会話を終了")
                 .accessibilityLabel("会話を終了")
+            } else {
+                Self.slot
             }
             Menu { TaskRowMenuItems(task: task, status: status) } label: {
-                Self.icon("ellipsis.circle")
+                Self.target(Self.icon("ellipsis.circle"))
             }
             .menuStyle(.button)
             .buttonStyle(.plain)
@@ -456,11 +465,20 @@ struct TaskRowHoverActions: View {
         Image(systemName: name).imageScale(.medium)
     }
 
-    /// 操作と同じ大きさの見えない置き場（行の札の位置に取っておく）
+    /// 押せる範囲。横は置き場（`placeholder`）と同じ幅、縦は題の行からはみ出して押せる範囲の最小の高さまで広げる
+    private static func target(_ icon: some View) -> some View {
+        icon.frame(width: HitTarget.size).frame(minHeight: HitTarget.size).contentShape(Rectangle())
+    }
+
+    /// 1 つ分の置き場の幅。操作の数が行ごとに違っても、題の右端の位置を揃える
+    private static var slot: some View {
+        Color.clear.frame(width: HitTarget.size, height: 0)
+    }
+
+    /// 操作と同じ大きさの見えない置き場（題の行の右に取っておく）。高さは印の高さで、題の行を高くしない
     static var placeholder: some View {
-        HStack(spacing: Space.inline) {
-            icon("xmark.circle")
-            icon("ellipsis.circle")
+        HStack(spacing: 0) {
+            ForEach(["pin", "xmark.circle", "ellipsis.circle"], id: \.self) { icon($0).frame(width: HitTarget.size) }
         }
         .hidden()
     }

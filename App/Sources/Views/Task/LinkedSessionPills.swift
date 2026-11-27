@@ -61,11 +61,15 @@ private struct EndablePill: View {
         ConversationPill(conversation: conversation, selected: selected, hidesStatusGlyph: showsEnd, action: action)
             .overlay(alignment: .leading) {
                 if showsEnd {
+                    // 押せる範囲は札の左端から印の右まで、高さは札いっぱい（印だけだと小さく、外して札を押しやすい）
                     Button { model.close(conversation: conversation.key) } label: {
                         Image(systemName: "xmark.circle.fill").symbolRenderingMode(.hierarchical).font(.callout)
+                            .padding(.leading, Space.block)
+                            .padding(.trailing, Space.inline)
+                            .frame(maxHeight: .infinity)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.leading, Space.block)
                     .help("会話を終了")
                     .accessibilityLabel("会話を終了")
                 }
