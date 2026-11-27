@@ -69,6 +69,7 @@ final class InboxNotifier: NSObject {
         let ready = Set(model.fleet.allMachines.values.compactMap { $0.machine?.id })
         updateBadge(count: model.inboxWaitingCount)
         model.syncPush()
+        if ClientPrefsSync.shared.tick(fleet: model.fleet) { model.reloadDevicePrefs() }
         model.reconcileRewindNoticeDismissals()
         model.observeUnread()
         postFinishedTurns(model)

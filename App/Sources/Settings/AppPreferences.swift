@@ -2,27 +2,27 @@ import SwiftUI
 import TaskboardKit
 
 /// この端末の設定（UserDefaults）のキー。読み書きは `DevicePrefs`。案件・列・起動の既定は daemon に置くのでここには無い（47 §5）。
-/// キーはすべてここに置く。文字を変えると保存した値が読めなくなるので変えない（`PreferenceKeyTests` が固定する）
+/// キーはすべてここに置く。文字を変えると保存した値が読めなくなるので変えない。設定画面の項目のキーは daemon に写すので `ClientPref` が決める
 enum AppPreferences {
-    static let appearanceKey = "appearance"
-    static let notifyKindsKey = "notify.kinds"
-    static let notifyTurnsKey = "notify.turns"
-    static let notifySoundKey = "notify.sound"
-    static let usageWindowsKey = "usage.windows"
-    static let collapseToolsKey = "chat.collapseTools"
-    static let chatFontSizeKey = "chat.fontSize"
+    static let appearanceKey = ClientPref.appearance.rawValue
+    static let notifyKindsKey = ClientPref.notifyKinds.rawValue
+    static let notifyTurnsKey = ClientPref.notifyTurns.rawValue
+    static let notifySoundKey = ClientPref.notifySound.rawValue
+    static let usageWindowsKey = ClientPref.usageWindows.rawValue
+    static let collapseToolsKey = ClientPref.chatCollapseTools.rawValue
+    static let chatFontSizeKey = ClientPref.chatFontSize.rawValue
     /// 入力欄の［音声入力］のボタン（Mac は ⌥Space も）
-    static let voiceInputKey = "chat.voiceInput"
+    static let voiceInputKey = ClientPref.chatVoiceInput.rawValue
     /// 音声入力で、AirPods などをつないでいても内蔵のマイクで聞く（既定はオン）
-    static let preferBuiltInMicrophoneKey = "chat.preferBuiltInMicrophone"
+    static let preferBuiltInMicrophoneKey = ClientPref.chatPreferBuiltInMicrophone.rawValue
     /// 巻き戻した会話の［元に戻す］のバーを消した・送った印（`RewindNoticeDismissals`）
     static let rewindNoticeDismissalsKey = "chat.rewindNoticeDismissals"
-    static let terminalFontSizeKey = "terminal.fontSize"
-    static let terminalFontFamiliesKey = "terminal.fontFamilies"
-    static let terminalLightThemeKey = "terminal.theme.light"
-    static let terminalDarkThemeKey = "terminal.theme.dark"
-    static let terminalOptionAsMetaKey = "terminal.optionAsMeta"
-    static let terminalBellKey = "terminal.bell"
+    static let terminalFontSizeKey = ClientPref.terminalFontSize.rawValue
+    static let terminalFontFamiliesKey = ClientPref.terminalFontFamilies.rawValue
+    static let terminalLightThemeKey = ClientPref.terminalLightTheme.rawValue
+    static let terminalDarkThemeKey = ClientPref.terminalDarkTheme.rawValue
+    static let terminalOptionAsMetaKey = ClientPref.terminalOptionAsMeta.rawValue
+    static let terminalBellKey = ClientPref.terminalBell.rawValue
     static let hiddenMachinesKey = "sidebar.hiddenMachines"
     static let sidebarMachineOrderKey = "sidebar.machineOrder"
     static let sidebarCollapsedKey = "sidebar.collapsed"
@@ -34,9 +34,9 @@ enum AppPreferences {
     static let sidebarTaskOrderKey = "sidebar.taskOrder"
     /// サイドバーの先頭に出すタスク（［ピン留め］）
     static let pinnedTasksKey = "sidebar.pinnedTasks"
-    static let onlyMachineEnabledKey = "onlyMachine.enabled"
+    static let onlyMachineEnabledKey = ClientPref.onlyMachineEnabled.rawValue
     static let onlyMachineIDKey = "onlyMachine.id"
-    static let taskPresentationKey = "task.presentation"
+    static let taskPresentationKey = ClientPref.taskPresentation.rawValue
     /// ホームの形（`HomeLayout`。⌘B）
     static let homeLayoutKey = "home.layout"
     static let taskPanelWidthKey = "taskPanel.width"
@@ -54,7 +54,7 @@ enum AppPreferences {
     /// 文書ごとに、リモートコンテンツを読み込むと許したホスト（`DocumentRemoteContent`）
     static let docRemoteHostsKey = "doc.remoteHosts"
     /// 文書の［エディタで開く］の URL（`{path}` を元のファイルのパスに置き換える）
-    static let docEditorURLKey = "doc.editorURL"
+    static let docEditorURLKey = ClientPref.docEditorURL.rawValue
     /// セッションの画面でチャットと端末のどちらを出すか
 
     static func sidebarBoardOrderKey(machine: String) -> String { "sidebar.boardOrder.\(machine)" }

@@ -4709,6 +4709,61 @@
         }
       }
     },
+    "agent.mcp.prefs.client" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末「{{client}}」が 1 つに決まらない。ある端末: {{list}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.prefs.client.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{name}}（{{id}}）・ {{platform}} ・ 最後の報告 {{reported}}"
+          }
+        }
+      }
+    },
+    "agent.mcp.prefs.header" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末のアプリの設定（アプリが報告した値と、MCP で書いた値）:"
+          }
+        }
+      }
+    },
+    "agent.mcp.prefs.shape" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "set は項目のキー → 値の object で渡す"
+          }
+        }
+      }
+    },
+    "agent.mcp.prefs.unset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未設定（アプリの既定）"
+          }
+        }
+      }
+    },
     "agent.mcp.schedules.board" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7877,6 +7932,50 @@
         }
       }
     },
+    "agent.prefs.choices" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{key}} に使える値は {{choices}}"
+          }
+        }
+      }
+    },
+    "agent.prefs.range" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{key}} は {{lower}}〜{{upper}} で指定する"
+          }
+        }
+      }
+    },
+    "agent.prefs.type" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{key}} の値の型が違う"
+          }
+        }
+      }
+    },
+    "agent.prefs.unknown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "{{key}} という設定は無い"
+          }
+        }
+      }
+    },
     "agent.run.result" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7939,6 +8038,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "出力が長いので、末尾の {{kb}}KB だけを載せた。"
+          }
+        }
+      }
+    },
+    "agent.tool.app_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各端末のアプリ（Mac・iPhone・iPad）の設定画面の値（外観・タスクの開き方・通知・チャットと端末の文字の大きさ・テーマなど）を一覧し、set で変える。変えた値は、その端末のアプリが次に接続しているときに反映される。端末は client で名前か id を指定する"
+          }
+        }
+      }
+    },
+    "agent.tool.app_settings.client" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端末の名前か id。省くと全部の端末を一覧する"
+          }
+        }
+      }
+    },
+    "agent.tool.app_settings.set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "項目のキー → 値。指定した項目だけ変える"
           }
         }
       }

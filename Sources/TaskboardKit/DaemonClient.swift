@@ -314,6 +314,16 @@ public final class DaemonClient: SessionSource, DaemonWriter, UsageHistorySource
         try await get("/v1/devices")
     }
 
+    /// 端末（アプリ）の設定の写し
+    public func clientPrefs() async throws -> [ClientPrefs] {
+        try await get("/v1/clients/prefs")
+    }
+
+    /// 端末の設定を報告する（MCP は名前と種類を省いて値だけを書く）。応答は項目ごとに新しい方を重ねた後の値
+    public func reportClientPrefs(id: String, _ report: ClientPrefsReport) async throws -> ClientPrefs {
+        try await send("PUT", "/v1/clients/\(id)/prefs", report)
+    }
+
     /// 端末を止める。端末の token で呼べるのは自分だけ
     public func revokeDevice(_ id: String) async throws {
         try await delete("/v1/devices/\(id)")

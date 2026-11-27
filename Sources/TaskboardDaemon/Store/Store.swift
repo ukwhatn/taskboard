@@ -117,6 +117,7 @@ public final class Store: Sendable {
         registerDocExternalHostsMigration(&migrator)  // v49（Store+Documents）
         registerUsageAccountSampleMigration(&migrator)  // v50（Store+Usage）
         registerDocChangesMigration(&migrator)  // v51（Store+Documents）
+        registerClientPrefsMigration(&migrator)  // v52（Store+ClientPrefs）
         return migrator
     }
 

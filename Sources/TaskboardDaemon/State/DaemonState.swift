@@ -515,6 +515,11 @@ public actor DaemonState {
         broadcast(.devicesUpdated(devices.map { var d = $0; d.current = false; return d }))
     }
 
+    /// 端末の設定の写し。これも `StateSnapshot` には載せない（アプリは自分の報告の応答と、この出来事で受ける）
+    public func publishClientPrefs(_ prefs: ClientPrefs) {
+        broadcast(.clientPrefsUpdated(prefs))
+    }
+
     // MARK: 購読
 
     /// 変化の購読。返ってきた stream は、呼び出し側が終えたら `unsubscribe` する。

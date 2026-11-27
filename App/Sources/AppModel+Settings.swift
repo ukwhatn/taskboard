@@ -203,3 +203,15 @@ extension AppModel {
         }
     }
 }
+
+extension AppModel {
+    /// 端末の設定のうち model が持つ値を、保存先から読み直す（MCP が daemon に書いた値を `ClientPrefsSync` が反映したとき）。
+    /// `@AppStorage` で読む値は保存先の変化で描き直されるので、ここでは扱わない
+    func reloadDevicePrefs() {
+        let stored = DevicePrefs()
+        if taskPresentation != stored.taskPresentation { taskPresentation = stored.taskPresentation }
+        if onlyMachineEnabled != stored.onlyMachineEnabled { onlyMachineEnabled = stored.onlyMachineEnabled }
+        if usageWindows != stored.usageWindows { usageWindows = stored.usageWindows }
+        if scenario == nil, AppearanceChoice(appearanceOverride) != stored.appearance { appearanceOverride = stored.appearance.colorScheme }
+    }
+}

@@ -101,6 +101,7 @@ public enum APIServer {
         registerBoardRoutes(v1: v1, daemonOnly: daemonOnly, state: state, dependencies: dependencies, encoder: encoder)
         registerDevinRoutes(v1: v1, dependencies: dependencies, encoder: encoder)
         registerSlackRoutes(v1: v1, daemonOnly: daemonOnly, dependencies: dependencies, encoder: encoder)
+        registerClientPrefsRoutes(v1: v1, state: state, dependencies: dependencies, encoder: encoder)
         registerSessionRoutes(v1: v1, state: state, dependencies: dependencies, encoder: encoder)
         registerScheduleRoutes(v1: v1, state: state, dependencies: dependencies, encoder: encoder)
         registerWorkdirRoutes(v1: v1, daemonOnly: daemonOnly, state: state, dependencies: dependencies, encoder: encoder)

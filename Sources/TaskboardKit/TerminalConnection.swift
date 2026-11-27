@@ -39,6 +39,8 @@ public protocol DaemonWriter: Sendable {
     func createPairing() async throws -> PairingCode
     func devices() async throws -> [DeviceInfo]
     func revokeDevice(_ id: String) async throws
+    func clientPrefs() async throws -> [ClientPrefs]
+    func reportClientPrefs(id: String, _ report: ClientPrefsReport) async throws -> ClientPrefs
     func updateBoard(id: String, _ request: BoardUpdateRequest) async throws -> Board
     func deleteBoard(id: String) async throws
     func boardSlack(id: String) async throws -> BoardSlack

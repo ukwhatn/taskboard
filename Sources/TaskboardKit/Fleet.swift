@@ -33,6 +33,8 @@ public struct MachineState: Hashable, Sendable {
     public var orchestrator: OrchestratorInfo? { didSet { derived = MachineDerived() } }
     /// ペアリングした端末。`devices.updated` が来るか、設定画面が `GET /v1/devices` で取るまで nil
     public var devices: [DeviceInfo]?
+    /// 端末（アプリ）の設定の写し。key は `ClientPrefs.clientID`。報告の応答か `client_prefs.updated` が来るまで空
+    public var clientPrefs: [String: ClientPrefs] = [:]
     /// そのマシンの codex（アカウント・コネクタ）。設定画面が `GET /v1/codex` で取るまで nil
     public var codex: CodexMachineInfo?
     /// そのマシンの Claude Code のモデルの一覧。起動の欄と会話の欄が `GET /v1/claude` で取るまで nil（引くときは `ClaudeModels` の控えで引く）
@@ -155,6 +157,8 @@ public struct MachineState: Hashable, Sendable {
             orchestrator = value
         case .devicesUpdated(let value):
             devices = value
+        case .clientPrefsUpdated(let value):
+            clientPrefs[value.clientID] = value
         case .inboxDismissalsUpdated(let value):
             inboxDismissals = Self.dismissalsByItem(value)
         case .conversationUpdated(let value):
@@ -732,6 +736,11 @@ public final class Fleet {
     public func conversationSearchSource(for machine: MachineID) -> (any ConversationSearchSource)? {
         guard let id = visibleFleetID(for: machine) else { return nil }
         return sources[id] as? any ConversationSearchSource
+    }
+
+    /// 接続先の書き込み先。隠しているマシンも返す（端末の設定の写しは隠していても送る）。fixtures なら nil
+    public func writer(fleetID: String) -> (any DaemonWriter)? {
+        sources[fleetID] as? any DaemonWriter
     }
 
     /// 接続の利用状況を引ける供給元。前の版の daemon も DaemonClient なので返す（引けなければ 404）

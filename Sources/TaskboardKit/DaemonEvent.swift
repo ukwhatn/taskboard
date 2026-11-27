@@ -29,6 +29,8 @@ public enum DaemonEvent: Hashable, Sendable {
     case orchestratorUpdated(OrchestratorInfo)
     /// ペアリングした端末の一覧を丸ごと置き換える（`current` は常に false）
     case devicesUpdated([DeviceInfo])
+    /// 1 台の端末（アプリ）の設定の写し（`ClientPrefs`）
+    case clientPrefsUpdated(ClientPrefs)
     /// 受信箱で消した項目の記録を丸ごと置き換える
     case inboxDismissalsUpdated([InboxDismissal])
     /// host の会話の様子（状態・問い・題・裏のタスクの数）。発言と差分は `/v1/stream` で購読した会話にだけ流れる
@@ -67,6 +69,7 @@ public enum DaemonEvent: Hashable, Sendable {
         case .settingsUpdated: "settings.updated"
         case .orchestratorUpdated: "orchestrator.updated"
         case .devicesUpdated: "devices.updated"
+        case .clientPrefsUpdated: "client_prefs.updated"
         case .inboxDismissalsUpdated: "inbox.dismissals_updated"
         case .conversationUpdated: "conversation.updated"
         case .conversationRemoved: "conversation.removed"
@@ -112,6 +115,7 @@ extension DaemonEvent: Codable {
         case "settings.updated": self = .settingsUpdated(try c.decode(MachineSettings.self, forKey: .data))
         case "orchestrator.updated": self = .orchestratorUpdated(try c.decode(OrchestratorInfo.self, forKey: .data))
         case "devices.updated": self = .devicesUpdated(try c.decode([DeviceInfo].self, forKey: .data))
+        case "client_prefs.updated": self = .clientPrefsUpdated(try c.decode(ClientPrefs.self, forKey: .data))
         case "inbox.dismissals_updated": self = .inboxDismissalsUpdated(try c.decode([InboxDismissal].self, forKey: .data))
         case "conversation.updated": self = .conversationUpdated(try c.decode(Conversation.self, forKey: .data))
         case "conversation.removed": self = .conversationRemoved(try c.decode(ConversationKey.self, forKey: .data))
@@ -153,6 +157,7 @@ extension DaemonEvent: Codable {
         case .settingsUpdated(let v): try c.encode(v, forKey: .data)
         case .orchestratorUpdated(let v): try c.encode(v, forKey: .data)
         case .devicesUpdated(let v): try c.encode(v, forKey: .data)
+        case .clientPrefsUpdated(let v): try c.encode(v, forKey: .data)
         case .inboxDismissalsUpdated(let v): try c.encode(v, forKey: .data)
         case .conversationUpdated(let v): try c.encode(v, forKey: .data)
         case .conversationRemoved(let v): try c.encode(v, forKey: .data)

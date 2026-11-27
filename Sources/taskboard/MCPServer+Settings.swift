@@ -2,7 +2,7 @@ import Foundation
 import MCP
 import TaskboardKit
 
-/// アプリの設定画面で変えられる daemon の設定のうち、案件・タスク・マシンの tool に収まらないもの（Slack の連携・作業ディレクトリの星・端末・Codex のコネクタ）と、
+/// アプリの設定画面で変えられる daemon の設定のうち、案件・タスク・マシンの tool に収まらないもの（Slack の連携・作業ディレクトリの星・端末・Codex のコネクタ・端末のアプリの設定）と、
 /// board_update の起動の既定の読み方
 extension TaskboardTools {
     static let launchDefaultsProperties: [String: Value] = [
@@ -47,6 +47,17 @@ extension TaskboardTools {
                 "logout": property("string", Copy.text("agent.tool.codex_connectors.logout")),
                 "confirm": confirmProperty,
             ])) { tools, args in try await tools.codexConnectors(args) },
+        ToolEntry(
+            name: "app_settings", description: Copy.text("agent.tool.app_settings"),
+            inputSchema: schema([
+                "client": property("string", Copy.text("agent.tool.app_settings.client")),
+                "set": .object([
+                    "type": .string("object"),
+                    "description": .string(Copy.text("agent.tool.app_settings.set")),
+                    "properties": .object(Dictionary(uniqueKeysWithValues: ClientPref.allCases.map { ($0.rawValue, appSettingProperty($0)) })),
+                    "additionalProperties": .bool(false),
+                ]),
+            ])) { tools, args in try await tools.appSettings(args) },
         ToolEntry(
             name: "workdir_bookmarks", description: Copy.text("agent.tool.workdir_bookmarks"),
             inputSchema: schema([
@@ -218,6 +229,62 @@ extension TaskboardTools {
             lines.append("- " + Copy.text("agent.mcp.settings.codex.loginLine", ["name": login.name, "id": login.id, "state": login.state.rawValue]))
         }
         return lines.joined(separator: "\n")
+    }
+
+    // MARK: 端末（アプリ）の設定
+
+    static func appSettingProperty(_ pref: ClientPref) -> Value {
+        switch pref.kind {
+        case .bool: property("boolean")
+        case .number(let range): .object(["type": .string("number"), "minimum": .double(range.lowerBound), "maximum": .double(range.upperBound)])
+        case .string(let choices): choices.isEmpty ? property("string") : property("string", enum: choices)
+        case .strings(let choices): property("array", items: choices.isEmpty ? property("string") : property("string", enum: choices))
+        }
+    }
+
+    private func appSettings(_ args: [String: Value]) async throws -> String {
+        var clients = try await client.clientPrefs()
+        if let raw = args["set"] {
+            guard let object = raw.objectValue, !object.isEmpty else { throw ToolError.invalid(Copy.text("agent.mcp.prefs.shape")) }
+            guard let name = args.string("client"), !name.isEmpty else { throw ToolError.missing("client") }
+            let matches = clients.filter { $0.clientID == name || $0.name == name }
+            guard matches.count == 1, let target = matches.first else {
+                throw ToolError.invalid(Copy.text("agent.mcp.prefs.client", ["client": name, "list": clients.map { "\($0.name) (\($0.clientID))" }.joined(separator: ", ")]))
+            }
+            let now = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
+            var values: [String: ClientPrefEntry] = [:]
+            for (key, value) in object {
+                guard let pref = ClientPref(rawValue: key) else { throw ToolError.invalid(Copy.text("agent.prefs.unknown", ["key": key])) }
+                let parsed = try Self.clientPrefValue(value, pref: pref)
+                if let problem = pref.problem(parsed) { throw ToolError.invalid(problem) }
+                values[key] = ClientPrefEntry(value: parsed, at: now)
+            }
+            let updated = try await client.reportClientPrefs(id: target.clientID, ClientPrefsReport(values: values))
+            clients = clients.map { $0.clientID == updated.clientID ? updated : $0 }
+        }
+        var lines = [Copy.text("agent.mcp.prefs.header")]
+        if clients.isEmpty { lines.append(Copy.text("agent.mcp.settings.bookmark.none")) }
+        for prefs in clients where args.string("client").map({ $0 == prefs.clientID || $0 == prefs.name }) ?? true {
+            lines.append("## " + Copy.text("agent.mcp.prefs.client.line", ["name": prefs.name, "id": prefs.clientID, "platform": prefs.platform.rawValue, "reported": Self.formatted(prefs.reportedAt)]))
+            for pref in ClientPref.allCases {
+                lines.append("- \(pref.rawValue): " + (prefs.values[pref.rawValue]?.value.display ?? Copy.text("agent.mcp.prefs.unset")))
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    static func clientPrefValue(_ value: Value, pref: ClientPref) throws -> ClientPrefValue {
+        switch pref.kind {
+        case .bool:
+            if let bool = value.boolValue { return .bool(bool) }
+        case .number:
+            if let number = value.doubleValue ?? value.intValue.map(Double.init) { return .number(number) }
+        case .string:
+            if let text = value.stringValue { return .string(text) }
+        case .strings:
+            if let items = value.arrayValue { return .strings(items.compactMap(\.stringValue)) }
+        }
+        throw ToolError.invalid(Copy.text("agent.prefs.type", ["key": pref.rawValue]))
     }
 
     // MARK: 作業ディレクトリの星

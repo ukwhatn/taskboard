@@ -57,7 +57,7 @@ public actor PushNotifier {
         machine.apply(event)
         switch event {
         // 消した記録は送るものを変えない（APNs は受信箱の記録を見ない）
-        case .usageUpdated, .devicesUpdated, .inboxDismissalsUpdated: return
+        case .usageUpdated, .devicesUpdated, .clientPrefsUpdated, .inboxDismissalsUpdated: return
         default: break
         }
         finishedTurns += turns.update(machine)
