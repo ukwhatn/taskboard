@@ -71,7 +71,6 @@ extension Store {
             if let name = request.name { row.name = try Self.validBoardName(db, name, excluding: id) }
             if let template = request.promptTemplate { row.promptTemplate = template }
             if let target = request.mergeTarget { row.mergeTarget = target.rawValue }
-            if let delegation = request.delegation { row.delegation = try Self.encodeDelegation(delegation) }
             if let archived = request.archived {
                 if archived, row.archivedAt == nil {
                     guard try Self.activeBoardCount(db, excluding: id) > 0 else {

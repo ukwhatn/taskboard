@@ -59,23 +59,7 @@ public enum SessionGuidance {
             lines.append(Copy.text("agent.guidance.columns"))
             lines += board.orderedColumns.map { "  - " + columnLine($0) }
         }
-        lines += delegationLines(task: task, board: board)
         return lines.joined(separator: "\n")
-    }
-
-    /// 「委任範囲」の節。7 項目の段階と出所（組み込み・案件の初期値・タスクの上書き）を 1 行ずつ。`session_guide`・SessionStart・`task_get` が使う
-    public static func delegationLines(task: BoardTask, board: Board?) -> [String] {
-        [Copy.text("agent.guidance.delegation")]
-            + task.delegation(board: board).map { entry in
-                let source = switch entry.source {
-                case .builtin: Copy.text("agent.guidance.delegation.builtin")
-                case .board: Copy.text("agent.guidance.delegation.board")
-                case .task: Copy.text("agent.guidance.delegation.task")
-                }
-                return Copy.text(
-                    "agent.guidance.delegation.line",
-                    ["id": entry.area.rawValue, "area": entry.area.agentLabel, "level": entry.level.agentLabel, "levelID": entry.level.rawValue, "source": source])
-            }
     }
 
     /// `id（名前）`

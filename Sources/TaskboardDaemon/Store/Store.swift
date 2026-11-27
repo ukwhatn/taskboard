@@ -335,7 +335,6 @@ public final class Store: Sendable {
             if let title = request.title { row.title = title }
             if let note = request.note { row.note = note }
             if request.clearDue { row.due = nil } else if let due = request.due { row.due = due }
-            if let delegation = request.delegation { row.delegation = try Self.encodeDelegation(delegation) }
             row.updatedAt = Date()
             try row.update(db)
             for url in request.addLinks where !url.isEmpty {
@@ -626,7 +625,7 @@ public final class Store: Sendable {
                 },
                 createdAt: row.createdAt, promptTemplate: row.promptTemplate, archived: row.archivedAt != nil,
                 launchDefaults: row.launchDefaults.flatMap { try? JSONDecoder().decode(LaunchDefaults.self, from: Data($0.utf8)) },
-                mergeTarget: MergeTarget(rawValue: row.mergeTarget) ?? .deploying, delegation: decodeDelegation(row.delegation))
+                mergeTarget: MergeTarget(rawValue: row.mergeTarget) ?? .deploying)
         }
     }
 
@@ -677,7 +676,7 @@ public final class Store: Sendable {
                         id: $0.id!, agent: $0.agent, sessionID: $0.sessionId, cwd: $0.cwd, label: $0.label, linkedAt: $0.linkedAt,
                         launchArgs: decodeStrings($0.launchArgs))
                 },
-                importedID: row.importedId, delegation: decodeDelegation(row.delegation), createdAt: row.createdAt, updatedAt: row.updatedAt)
+                importedID: row.importedId, createdAt: row.createdAt, updatedAt: row.updatedAt)
         }
     }
 
@@ -757,8 +756,6 @@ struct BoardRow: Codable, FetchableRecord, PersistableRecord {
     var launchDefaults: String? = nil
     /// `MergeTarget` の rawValue
     var mergeTarget: String = MergeTarget.deploying.rawValue
-    /// 委任範囲の案件の初期値（`DelegationScope` の JSON）
-    var delegation: String? = nil
 }
 
 struct ColumnRow: Codable, FetchableRecord, PersistableRecord {
@@ -784,8 +781,6 @@ struct TaskRow: Codable, FetchableRecord, MutablePersistableRecord {
     var importedId: Int?
     var createdAt: Date
     var updatedAt: Date
-    /// 委任範囲のタスクの上書き（`DelegationScope` の JSON）
-    var delegation: String? = nil
 
     mutating func didInsert(_ inserted: InsertionSuccess) {
         number = inserted.rowID

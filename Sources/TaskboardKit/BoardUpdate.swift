@@ -16,13 +16,11 @@ public struct BoardUpdateRequest: Codable, Hashable, Sendable {
     public var reassign: [String: String]?
     /// PR がマージされたタスクを進める先
     public var mergeTarget: MergeTarget?
-    /// 委任範囲の案件の初期値を丸ごと置き換える（空で全部を組み込みの初期値に戻す）
-    public var delegation: DelegationScope?
 
     public init(
         name: String? = nil, promptTemplate: String? = nil, columnTemplates: [String: String]? = nil, archived: Bool? = nil,
         launchDefaults: LaunchDefaults? = nil, clearLaunchDefaults: Bool? = nil, columns: [BoardColumnEdit]? = nil, reassign: [String: String]? = nil,
-        mergeTarget: MergeTarget? = nil, delegation: DelegationScope? = nil
+        mergeTarget: MergeTarget? = nil
     ) {
         self.name = name
         self.promptTemplate = promptTemplate
@@ -33,7 +31,6 @@ public struct BoardUpdateRequest: Codable, Hashable, Sendable {
         self.columns = columns
         self.reassign = reassign
         self.mergeTarget = mergeTarget
-        self.delegation = delegation
     }
 }
 

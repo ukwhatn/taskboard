@@ -214,12 +214,10 @@ public struct TaskUpdateRequest: Codable, Hashable, Sendable {
     public var clearDue: Bool
     public var addLinks: [String]
     public var removeLinkIDs: [Int64]
-    /// 委任範囲のタスクの上書きを丸ごと置き換える（空で全部を案件の設定に戻す）
-    public var delegation: DelegationScope?
 
     public init(
         title: String? = nil, note: String? = nil, columnID: String? = nil, boardID: String? = nil, due: String? = nil, clearDue: Bool = false,
-        addLinks: [String] = [], removeLinkIDs: [Int64] = [], delegation: DelegationScope? = nil
+        addLinks: [String] = [], removeLinkIDs: [Int64] = []
     ) {
         self.title = title
         self.note = note
@@ -229,7 +227,6 @@ public struct TaskUpdateRequest: Codable, Hashable, Sendable {
         self.clearDue = clearDue
         self.addLinks = addLinks
         self.removeLinkIDs = removeLinkIDs
-        self.delegation = delegation
     }
 }
 

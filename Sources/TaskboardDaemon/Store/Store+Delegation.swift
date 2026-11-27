@@ -2,8 +2,7 @@ import Foundation
 import GRDB
 import TaskboardKit
 
-/// 委任範囲。案件の初期値（`board.delegation`）とタスクの上書き（`task.delegation`）は JSON の列。
-/// 表 `delegationRecord`（廃止した判断の記録と範囲の変更の提案）は 3 台の DB に適用済みなので、登録だけを残して読み書きしない
+/// 廃止した委任範囲の migration。列 `board.delegation`・`task.delegation` と表 `delegationRecord` は 3 台の DB に適用済みなので、登録だけを残して読み書きしない
 extension Store {
     static let delegationMigration = "v43 delegation scope and records"
 
@@ -31,16 +30,5 @@ extension Store {
             }
             try db.create(index: "delegationRecord_task", on: "delegationRecord", columns: ["taskNumber", "id"])
         }
-    }
-
-    // MARK: 範囲（案件の初期値・タスクの上書き）
-
-    /// 空の指定は NULL にする
-    static func encodeDelegation(_ scope: DelegationScope) throws -> String? {
-        scope.isEmpty ? nil : String(decoding: try JSONEncoder().encode(scope), as: UTF8.self)
-    }
-
-    static func decodeDelegation(_ text: String?) -> DelegationScope {
-        text.flatMap { try? JSONDecoder().decode(DelegationScope.self, from: Data($0.utf8)) } ?? DelegationScope()
     }
 }

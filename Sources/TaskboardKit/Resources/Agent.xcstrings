@@ -100,116 +100,6 @@
         }
       }
     },
-    "agent.delegation.area.cost" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "費用の発生"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.destructive" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "削除・戻せない操作"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.followups" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "範囲外で見つけた不具合の起票"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.implementation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "実装の進め方（PR の分け方・順序・設計の細部）"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.outbound" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "社外・他チームへの文面の投稿"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.review_merge" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "レビューの依頼・マージ"
-          }
-        }
-      }
-    },
-    "agent.delegation.area.tracker" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "issue・チケットの更新"
-          }
-        }
-      }
-    },
-    "agent.delegation.level.ask" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "確認"
-          }
-        }
-      }
-    },
-    "agent.delegation.level.delegate" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "委任"
-          }
-        }
-      }
-    },
-    "agent.delegation.level.report" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "報告のみ"
-          }
-        }
-      }
-    },
     "agent.doc.changes.count" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -338,61 +228,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "- 列（移すときは説明に従う）:"
-          }
-        }
-      }
-    },
-    "agent.guidance.delegation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "- 委任範囲（範囲の内のことは人に問わずに決めて実行する。［報告のみ］の項目は、決めたことを応答で報告する。［確認］の項目だけを人に問う）:"
-          }
-        }
-      }
-    },
-    "agent.guidance.delegation.board" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "案件の初期値"
-          }
-        }
-      }
-    },
-    "agent.guidance.delegation.builtin" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "組み込みの初期値"
-          }
-        }
-      }
-    },
-    "agent.guidance.delegation.line" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "  - {{id}}（{{area}}）: {{levelID}}（{{level}}）・{{source}}"
-          }
-        }
-      }
-    },
-    "agent.guidance.delegation.task" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "タスクの上書き"
           }
         }
       }
@@ -5369,39 +5204,6 @@
         }
       }
     },
-    "agent.mcp.settings.delegation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "- 委任範囲の案件の初期値:"
-          }
-        }
-      }
-    },
-    "agent.mcp.settings.delegation.shape" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "delegation は、項目の id → 段階の名前の object で渡す"
-          }
-        }
-      }
-    },
-    "agent.mcp.settings.delegation.widen" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "{{area}} は今 {{current}} なので、{{next}} には変えられない。確認を減らす変更は、利用者がアプリの設定で行う"
-          }
-        }
-      }
-    },
     "agent.mcp.settings.launch" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8092,7 +7894,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "案件の名前・起動プロンプト・マージ後に進める列・アーカイブ・起動の既定（launch_*）・委任範囲の初期値（delegation）と、列（追加・削除・名前・説明・折りたたむ・列の起動プロンプト）を変える。タスクが残る列を削除するときは reassign で移す先を渡す。「完了」の列は削除できない"
+            "value" : "案件の名前・起動プロンプト・マージ後に進める列・アーカイブ・起動の既定（launch_*）と、列（追加・削除・名前・説明・折りたたむ・列の起動プロンプト）を変える。タスクが残る列を削除するときは reassign で移す先を渡す。「完了」の列は削除できない"
           }
         }
       }
@@ -8324,17 +8126,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解決にする（人は再オープンできる）"
-          }
-        }
-      }
-    },
-    "agent.tool.delegation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "委任範囲の項目 → 段階（delegate・report・ask）か inherit（指定を外して上の段階に従う）。指定した項目だけ変える。確認を減らす向き（今より緩い段階）には変えられず、それは利用者がアプリの設定で行う"
           }
         }
       }

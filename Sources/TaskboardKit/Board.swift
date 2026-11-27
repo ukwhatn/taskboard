@@ -16,12 +16,10 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
     public var launchDefaults: LaunchDefaults?
     /// PR がマージされたタスクを進める先（99_history Q3）
     public var mergeTarget: MergeTarget
-    /// 委任範囲の案件の初期値（指定した項目だけ）
-    public var delegation: DelegationScope
 
     public init(
         id: String, machine: MachineID, name: String, position: Int, columns: [BoardColumn], createdAt: Date, promptTemplate: String = "",
-        archived: Bool = false, launchDefaults: LaunchDefaults? = nil, mergeTarget: MergeTarget = .deploying, delegation: DelegationScope = DelegationScope()
+        archived: Bool = false, launchDefaults: LaunchDefaults? = nil, mergeTarget: MergeTarget = .deploying
     ) {
         self.id = id
         self.machine = machine
@@ -33,7 +31,6 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         self.archived = archived
         self.launchDefaults = launchDefaults
         self.mergeTarget = mergeTarget
-        self.delegation = delegation
     }
 
     public init(from decoder: any Decoder) throws {
@@ -48,7 +45,6 @@ public struct Board: Codable, Hashable, Identifiable, Sendable {
         archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
         launchDefaults = try c.decodeIfPresent(LaunchDefaults.self, forKey: .launchDefaults)
         mergeTarget = try c.decodeIfPresent(MergeTarget.self, forKey: .mergeTarget) ?? .deploying
-        delegation = try c.decodeIfPresent(DelegationScope.self, forKey: .delegation) ?? DelegationScope()
     }
 
     /// 列の並び（`position` の順）。画面に列を並べるときと、隣の列を引くときはこれを使う
@@ -301,14 +297,12 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
     public var sessions: [TaskSessionRef]
     /// taskherd から取り込んだときの元 id。再取り込みの重複防止に使う。
     public var importedID: Int?
-    /// 委任範囲のタスクの上書き（指定した項目だけ）。今効いている段階は `delegation(board:)`
-    public var delegation: DelegationScope
     public var createdAt: Date
     public var updatedAt: Date
 
     public init(
         machine: MachineID, number: Int, boardID: String, columnID: String, title: String, note: String = "", due: String? = nil,
-        links: [TaskLink] = [], sessions: [TaskSessionRef] = [], importedID: Int? = nil, delegation: DelegationScope = DelegationScope(),
+        links: [TaskLink] = [], sessions: [TaskSessionRef] = [], importedID: Int? = nil,
         createdAt: Date, updatedAt: Date
     ) {
         self.machine = machine
@@ -321,14 +315,12 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
         self.links = links
         self.sessions = sessions
         self.importedID = importedID
-        self.delegation = delegation
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
-    private enum CodingKeys: String, CodingKey { case machine, number, boardID, columnID, title, note, due, links, sessions, importedID, delegation, createdAt, updatedAt }
+    private enum CodingKeys: String, CodingKey { case machine, number, boardID, columnID, title, note, due, links, sessions, importedID, createdAt, updatedAt }
 
-    /// 委任範囲より前の daemon と fixtures は `delegation` を持たない
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         machine = try c.decode(MachineID.self, forKey: .machine)
@@ -341,7 +333,6 @@ public struct BoardTask: Codable, Hashable, Identifiable, Sendable {
         links = try c.decode([TaskLink].self, forKey: .links)
         sessions = try c.decode([TaskSessionRef].self, forKey: .sessions)
         importedID = try c.decodeIfPresent(Int.self, forKey: .importedID)
-        delegation = try c.decodeIfPresent(DelegationScope.self, forKey: .delegation) ?? DelegationScope()
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
     }

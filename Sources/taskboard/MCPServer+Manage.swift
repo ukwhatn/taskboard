@@ -34,7 +34,6 @@ extension TaskboardTools {
             inputSchema: schema(launchDefaultsProperties.merging([
                 "board": property("string", Copy.text("agent.tool.board_update.board")),
                 "name": property("string"),
-                "delegation": delegationProperty,
                 "prompt_template": property("string", Copy.unfilled("agent.tool.board_update.prompt_template")),
                 "merge_target": property("string", Copy.text("agent.tool.board_update.merge_target"), enum: MergeTarget.allCases.map(\.rawValue)),
                 "archived": property("boolean", Copy.text("agent.tool.board_update.archived")),
@@ -144,7 +143,6 @@ extension TaskboardTools {
             return "  - " + SessionGuidance.columnLine(column) + flags.map { " ・ " + $0 }.joined()
         }
         lines.append(describe(launchDefaults: board.launchDefaults))
-        lines += describe(boardDelegation: board)
         return lines.joined(separator: "\n")
     }
 
@@ -217,8 +215,6 @@ extension TaskboardTools {
         } else {
             request.launchDefaults = try await launchDefaultsEdit(args, current: board.launchDefaults)
         }
-        request.delegation = try Self.delegationEdit(
-            args["delegation"], current: board.delegation, effective: { board.delegationLevel($0) }, fallback: { $0.builtinLevel })
         guard request != BoardUpdateRequest() else { throw ToolError.invalid(Copy.text("agent.mcp.manage.remove")) }
         let updated = try await client.updateBoard(id: board.id, request)
         return Copy.text("agent.mcp.manage.updated") + Self.describe(board: updated)

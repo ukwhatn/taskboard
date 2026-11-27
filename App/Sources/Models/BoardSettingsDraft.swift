@@ -26,8 +26,6 @@ struct BoardSettingsDraft: Hashable {
     var hasLaunchDefaults: Bool
     var launch: LaunchDraft
     var promptTemplate: String
-    /// 委任範囲の案件の初期値。組み込みの初期値と同じ項目は持たない（`DelegationArea.builtinLevel` が変わったら追従させる）
-    var delegation: DelegationScope
     /// Slack の設定。daemon から読み終えるまで nil（案件とは別の API で読み書きする）
     var slack: BoardSlackDraft?
 
@@ -47,12 +45,6 @@ struct BoardSettingsDraft: Hashable {
         self.launch = launch
         hasLaunchDefaults = board.launchDefaults != nil
         promptTemplate = board.promptTemplate
-        delegation = board.delegation
-    }
-
-    /// 項目の段階を選ぶ。組み込みの初期値と同じなら指定を外す
-    mutating func setDelegation(_ level: DelegationLevel, for area: DelegationArea) {
-        delegation[area] = level == area.builtinLevel ? nil : level
     }
 
     /// 起動の初期値はオフの間の中身を比べない（オフにして戻すだけなら変更なし）
@@ -115,7 +107,6 @@ struct BoardSettingsDraft: Hashable {
             clearLaunchDefaults: !hasLaunchDefaults && board.launchDefaults != nil ? true : nil,
             columns: columnsChanged ? edits : nil,
             reassign: columnsChanged && !targets.isEmpty ? targets : nil,
-            mergeTarget: mergeTarget == board.mergeTarget ? nil : mergeTarget,
-            delegation: delegation == baseline.delegation ? nil : delegation)
+            mergeTarget: mergeTarget == board.mergeTarget ? nil : mergeTarget)
     }
 }

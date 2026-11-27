@@ -136,7 +136,7 @@ struct SidePanelBody: View {
     }
 }
 
-/// 右側の状態の欄。会話の環境（会話を出しているとき）、メモ、PR、委任範囲と委任範囲での判断、終了したセッション、再開の予定、PR・issueの監視、定期起動。中身の無い節は出さない
+/// 右側の状態の欄。会話の環境（会話を出しているとき）、メモ、PR、終了したセッション、再開の予定、PR・issueの監視、定期起動。中身の無い節は出さない
 private struct TaskStatusSections: View {
     @Environment(AppModel.self) private var model
     @Environment(\.window) private var window
@@ -168,10 +168,6 @@ private struct TaskStatusSections: View {
             if !task.pullRequestLinks.isEmpty {
                 section(String(localized: "PR")) { TaskPRPane(task: task) }
                     .id(SidePanelBody.prAnchor)
-            }
-            let machine = model.fleet.machineState(for: task.machine)
-            section(String(localized: "委任範囲")) {
-                TaskDelegationScope(task: task, board: machine?.boards[task.boardID])
             }
             let finished = model.finishedSessions(of: task, in: sessions)
             if !finished.isEmpty {

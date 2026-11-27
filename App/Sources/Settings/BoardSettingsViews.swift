@@ -171,7 +171,6 @@ struct BoardDetailSettings: View {
                     }
                 }
             }
-            DelegationSection(draft: editing)
             LaunchDefaultsSection(hasDefaults: editing.hasLaunchDefaults, draft: editing.launch)
             Section {
                 Redraw(on: draft.promptTemplate) {
@@ -421,40 +420,6 @@ struct BoardDetailSettings: View {
             } catch {
                 self.error = UserFacingError("案件を削除できませんでした", error: error)?.text
             }
-        }
-    }
-}
-
-// MARK: - 委任範囲
-
-/// 委任範囲の案件の初期値（7 項目 × 3 段階）。項目の名前が長いので、名前の下に段階を横並びで置く。見せる値が同じなら描き直さない
-private struct DelegationSection: View, Equatable {
-    @Binding var draft: BoardSettingsDraft
-    private let shown: DelegationScope
-
-    init(draft: Binding<BoardSettingsDraft>) {
-        _draft = draft
-        shown = draft.wrappedValue.delegation
-    }
-
-    nonisolated static func == (a: Self, b: Self) -> Bool { a.shown == b.shown }
-
-    var body: some View {
-        Section {
-            ForEach(DelegationArea.allCases) { area in
-                VStack(alignment: .leading, spacing: Space.row) {
-                    Text(area.label)
-                    Picker(area.label, selection: Binding(get: { draft.delegation[area] ?? area.builtinLevel }, set: { draft.setDelegation($0, for: area) })) {
-                        ForEach(DelegationLevel.allCases) { Text($0.label).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-            }
-        } header: {
-            Text("委任範囲")
-        } footer: {
-            Text("［委任］と［報告のみ］の項目は、会話が問い合わせずに決めて実行します。［報告のみ］で決めたことは受信箱のお知らせに表示されます。タスクごとに変更できます。")
         }
     }
 }

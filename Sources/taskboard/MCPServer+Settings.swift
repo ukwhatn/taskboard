@@ -3,7 +3,7 @@ import MCP
 import TaskboardKit
 
 /// アプリの設定画面で変えられる daemon の設定のうち、案件・タスク・マシンの tool に収まらないもの（Slack の連携・作業ディレクトリの星）と、
-/// board_update・task_update が共有する起動の既定と委任範囲の読み方
+/// board_update の起動の既定の読み方
 extension TaskboardTools {
     static let launchDefaultsProperties: [String: Value] = [
         "launch_kind": property("string", Copy.text("agent.tool.board_update.launch_kind"), enum: AgentKind.allCases.map(\.rawValue)),
@@ -14,18 +14,6 @@ extension TaskboardTools {
         "launch_worktree": property("boolean", Copy.text("agent.tool.board_update.launch_worktree")),
         "clear_launch_defaults": property("boolean", Copy.text("agent.tool.board_update.clear_launch_defaults")),
     ]
-
-    static let delegationProperty: Value = .object([
-        "type": .string("object"),
-        "description": .string(Copy.text("agent.tool.delegation")),
-        "properties": .object(Dictionary(uniqueKeysWithValues: DelegationArea.allCases.map {
-            ($0.rawValue, property("string", enum: DelegationLevel.allCases.map(\.rawValue) + [delegationInherit]))
-        })),
-        "additionalProperties": .bool(false),
-    ])
-
-    /// 委任範囲の指定を外して、案件（タスクなら案件、案件なら組み込み）の段階に従わせる値
-    static let delegationInherit = "inherit"
 
     static let settingTools: [ToolEntry] = [
         ToolEntry(
@@ -95,48 +83,6 @@ extension TaskboardTools {
         ])
     }
 
-    // MARK: 委任範囲
-
-    /// `delegation` の指定を今の指定に重ねる。会話は自分の委任範囲を広げられないので、確認を減らす向き（今効いている段階より緩い段階）への変更は断る。
-    /// 広げるのはアプリの設定画面で利用者が行う
-    static func delegationEdit(_ value: Value?, current: DelegationScope, effective: (DelegationArea) -> DelegationLevel, fallback: (DelegationArea) -> DelegationLevel) throws -> DelegationScope? {
-        guard let value else { return nil }
-        guard let object = value.objectValue else { throw ToolError.invalid(Copy.text("agent.mcp.settings.delegation.shape")) }
-        var scope = current
-        for (key, raw) in object {
-            guard let area = DelegationArea(rawValue: key) else {
-                throw ToolError.invalid(Self.invalidChoice("delegation." + key, DelegationArea.allCases.map(\.rawValue)))
-            }
-            guard let text = raw.stringValue else { throw ToolError.invalid(Copy.text("agent.mcp.settings.delegation.shape")) }
-            let next: DelegationLevel?
-            if text == delegationInherit {
-                next = nil
-            } else if let level = DelegationLevel(rawValue: text) {
-                next = level
-            } else {
-                throw ToolError.invalid(Self.invalidChoice("delegation." + key, DelegationLevel.allCases.map(\.rawValue) + [delegationInherit]))
-            }
-            let resulting = next ?? fallback(area)
-            guard resulting.strictness >= effective(area).strictness else {
-                throw ToolError.invalid(Copy.text("agent.mcp.settings.delegation.widen", [
-                    "area": area.rawValue, "current": effective(area).rawValue, "next": resulting.rawValue,
-                ]))
-            }
-            scope[area] = next
-        }
-        return scope
-    }
-
-    static func describe(boardDelegation board: Board) -> [String] {
-        [Copy.text("agent.mcp.settings.delegation")]
-            + DelegationArea.allCases.map { area in
-                let source = board.delegation[area] == nil ? Copy.text("agent.guidance.delegation.builtin") : Copy.text("agent.guidance.delegation.board")
-                return Copy.text(
-                    "agent.guidance.delegation.line",
-                    ["id": area.rawValue, "area": area.agentLabel, "level": board.delegationLevel(area).agentLabel, "levelID": board.delegationLevel(area).rawValue, "source": source])
-            }
-    }
-
     // MARK: Slack
 
     private func boardSlackUpdate(_ args: [String: Value]) async throws -> String {
@@ -183,16 +129,5 @@ extension TaskboardTools {
         lines += after.bookmarks.isEmpty ? [Copy.text("agent.mcp.settings.bookmark.none")] : after.bookmarks.map { "- " + $0.path }
         if !after.recent.isEmpty { lines.append(Copy.text("agent.mcp.settings.bookmark.recent") + after.recent.joined(separator: ", ")) }
         return lines.joined(separator: "\n")
-    }
-}
-
-extension DelegationLevel {
-    /// 人に問う度合い。大きいほど確認が多い
-    var strictness: Int {
-        switch self {
-        case .delegate: 0
-        case .report: 1
-        case .ask: 2
-        }
     }
 }
